@@ -1,0 +1,373 @@
+:root {
+  color: #1f2328;
+  background: #f7f8fa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f7f8fa;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 72px;
+  padding: 0 32px;
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid #edf0f5;
+  backdrop-filter: blur(16px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 190px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  cursor: pointer;
+}
+
+.brand-mark {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  color: #fff;
+  background: #111827;
+  border-radius: 10px;
+}
+
+.top-menu {
+  flex: 1;
+  min-width: 0;
+  border-bottom: none;
+}
+
+.app-content {
+  width: min(1280px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 32px 0 56px;
+}
+
+.map-content {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.page-stack,
+.full-width,
+.toolbar {
+  width: 100%;
+}
+
+.narrow-page {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.page-header {
+  padding: 8px 0;
+}
+
+.hero-panel {
+  padding: 34px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #ffffff 0%, #f4f8ff 55%, #eef6ff 100%);
+  border: 1px solid #edf0f5;
+  border-radius: 24px;
+}
+
+.project-card {
+  height: 100%;
+  border-color: #eef1f5;
+}
+
+.project-card .ant-card-body {
+  height: 100%;
+}
+
+.globe-card {
+  overflow: hidden;
+  background: #f5f0e8;
+  border: 1px solid #ddd6c8;
+  box-shadow: 0 8px 32px rgba(80,60,40,0.10);
+}
+
+.home-globe-wrap {
+  display: grid;
+  height: 320px;
+  overflow: hidden;
+  place-items: center;
+  background: radial-gradient(circle at 50% 44%, #f0ebe0 0%, #e8e2d4 55%, #ddd8cc 100%);
+  border-radius: 14px;
+}
+
+.real-globe-stage {
+  display: grid;
+  width: 100%;
+  overflow: hidden;
+  place-items: center;
+  background: radial-gradient(circle at 50% 46%, #f0ebe0 0%, #e8e2d4 50%, #ddd8cc 80%, transparent 100%);
+}
+
+.mt-12 {
+  margin-top: 12px;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+.ant-card {
+  border-radius: 18px;
+}
+
+.ant-table-wrapper .ant-table {
+  border-radius: 16px;
+}
+
+.starmapper-shell {
+  position: relative;
+  height: calc(100vh - 72px);
+  min-height: 720px;
+  overflow: hidden;
+  background: #d6dee0;
+}
+
+.repo-pill {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  z-index: 600;
+  max-width: 280px;
+  padding: 9px 14px;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: rgba(255, 250, 240, 0.94);
+  border: 1px solid rgba(199, 180, 147, 0.55);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(31, 41, 55, 0.12);
+}
+
+.map-stage-real,
+.leaflet-stage {
+  width: 100%;
+  height: 100%;
+}
+
+.leaflet-stage {
+  z-index: 1;
+  background: #d6dee0;
+}
+
+.leaflet-container {
+  font: inherit;
+}
+
+.leaflet-tile {
+  filter: saturate(0.75) brightness(0.92);
+}
+
+.map-top-card {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 620;
+  width: 380px;
+  padding: 12px;
+  background: rgba(255, 251, 242, 0.96);
+  border: 1px solid rgba(213, 196, 162, 0.55);
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(61, 54, 45, 0.22);
+  transform: translateX(-50%);
+}
+
+.repo-search-row {
+  width: 100%;
+  margin-bottom: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.map-stat-row {
+  overflow: hidden;
+  margin-bottom: 8px;
+  text-align: center;
+  border: 1px solid #eee0c8;
+  border-radius: 10px;
+}
+
+.map-stat-row .ant-col {
+  padding: 8px 4px;
+  background: rgba(255, 255, 255, 0.54);
+  border-right: 1px solid #eee0c8;
+}
+
+.map-stat-row .ant-col:last-child {
+  border-right: none;
+}
+
+.map-stat-row .ant-statistic-title {
+  margin-bottom: 0;
+  font-size: 10px;
+}
+
+.map-stat-row .ant-statistic-content {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.map-left-panel {
+  position: absolute;
+  top: 160px;
+  left: 14px;
+  z-index: 610;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 164px;
+}
+
+.map-left-panel .ant-segmented {
+  padding: 3px;
+  background: rgba(255, 250, 240, 0.94);
+  border: 1px solid rgba(213, 196, 162, 0.55);
+}
+
+.map-panel-card {
+  padding: 12px;
+  background: rgba(255, 250, 240, 0.94);
+  border: 1px solid rgba(213, 196, 162, 0.55);
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(31, 41, 55, 0.12);
+}
+
+.compact-divider {
+  margin: 8px 0;
+}
+
+.density-bar {
+  height: 6px;
+  margin-top: 6px;
+  background: linear-gradient(90deg, #f8d7ad, #e68945, #6f1d1b);
+  border-radius: 999px;
+}
+
+.side-nav-button,
+.share-button {
+  justify-content: flex-start;
+  height: 34px;
+  background: rgba(255, 250, 240, 0.94);
+  border-color: rgba(213, 196, 162, 0.55);
+  box-shadow: 0 8px 20px rgba(31, 41, 55, 0.08);
+}
+
+.share-button {
+  color: #fff;
+  background: #16833b;
+  border-color: #16833b;
+}
+
+.map-right-toolbar {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 610;
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  background: rgba(255, 250, 240, 0.94);
+  border: 1px solid rgba(213, 196, 162, 0.55);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(31, 41, 55, 0.12);
+}
+
+.antd-map-zoom {
+  position: absolute;
+  right: 16px;
+  bottom: 38px;
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.antd-map-zoom .ant-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+@media (max-width: 860px) {
+  .app-header {
+    height: auto;
+    padding: 16px;
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    min-width: auto;
+  }
+
+  .top-menu {
+    order: 3;
+    width: 100%;
+  }
+
+  .app-content {
+    width: min(100% - 24px, 1280px);
+    padding-top: 20px;
+  }
+
+  .map-content {
+    width: 100%;
+    padding-top: 0;
+  }
+
+  .hero-panel {
+    padding: 24px;
+  }
+
+  .map-top-card {
+    top: 72px;
+    width: min(360px, calc(100% - 24px));
+  }
+
+  .map-left-panel {
+    top: auto;
+    bottom: 16px;
+    left: 12px;
+    width: 150px;
+  }
+
+  .map-right-toolbar {
+    right: 12px;
+    flex-wrap: wrap;
+    max-width: 220px;
+    border-radius: 16px;
+  }
+}
