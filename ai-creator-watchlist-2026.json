@@ -1,0 +1,368 @@
+{
+  "schema": "ai_creator_watchlist.v1",
+  "created_at": "2026-07-06",
+  "updated_at": "2026-10-08T08:15:49.344Z",
+  "last_report_file": "/reports/ai-events-2026-10-08.md",
+  "video_window": {
+    "from": "2026-07-08",
+    "to": "2026-10-08",
+    "rule": "For YouTube/video-led product radar, include relevant videos from roughly the last 3 months. Prefer official channels, high-view tutorials, and vertical creators in interior design AI, AI coding, AI-CAD, AI 3D, spatial AI, and world models."
+  },
+  "next_fetch_policy": {
+    "official_priority": "Always check official/product channels first for launches, demos, release notes, and tutorials.",
+    "followed_priority": "Then check followed creators for new uploads since last_seen_at and view growth on tracked seed videos.",
+    "new_creator_policy": "Keep new creators in observe state until they publish at least two highly relevant videos or one high-impact video with strong follow-up discussion.",
+    "upgrade_rule": "Upgrade observe to followed when the creator repeatedly covers one of the target domains with practical product detail, credible testing, or strong audience traction.",
+    "downgrade_rule": "Downgrade or remove creators that pivot away from target domains for two consecutive fetch cycles."
+  },
+  "channels": [
+    {
+      "name": "Hugging Face 模型中心",
+      "kind": "official",
+      "status": "official_priority",
+      "priority": 1,
+      "focus": [
+        "生成式模型发布",
+        "开放权重模型",
+        "社区微调",
+        "模型树与许可证",
+        "图像、视频、3D、世界模型和物理 AI"
+      ],
+      "url": "https://huggingface.co/models?sort=trending",
+      "why": "生成式模型与社区衍生版本的核心发现入口。每天关注趋势、近期更新和目标机构发布，入库前继续核验模型卡、上游血缘、许可证、访问限制、论文与原始运行仓库。",
+      "seed_links": [
+        "https://huggingface.co/conradlocke/krea2-identity-edit",
+        "https://huggingface.co/krea/Krea-2-Raw"
+      ],
+      "last_seen_at": "2026-10-08",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "success",
+      "collection_note": "Official structured source checked"
+    },
+    {
+      "name": "AI风向标 / Memene",
+      "kind": "media",
+      "status": "followed",
+      "priority": 1,
+      "focus": [
+        "daily AI digest",
+        "product updates",
+        "model releases",
+        "developer ecosystem",
+        "source discovery"
+      ],
+      "url": "https://memene.cn/daily/160527759758589952",
+      "url_pattern": "https://memene.cn/daily/{structured-record-id}",
+      "why": "A date-addressable daily AI digest with categorized headlines, summaries, tracked products, and reference links. Use it as a core discovery and cross-check source, then verify every selected event against its original source.",
+      "seed_links": [
+        "https://memene.cn/model/2026-07-17",
+        "https://memene.cn/model/2026-07-16"
+      ],
+      "last_seen_at": "2026-10-08",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "success",
+      "collection_note": "Official structured source checked"
+    },
+    {
+      "name": "MeshyAI",
+      "status": "official_priority",
+      "priority": 1,
+      "focus": [
+        "AI 3D",
+        "3D Agent",
+        "image-to-3D",
+        "creator workflow"
+      ],
+      "url": "https://www.youtube.com/@MeshyAI",
+      "why": "Official AI 3D product channel. June 2026 Meshy 3D Agent videos showed strong search visibility and high view counts.",
+      "seed_links": [
+        "https://www.meshy.ai/features/3d-agent",
+        "https://www.prnewswire.com/news-releases/meshy-launches-3d-agent-beta-the-worlds-first-ai-agent-for-3d-creation-302790052.html"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "Google DeepMind",
+      "status": "official_priority",
+      "priority": 1,
+      "focus": [
+        "world models",
+        "robotics",
+        "spatial intelligence",
+        "simulation"
+      ],
+      "url": "https://www.youtube.com/@GoogleDeepMind",
+      "why": "Primary source for Genie/world-model and robotics research videos.",
+      "seed_links": [
+        "https://deepmind.google/discover/blog/genie-3-a-new-frontier-for-world-models/"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "Chrome for Developers / Google for Developers",
+      "status": "official_priority",
+      "priority": 1,
+      "focus": [
+        "AI coding",
+        "Gemini API",
+        "AI Studio",
+        "browser automation",
+        "agentic web"
+      ],
+      "url": "https://www.youtube.com/user/ChromeDevelopers",
+      "why": "Official developer product videos around Google I/O 2026 AI tooling.",
+      "seed_links": [
+        "https://blog.google/innovation-and-ai/technology/developers-tools/google-io-2026-developer-highlights/",
+        "https://blog.google/innovation-and-ai/technology/ai/google-io-2026-all-our-announcements/"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "ARES CAD Software by Graebert",
+      "status": "official_priority",
+      "priority": 1,
+      "focus": [
+        "AI-CAD",
+        "DWG automation",
+        "online CAD"
+      ],
+      "url": "https://www.youtube.com/%40ARESCADsoftware",
+      "why": "Official CAD channel with relevant DWG and automation product content.",
+      "seed_links": [
+        "https://www.graebert.com/cad-software/ares-commander/"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "Stefan 3D AI",
+      "status": "followed",
+      "priority": 2,
+      "focus": [
+        "AI 3D review",
+        "Unreal Engine",
+        "Blender",
+        "Meshy",
+        "Tripo"
+      ],
+      "url": "https://www.youtube.com/results?search_query=Stefan+3D+AI+Meshy+Tripo",
+      "why": "Practical AI 3D testing and production-workflow commentary, useful beyond official demos.",
+      "seed_links": [
+        "https://www.youtube.com/watch?v=v72wRfONHNQ",
+        "https://www.youtube.com/watch?v=SCQt6B96DSs"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "Bilawal Sidhu",
+      "status": "followed",
+      "priority": 2,
+      "focus": [
+        "spatial AI",
+        "world models",
+        "3D capture",
+        "XR",
+        "creator tools"
+      ],
+      "url": "https://www.youtube.com/@BilawalSidhu",
+      "why": "Strong explainer channel for spatial AI and real-world capture trends.",
+      "seed_links": [
+        "https://www.youtube.com/watch?v=bxv4IkobUPI"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "Riley Brown",
+      "status": "followed",
+      "priority": 2,
+      "focus": [
+        "AI coding",
+        "Codex",
+        "app building",
+        "agentic development"
+      ],
+      "url": "https://www.youtube.com/@RileyBrownAI",
+      "why": "High-visibility AI coding tutorials indicate mainstream developer adoption patterns.",
+      "seed_links": [
+        "https://www.youtube.com/watch?v=KXIdYEdOPys"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "Nick Saraev",
+      "status": "followed",
+      "priority": 2,
+      "focus": [
+        "AI coding",
+        "Claude Code",
+        "mobile app building",
+        "automation"
+      ],
+      "url": "https://www.youtube.com/@NickSaraev",
+      "why": "Long-form product-building tutorials show whether AI coding tools can complete real app workflows.",
+      "seed_links": [
+        "https://www.youtube.com/watch?v=BMMcmmnjrM8"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "Kate Vera Creative",
+      "status": "followed",
+      "priority": 2,
+      "focus": [
+        "AI interior design",
+        "designer workflow",
+        "brief-to-render",
+        "presentation"
+      ],
+      "url": "https://www.youtube.com/results?search_query=Kate+Vera+Creative+AI+interior+design",
+      "why": "Interior-design-specific AI workflow content, useful for designer adoption signals.",
+      "seed_links": [
+        "https://www.youtube.com/watch?v=Wt6IzAS71e0"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "Mia Tsujimura | The Portfolio Archive",
+      "status": "followed",
+      "priority": 2,
+      "focus": [
+        "interior design",
+        "architecture portfolio",
+        "AI workflow",
+        "design presentation"
+      ],
+      "url": "https://www.youtube.com/results?search_query=Mia+Tsujimura+The+Portfolio+Archive+AI+interior+design",
+      "why": "Stable design-education perspective for how AI affects portfolio, rendering, and presentation work.",
+      "seed_links": [
+        "https://www.youtube.com/results?search_query=Mia+Tsujimura+AI+interior+design+Nano+Banana+2026"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "AI Master",
+      "status": "followed",
+      "priority": 3,
+      "focus": [
+        "Claude Code",
+        "AI coding beginner tutorials"
+      ],
+      "url": "https://www.youtube.com/results?search_query=AI+Master+Claude+Code+2026",
+      "why": "Claude Code beginner content showed meaningful search traction in the 2026-04 to 2026-07 window.",
+      "seed_links": [
+        "https://www.youtube.com/watch?v=RywmhLTFeFk"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "PropTech Playbook",
+      "status": "observe_new",
+      "priority": 3,
+      "focus": [
+        "AI interior design tools",
+        "virtual staging",
+        "photo redesign",
+        "CAD renders",
+        "VR"
+      ],
+      "url": "https://www.youtube.com/results?search_query=PropTech+Playbook+AI+Interior+Design+Tools+2026",
+      "why": "Small but highly relevant vertical signal for interior-design AI product lists.",
+      "seed_links": [
+        "https://www.youtube.com/watch?v=vx-8W7a606I"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "NextMindRevolution",
+      "status": "observe_new",
+      "priority": 3,
+      "focus": [
+        "AI interior design",
+        "Gemini",
+        "Nano Banana",
+        "workflow"
+      ],
+      "url": "https://www.youtube.com/results?search_query=NextMindRevolution+AI+Interior+Design+Gemini+Nano+Banana",
+      "why": "Low-view but highly targeted interior-design AI workflow content.",
+      "seed_links": [
+        "https://www.youtube.com/watch?v=7Pe5w8xpkV0"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "Davidson-Daniel",
+      "status": "observe_new",
+      "priority": 3,
+      "focus": [
+        "Tripo",
+        "AI 3D tool review"
+      ],
+      "url": "https://www.youtube.com/results?search_query=Davidson-Daniel+Tripo+AI+Review",
+      "why": "Tripo review had notable search visibility, but long-term AI 3D focus needs confirmation.",
+      "seed_links": [
+        "https://www.youtube.com/watch?v=5M6W3arooTk"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    },
+    {
+      "name": "Vistrux / Agentic AI for CAD",
+      "status": "observe_new",
+      "priority": 3,
+      "focus": [
+        "AI-CAD",
+        "prompt-to-3D",
+        "generative CAD"
+      ],
+      "url": "https://www.youtube.com/results?search_query=Vistrux+Agentic+AI+for+CAD",
+      "why": "Niche AI-CAD signal. Track for true parametric/editable CAD support rather than demo-only generation.",
+      "seed_links": [
+        "https://www.youtube.com/results?search_query=ChatGPT+for+CAD+Generative+AI+builds+3D+models+from+a+prompt+2026"
+      ],
+      "last_seen_at": "2026-07-06",
+      "last_checked_at": "2026-10-08T08:15:49.344Z",
+      "collection_status": "blocked",
+      "collection_note": "fetch failed"
+    }
+  ]
+}

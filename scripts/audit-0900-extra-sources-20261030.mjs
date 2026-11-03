@@ -1,0 +1,11 @@
+import {readFile,writeFile} from 'node:fs/promises';
+import './network-fetch.mjs';
+const base='data/dev/source-archives/audit-0900-2026-10-30';
+const read=async n=>JSON.parse(await readFile(`data/dev/${n}.json`,'utf8'));
+const [memene,media,prior]=await Promise.all([read('memene-daily-latest'),read('ai-media-latest'),JSON.parse(await readFile(base+'/fetch-results.json','utf8'))]);
+const existing=new Set(prior.map(r=>r.url));
+const urls=[...new Set([...memene.target.candidates.flatMap(c=>(c.sources??[]).map(l=>l.url)),...media.candidates.filter(c=>c.sourceId==='aiera').map(c=>'https://aiera.com.cn/wp-json/wp/v2/posts/'+new URL(c.url).searchParams.get('id')+'?_embed=1'),...['2610.37172','2610.37381','2610.37257'].map(id=>'https://arxiv.org/abs/'+id)])].filter(u=>!existing.has(u)&&!u.includes('x.com/'));
+let cursor=0;const results=[];
+await Promise.all(Array.from({length:6},async()=>{while(cursor<urls.length){const j=cursor++,i=prior.length+j,url=urls[j],checkedAt=new Date().toISOString();try{const r=await fetch(url,{signal:AbortSignal.timeout(25000)});const raw=await r.text();await writeFile(`${base}/${i}.raw`,raw);let body=raw;try{const p=JSON.parse(raw);if(p.content?.rendered)body=`${p.date} ${p.title.rendered} ${p.content.rendered}`;}catch{}const txt=body.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();await writeFile(`${base}/${i}.txt`,txt);results[j]={i,url,checkedAt,httpStatus:r.status,success:r.ok,path:`${base}/${i}.txt`,chars:txt.length};}catch(e){results[j]={i,url,checkedAt,success:false,error:e.message};}}}));
+await writeFile(base+'/extra-results.json',JSON.stringify(results,null,2));
+console.log(JSON.stringify(results));

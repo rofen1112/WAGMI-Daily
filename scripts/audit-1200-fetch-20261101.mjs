@@ -1,0 +1,13 @@
+import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
+import './network-fetch.mjs';
+const base='data/dev/source-archives/audit-1200-2026-11-01';
+await fs.mkdir(base,{recursive:true});
+const read=async p=>JSON.parse(await fs.readFile(p,'utf8'));
+const [m,d,r]=await Promise.all(['memene-daily-latest','ai-media-latest','ai-discovery-review-2026-11-01'].map(n=>read('data/dev/'+n+'.json')));
+const selected=d.candidates.filter(c=>r.media.items.find(x=>x.id===c.id)?.disposition==='needs_review');
+const extra=await read(base+'/extra-urls.json').catch(()=>[]);
+const urls=[...new Set([...m.target.candidates.flatMap(c=>c.sources.map(s=>s.url)),...selected.map(c=>c.url.replace(/^http:/,'https:')),...selected.filter(c=>c.sourceId==='aiera').map(c=>'https://aiera.com.cn/wp-json/wp/v2/posts/'+new URL(c.url).searchParams.get('id')+'?_embed=1'),...selected.filter(c=>c.sourceDate==='2026-11-01').flatMap(c=>(c.sections??[]).flatMap(s=>s.referencedUrls)),...extra, 'https://openai.com/news/rss.xml','https://blog.google/rss/','https://www.anthropic.com/news','https://blogs.nvidia.com/feed/'])];
+const prior=await read(base+'/fetch-results.json').catch(()=>[]),out=[];let cursor=0;
+await Promise.all(Array.from({length:8},async()=>{while(cursor<urls.length){const url=urls[cursor++],cached=prior.find(x=>x.url===url&&x.success);if(cached){out.push(cached);continue;}const i=crypto.createHash('sha256').update(url).digest('hex').slice(0,14),checkedAt=new Date().toISOString();try{const response=await fetch(url,{signal:AbortSignal.timeout(25000)}),raw=await response.text();await fs.writeFile(base+'/'+i+'.html',raw);const text=raw.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;|&#160;/g,' ').replace(/&amp;/g,'&').replace(/\s+/g,' ').trim();await fs.writeFile(base+'/'+i+'.txt',text);out.push({url,checkedAt,status:response.status,success:response.ok,finalUrl:response.url,path:base+'/'+i+'.txt',rawPath:base+'/'+i+'.html',chars:text.length,sha256:crypto.createHash('sha256').update(raw).digest('hex')});}catch(error){out.push({url,checkedAt,success:false,error:error.message});}await fs.writeFile(base+'/fetch-results.json',JSON.stringify(out,null,2)+'\n');}}));
+console.log(JSON.stringify(out.map(({url,status,success,chars,path,error})=>({url,status,success,chars,path,error})),null,2));

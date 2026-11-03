@@ -1,0 +1,209 @@
+{
+  "schemaVersion": "1.0.0",
+  "checkedAt": "2026-10-14T03:53:46.223Z",
+  "project": "G:\\code-program\\0-2026\\wagmi-daily",
+  "runDate": "2026-10-14",
+  "model": {
+    "requestedModel": "gpt-6.1-sol",
+    "reasoningEffort": "high",
+    "scope": "项目默认及本项目7个定时任务创建的后续聊天",
+    "projectConfig": ".codex/config.toml",
+    "globalDefaultAlreadyMatched": true,
+    "automations": [
+      {
+        "id": "ark-insight-12-00",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high",
+        "unchanged": true
+      },
+      {
+        "id": "wagmi",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high",
+        "unchanged": true
+      },
+      {
+        "id": "wagmi-09-00",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high",
+        "unchanged": true
+      },
+      {
+        "id": "wagmi-ai",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high",
+        "unchanged": true
+      },
+      {
+        "id": "wagmi-ai-2",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high",
+        "unchanged": true
+      },
+      {
+        "id": "wagmi-github",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high",
+        "unchanged": true
+      },
+      {
+        "id": "wagmi-skill",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high",
+        "unchanged": true
+      }
+    ],
+    "note": "High 是推理强度；手动选择或显式模型覆盖仍具有更高优先级。没有更改已存在聊天的模型。",
+    "officialDocs": "https://learn.chatgpt.com/docs/config-file/config-basic"
+  },
+  "verification": {
+    "tests": {
+      "passed": 169,
+      "failed": 0,
+      "log": ".codex-logs/project-audit-tests-final-2026-10-14.log"
+    },
+    "typecheck": "passed",
+    "mainData": "passed",
+    "devData": "passed",
+    "builds": {
+      "public": "passed",
+      "admin": "passed",
+      "note": "使用.local-backups内的独立输出目录；未替换正式dist"
+    },
+    "dependencies": {
+      "before": {
+        "high": 3,
+        "total": 3
+      },
+      "after": {
+        "total": 0
+      },
+      "versions": {
+        "undici": "7.30.0",
+        "nanoid": "3.3.20",
+        "source-map-js": "1.2.2"
+      },
+      "log": ".codex-logs/project-audit-dependencies-final-2026-10-14.json"
+    },
+    "publicWebsite": {
+      "url": "https://wagmii.cn",
+      "localReady": true,
+      "publicReady": true,
+      "mainAsOf": "2026-10-13",
+      "generatedAt": "2026-10-13T07:21:25.928Z",
+      "contentHashesMatch": true,
+      "note": "current表示与main一致，不表示今日采集已发布"
+    },
+    "publicAccessBoundary": {
+      "main": 200,
+      "dev": 404,
+      "environmentFiles": 404
+    }
+  },
+  "fixed": [
+    {
+      "id": "automation-models",
+      "problem": "7个定时任务仍为GPT-5.6 sol / Medium",
+      "resolution": "通过automation_update更新7个任务并回读；时间、内容、状态及项目绑定保持一致"
+    },
+    {
+      "id": "dependency-vulnerabilities",
+      "problem": "undici、nanoid和source-map-js存在已知漏洞",
+      "resolution": "升级兼容版本；undici安全最低版本写入manifest和lockfile；审计清零"
+    },
+    {
+      "id": "upstream-diagnostics",
+      "problem": "成功的回退来源把上游不可用状态藏在upstream；完整性审计输出failedSources=[]",
+      "resolution": "递归收集上游故障，保留recoveredBy及dataQuality；增加2项回归测试",
+      "files": [
+        "scripts/source-diagnostics.mjs",
+        "scripts/audit-data-completeness.mjs",
+        "tests/source-diagnostics.test.mjs"
+      ]
+    },
+    {
+      "id": "rss-validation",
+      "problem": "论文解析未验证RSS/XML形状，HTTP 200错误页面可被误判为空结果",
+      "resolution": "校验XML和RSS结构及条目完整性，新增来源状态证据与2项回归测试；实际当前RSS是有效空结果",
+      "files": [
+        "scripts/discover-ai-papers.mjs",
+        "tests/ai-paper-discovery.test.mjs"
+      ],
+      "evidence": ".codex-logs/project-audit-arxiv-response-2026-10-14.xml"
+    },
+    {
+      "id": "report-index",
+      "problem": "2026-10-12 GitHub与Skill日报已有文件但未注册",
+      "resolution": "使用现有回填脚本注册2份到dev索引；未生成伪造历史内容；复查无未登记文件"
+    },
+    {
+      "id": "weekly-report",
+      "problem": "上周周报因07:50运行时AI尚未就绪而保留warning",
+      "resolution": "备份并按2026-10-05至2026-10-11重建；32条已核验事件；success",
+      "artifact": "reports/ai-events-weekly-2026-10-12.md",
+      "prevention": "周一任务增加有上限的上游等待，并在09:00复核补重建；当前没有修改调度与任务内容"
+    },
+    {
+      "id": "watchdog-stalled",
+      "problem": "监控进程仍响应，但checkedAt停在2026-10-08",
+      "resolution": "为请求及响应体加入独立截止时间，新增2项挂起回归测试；核实计划任务和进程归属后仅重启监控；已恢复当日检查",
+      "files": [
+        "scripts/local-watchdog.mjs",
+        "tests/local-watchdog.test.mjs"
+      ],
+      "limitation": "旧进程挂起的具体底层原因未被证明；当前503仍由数据新鲜度门禁触发"
+    }
+  ],
+  "remaining": [
+    {
+      "id": "github-publication-block",
+      "severity": "blocking",
+      "problem": "OSS Insight的4个事件趋势接口均声明数据不可用；其capture约为baseline的0.3%，unavailable_since=2026-03-01。GitHub官方Trending回退成功，现有framework仍要求primary失败时warning，因此今日发布阻断",
+      "evidence": "data/dev/github-trend-candidates.json",
+      "framework": "GITHUB_RADAR_FRAMEWORK.md",
+      "recommendation": "将GitHub官方Trending设为主趋势，OSS Insight作为可选交叉验证；同步两个finalizer、框架和回归测试。仍要求真实每日来源、必核仓库完整验证，禁止伪造OSS指标。完成后重跑GitHub审核、daily门禁、发布和公网一致性核验。",
+      "policyChanged": true,
+      "status": "resolved",
+      "resolvedAt": "2026-10-14T06:55:46.499Z",
+      "resolutionReport": "deliverables/github-publication-recovery-2026-10-14.json"
+    },
+    {
+      "id": "review-backlog",
+      "severity": "maintenance",
+      "problem": "Skill待审6578条，论文needs_review8894条；这些是累计保留/来源未出现状态，不能据此认定下架",
+      "recommendation": "按优先级分批核验详情页、官方仓库及迁移证据；采用现有review工具并保留历史记录，不在本次审计中删除条目"
+    },
+    {
+      "id": "sandbox-runtime",
+      "severity": "environment",
+      "problem": "默认执行环境和Node REPL启动失败：helper_unknown_error/setup refresh had errors、trusted Node process exited unexpectedly",
+      "resolution": "本次通过获准的执行通道完成审计；未修改权限策略",
+      "recommendation": "在Codex应用端修复Windows执行环境，先完成当前任务后重启应用，再验证普通shell；如果仍复现，附具体错误检查Windows sandbox配置。该项不能通过项目代码修复。"
+    }
+  ],
+  "other": {
+    "models": {
+      "publicMetadataRefreshed": 4,
+      "success": 4,
+      "commercialLicenseReviewNotChanged": true
+    },
+    "duplicates": {
+      "events": 0,
+      "projects": 0,
+      "skills": 0,
+      "papers": 0,
+      "reports": 0
+    },
+    "missingRegisteredReportFiles": 0,
+    "unregisteredReports": 0,
+    "reportGapsSinceFrameworkAdoption": 0,
+    "archiveNote": "7月17日前的分日报文件仍存在历史缺口；审计未以恢复后的指标伪造历史榜单。",
+    "dingtalk": "本次未发送；今日发布门禁仍阻断。",
+    "repoState": "项目开始已有大量未提交修改；未提交、清理或回滚这些工作。"
+  },
+  "followUp": {
+    "checkedAt": "2026-10-14T06:55:46.499Z",
+    "status": "github-publication-block-resolved",
+    "report": "deliverables/github-publication-recovery-2026-10-14.json"
+  }
+}

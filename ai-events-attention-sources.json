@@ -1,0 +1,609 @@
+{
+  "schema": "ai_events_attention_sources.v1",
+  "created_at": "2026-07-09",
+  "updated_at": "2026-10-10",
+  "source_file": "ai博主清单.md",
+  "purpose": "Define high-signal creator, media, research, and industry channels for AI events capture. GitHub Radar remains repository-centric; AI Events uses these sources as object-centric attention inputs.",
+  "capture_rule": "Every AI event should connect to at least one attention object, target board, or high-signal channel. If a channel mentions a GitHub repo, SDK, CLI, plugin, paper code, or open-source tool, pass it into GitHub Radar as forced intake.",
+  "groups": [
+    {
+      "id": "daily-reference-aggregators",
+      "title": "同行每日聚合参考",
+      "region": "CN",
+      "board": "每日候选发现 / 交叉核验",
+      "priority": 1,
+      "purpose": "利用按日期发布的同行聚合页快速发现候选事件、重点对象和原始参考链接；聚合内容不能替代原始来源核验。",
+      "boards": [
+        "AI 产品 / 模型发布",
+        "AI Agent",
+        "AI 安全 / 治理",
+        "AI 编程",
+        "市场 / 商业模式"
+      ],
+      "channels": [
+        {
+          "name": "每日AI / Memene",
+          "platforms": [
+            "网站",
+            "每日AI简报",
+            "公开历史接口"
+          ],
+          "url": "https://memene.cn/daily/130822021717164032?ref=website",
+          "planId": "cm3y1uwk40004tcv987dja7le",
+          "historyEndpoint": "https://apis.memenews.cn/api/summary/history",
+          "detailEndpoint": "https://apis.memenews.cn/api/summary/detailsSummaryById",
+          "discoveryCommand": "npm.cmd run memene:discover -- --date={YYYY-MM-DD} --days=7",
+          "dateRule": "以历史记录 historyRecords[].date 和详情 data.date 为准，不从日报数字 ID、页面访问时间或 URL 参数推断日期。",
+          "focus": "按真实发布日期发现每日 AI 热点、重点事件、来源链接和最近一周历史记录，补齐单日采集遗漏。",
+          "status": "core",
+          "priority": 1,
+          "sourceRole": "optional_discovery_and_cross_check",
+          "verificationRule": "每天回看最近 7 个自然日并精确匹配当日记录；聚合摘要只用于候选发现，入库前必须核验官方页面、官方账号、论文项目页、官方 GitHub 或可信媒体原文。",
+          "boards": [
+            "AI 产品 / 模型发布",
+            "AI Agent",
+            "AI 安全 / 治理",
+            "AI 编程",
+            "市场 / 商业模式"
+          ],
+          "requiredForPublication": false,
+          "availabilityPolicy": "周末或单源未更新仅记录来源状态；继续官方多源核验，不阻断日报发布。"
+        },
+        {
+          "name": "AI风向标 / Memene",
+          "platforms": [
+            "网站",
+            "每日资讯聚合"
+          ],
+          "url": "https://memene.cn/model/2026-07-17",
+          "urlPattern": "https://memene.cn/model/{YYYY-MM-DD}",
+          "focus": "按日期整理 AI 产品、模型、开发生态、技术洞察和行业动态，并提供参考来源链接",
+          "status": "core",
+          "priority": 1,
+          "sourceRole": "optional_discovery_and_cross_check",
+          "verificationRule": "只作为候选发现和交叉核验入口；入库前必须打开其参考链接，并以官方、论文项目页或可信媒体完成事实核验。",
+          "boards": [
+            "AI 产品 / 模型发布",
+            "AI Agent",
+            "AI 编程",
+            "市场 / 商业模式"
+          ],
+          "requiredForPublication": false,
+          "availabilityPolicy": "周末或单源未更新仅记录来源状态；继续官方多源核验，不阻断日报发布。"
+        }
+      ]
+    },
+    {
+      "id": "cn-industry-breaking",
+      "title": "国内行业快讯",
+      "region": "CN",
+      "board": "行业快讯 / 发布会 / 融资 / 政策",
+      "priority": 1,
+      "purpose": "追发布会、新模型、融资、政策和重大行业事件。",
+      "boards": [
+        "融资 / 投资",
+        "AI Agent",
+        "市场 / 商业模式"
+      ],
+      "channels": [
+        {
+          "name": "高飞的电子替身",
+          "platforms": [
+            "公众号",
+            "知乎",
+            "微博",
+            "播客《原点Talk》"
+          ],
+          "focus": "全球大厂 AI 发布会拆解、GTC/WAIC 现场复盘、行业重磅事件深度解读",
+          "audience": "行业从业者、需要第一时间跟进 AI 重大事件",
+          "status": "core",
+          "priority": 1,
+          "boards": [
+            "AI Agent",
+            "市场 / 商业模式"
+          ]
+        },
+        {
+          "name": "拾象科技-海外独角兽",
+          "platforms": [
+            "公众号",
+            "小宇宙播客",
+            "官网研报"
+          ],
+          "focus": "海外 AI 独角兽融资、美股 AI 巨头动态、月度全球 AI 产业汇总",
+          "audience": "二级市场、AI 产业研究员",
+          "status": "core",
+          "priority": 1,
+          "boards": [
+            "融资 / 投资",
+            "市场 / 商业模式"
+          ]
+        },
+        {
+          "name": "机器之心",
+          "platforms": [
+            "公众号",
+            "B站",
+            "知乎",
+            "官网",
+            "APP"
+          ],
+          "focus": "每日全球 AI 快讯、顶会、国产大模型、政策一手报道",
+          "audience": "全行业通用资讯阅读",
+          "status": "core",
+          "priority": 1,
+          "boards": [
+            "AI Agent",
+            "AI 编程",
+            "AI 3D / 世界模型"
+          ],
+          "url": "https://www.jiqizhixin.com/",
+          "publicDiscoveryUrl": "https://www.jiqizhixin.com/articles",
+          "discoveryConfig": "ai-media-sources.json",
+          "discoveryCommand": "npm.cmd run ai:media:discover",
+          "sourceRole": "optional_media_discovery",
+          "requiredForPublication": false,
+          "verificationRule": "公众号品牌公开网站/RSS仅用于候选发现；入选前必须核验原始官方事实证据。"
+        },
+        {
+          "name": "量子位",
+          "platforms": [
+            "公众号",
+            "B站",
+            "微博"
+          ],
+          "focus": "国产 AI 创业、监管政策、科技热点长图文和长视频资讯",
+          "audience": "碎片化快速梳理国内产业动态",
+          "status": "followed",
+          "priority": 2,
+          "boards": [
+            "市场 / 商业模式",
+            "AI Agent"
+          ],
+          "url": "https://www.qbitai.com/",
+          "publicDiscoveryUrl": "https://www.qbitai.com/feed/",
+          "discoveryConfig": "ai-media-sources.json",
+          "discoveryCommand": "npm.cmd run ai:media:discover",
+          "sourceRole": "optional_media_discovery",
+          "requiredForPublication": false,
+          "verificationRule": "公众号品牌公开网站/RSS仅用于候选发现；入选前必须核验原始官方事实证据。"
+        }
+      ]
+    },
+    {
+      "id": "cn-technical-deep-dive",
+      "title": "国内硬核技术",
+      "region": "CN",
+      "board": "论文 / 架构 / 开源模型",
+      "priority": 1,
+      "purpose": "深挖事件底层技术，识别能转入 GitHub Radar 的模型、框架和工程项目。",
+      "boards": [
+        "AI Agent",
+        "AI 编程",
+        "AI 3D / 世界模型"
+      ],
+      "channels": [
+        {
+          "name": "李沐（沐神）",
+          "platforms": [
+            "B站",
+            "知乎",
+            "GitHub",
+            "公众号《动手学深度学习》"
+          ],
+          "focus": "大模型架构拆解、新模型技术复盘、深度学习教程",
+          "audience": "算法工程师、AI 开发者、在校学生",
+          "status": "core",
+          "priority": 1,
+          "boards": [
+            "AI Agent",
+            "AI 编程"
+          ]
+        },
+        {
+          "name": "红色石头（AI有道）",
+          "platforms": [
+            "公众号AI有道",
+            "知乎",
+            "CSDN"
+          ],
+          "focus": "LLM/CV 论文通俗解读、AI 技术事件原理科普",
+          "audience": "入门技术爱好者、转行 AI 人群",
+          "status": "followed",
+          "priority": 2,
+          "boards": [
+            "AI Agent",
+            "AI 编程"
+          ]
+        },
+        {
+          "name": "磐创AI",
+          "platforms": [
+            "公众号",
+            "技术社群"
+          ],
+          "focus": "顶会汇总、国产开源大模型更新、工程落地干货",
+          "audience": "后端 / AI 工程落地人员",
+          "status": "followed",
+          "priority": 2,
+          "boards": [
+            "AI 编程",
+            "AI Agent"
+          ]
+        },
+        {
+          "name": "林骁（中科院博士）",
+          "platforms": [
+            "知乎专栏",
+            "公众号"
+          ],
+          "focus": "国产大模型对比、工业级 LLM 落地技术分析",
+          "audience": "企业算法负责人、AI 产品经理",
+          "status": "observe_new",
+          "priority": 3,
+          "boards": [
+            "AI Agent",
+            "市场 / 商业模式"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cn-bilibili-tools",
+      "title": "国内 B站工具实测",
+      "region": "CN",
+      "board": "AI 工具实测 / 热点科普",
+      "priority": 2,
+      "purpose": "观察实操工具、模型部署、视频生成和 AIGC 影视案例，筛选使用技巧类内容。",
+      "boards": [
+        "使用技巧 / 教程",
+        "AI 3D / 世界模型"
+      ],
+      "channels": [
+        {
+          "name": "Two Minute Papers 中文解说",
+          "platforms": [
+            "B站"
+          ],
+          "focus": "极速解读最新 AI 论文、多模态/Agent 前沿热点",
+          "status": "followed",
+          "priority": 2,
+          "boards": [
+            "AI Agent",
+            "AI 3D / 世界模型"
+          ]
+        },
+        {
+          "name": "技术爬爬虾",
+          "platforms": [
+            "B站"
+          ],
+          "focus": "新模型本地部署实测、商用大模型横向评测",
+          "status": "followed",
+          "priority": 2,
+          "boards": [
+            "使用技巧 / 教程",
+            "AI 编程"
+          ]
+        },
+        {
+          "name": "DiDi_OK",
+          "platforms": [
+            "B站"
+          ],
+          "focus": "Sora/视频生成大模型实操、AIGC 影视前沿案例复盘",
+          "status": "observe_new",
+          "priority": 3,
+          "boards": [
+            "使用技巧 / 教程",
+            "AI 3D / 世界模型"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cn-commercial-research",
+      "title": "国内商业投研",
+      "region": "CN",
+      "board": "商业化 / 并购 / 产业格局",
+      "priority": 2,
+      "purpose": "跟踪 AI 创投、商业化、行业并购、硬件和机器人产业链变化。",
+      "boards": [
+        "融资 / 投资",
+        "市场 / 商业模式"
+      ],
+      "channels": [
+        {
+          "name": "36氪AI频道",
+          "platforms": [
+            "公众号",
+            "APP"
+          ],
+          "focus": "国内 AI 企业融资、大模型商业化、行业并购、政策影响分析",
+          "audience": "创投、产业分析师、创业者",
+          "status": "followed",
+          "priority": 2,
+          "boards": [
+            "融资 / 投资",
+            "市场 / 商业模式"
+          ]
+        },
+        {
+          "name": "智东西",
+          "platforms": [
+            "公众号",
+            "B站"
+          ],
+          "focus": "AI 硬件、机器人、自动驾驶全产业链大事件",
+          "audience": "硬件 AI、机器人赛道从业者",
+          "status": "observe_new",
+          "priority": 3,
+          "boards": [
+            "市场 / 商业模式",
+            "AI Agent"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "global-academic-opinion",
+      "title": "海外学术与顶层观点",
+      "region": "Global",
+      "board": "学术观点 / 行业访谈 / 趋势判断",
+      "priority": 1,
+      "purpose": "捕捉顶层观点、重磅模型解读、AI 创业趋势和行业访谈。",
+      "boards": [
+        "AI Agent",
+        "AI 编程",
+        "AI 3D / 世界模型",
+        "市场 / 商业模式"
+      ],
+      "channels": [
+        {
+          "name": "Andrej Karpathy",
+          "platforms": [
+            "X",
+            "YouTube",
+            "GitHub Gist",
+            "Substack"
+          ],
+          "focus": "GPT/Claude/Sora 等重磅模型首发深度长文、AGI 底层思考",
+          "status": "core",
+          "priority": 1,
+          "boards": [
+            "AI Agent",
+            "AI 编程"
+          ]
+        },
+        {
+          "name": "Andrew Ng / DeepLearning.AI",
+          "platforms": [
+            "YouTube",
+            "The Batch",
+            "LinkedIn"
+          ],
+          "focus": "每周全球 AI 周报、企业落地案例、AI 创业趋势",
+          "status": "core",
+          "priority": 1,
+          "boards": [
+            "市场 / 商业模式",
+            "AI Agent"
+          ]
+        },
+        {
+          "name": "Lex Fridman",
+          "platforms": [
+            "YouTube",
+            "Spotify"
+          ],
+          "focus": "AI 行业领军人物深度访谈",
+          "status": "followed",
+          "priority": 2,
+          "boards": [
+            "市场 / 商业模式",
+            "AI Agent"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "global-youtube-tools",
+      "title": "海外 YouTube 工具与资讯",
+      "region": "Global",
+      "board": "模型实测 / 工具盘点 / 工程解读",
+      "priority": 1,
+      "purpose": "跟踪模型实测、企业工具、提示词工程、论文拆解和工程视角。",
+      "boards": [
+        "使用技巧 / 教程",
+        "AI Agent",
+        "AI 编程"
+      ],
+      "channels": [
+        {
+          "name": "Matt Wolfe",
+          "platforms": [
+            "YouTube"
+          ],
+          "focus": "每周全球新模型盘点、OpenAI/Google 发布会全程实测",
+          "status": "core",
+          "priority": 1,
+          "boards": [
+            "AI Agent",
+            "使用技巧 / 教程"
+          ]
+        },
+        {
+          "name": "The AI Advantage / Igor Pogany",
+          "platforms": [
+            "YouTube"
+          ],
+          "focus": "企业级商用 AI 工具、提示词工程、商业化落地教程",
+          "status": "followed",
+          "priority": 2,
+          "boards": [
+            "使用技巧 / 教程",
+            "市场 / 商业模式"
+          ]
+        },
+        {
+          "name": "Yannic Kilcher",
+          "platforms": [
+            "YouTube"
+          ],
+          "focus": "顶会论文直播拆解、LLM/多模态硬核技术解析",
+          "status": "followed",
+          "priority": 2,
+          "boards": [
+            "AI Agent",
+            "AI 编程"
+          ]
+        },
+        {
+          "name": "Nate Jones",
+          "platforms": [
+            "YouTube",
+            "播客"
+          ],
+          "focus": "微软云 AI 落地、大厂内部工程视角产业解读",
+          "status": "observe_new",
+          "priority": 3,
+          "boards": [
+            "AI Agent",
+            "市场 / 商业模式"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "global-substack-x",
+      "title": "海外 Substack / X 专栏",
+      "region": "Global",
+      "board": "每日资讯 / 批判性观点 / 开发者实战",
+      "priority": 1,
+      "purpose": "获取每日精简 AI 资讯、行业思辨和开源模型工程踩坑。",
+      "boards": [
+        "AI Agent",
+        "AI 编程",
+        "市场 / 商业模式"
+      ],
+      "channels": [
+        {
+          "name": "Wes Roth",
+          "platforms": [
+            "YouTube",
+            "Substack"
+          ],
+          "focus": "每日精简全球核心 AI 事件，过滤营销软文",
+          "status": "core",
+          "priority": 1,
+          "boards": [
+            "AI Agent",
+            "市场 / 商业模式"
+          ]
+        },
+        {
+          "name": "Gary Marcus",
+          "platforms": [
+            "Substack",
+            "X"
+          ],
+          "focus": "批判性视角分析大模型缺陷、客观看待 AI 行业泡沫",
+          "status": "followed",
+          "priority": 2,
+          "boards": [
+            "市场 / 商业模式"
+          ]
+        },
+        {
+          "name": "Simon Willison",
+          "platforms": [
+            "个人博客",
+            "X"
+          ],
+          "focus": "开源大模型工程踩坑、API 行业规则更新、开发者实战记录",
+          "status": "core",
+          "priority": 1,
+          "boards": [
+            "AI 编程",
+            "AI Agent"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "supplemental-public-account-media",
+      "title": "公众号品牌公开来源补充",
+      "region": "CN",
+      "priority": 2,
+      "channels": [
+        {
+          "name": "新智元",
+          "platforms": [
+            "公众号",
+            "官网"
+          ],
+          "focus": "AI行业热点与技术新闻补充发现",
+          "status": "followed",
+          "priority": 2,
+          "url": "https://aiera.com.cn/",
+          "publicDiscoveryUrl": "https://aiera.com.cn/asi-articles.html",
+          "discoveryConfig": "ai-media-sources.json",
+          "discoveryCommand": "npm.cmd run ai:media:discover",
+          "sourceRole": "optional_media_discovery",
+          "requiredForPublication": false,
+          "verificationRule": "公众号品牌公开网站/RSS仅用于候选发现；入选前必须核验原始官方事实证据。"
+        }
+      ]
+    }
+  ],
+  "quick_routes": [
+    {
+      "intent": "追 AI 大事件快讯",
+      "cn": [
+        "高飞的电子替身",
+        "机器之心",
+        "量子位"
+      ],
+      "global": [
+        "Andrew Ng / DeepLearning.AI",
+        "Wes Roth"
+      ]
+    },
+    {
+      "intent": "深挖事件底层技术",
+      "cn": [
+        "李沐（沐神）",
+        "磐创AI"
+      ],
+      "global": [
+        "Andrej Karpathy",
+        "Yannic Kilcher",
+        "Two Minute Papers 中文解说"
+      ]
+    },
+    {
+      "intent": "刷深度视频和实操 AI 新工具",
+      "cn": [
+        "技术爬爬虾",
+        "DiDi_OK",
+        "Two Minute Papers 中文解说"
+      ],
+      "global": [
+        "Matt Wolfe",
+        "The AI Advantage / Igor Pogany"
+      ]
+    },
+    {
+      "intent": "AI 创投和产业商业分析",
+      "cn": [
+        "拾象科技-海外独角兽",
+        "36氪AI频道",
+        "智东西"
+      ],
+      "global": [
+        "Lex Fridman",
+        "Nate Jones"
+      ]
+    }
+  ]
+}

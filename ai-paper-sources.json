@@ -1,0 +1,175 @@
+{
+  "schemaVersion": "1.0.0",
+  "daily": {
+    "source": "arxiv-rss",
+    "categories": ["cs.CV", "cs.AI", "cs.RO", "cs.GR", "cs.MM"],
+    "windowDays": 3,
+    "maxCandidates": 60,
+    "thresholds": {
+      "deepRead": 18,
+      "digest": 11,
+      "watch": 7
+    },
+    "budgets": {
+      "deepRead": 10,
+      "fullText": 3,
+      "digest": 20
+    }
+  },
+  "catalog": {
+    "maxCandidatesPerRun": 1000,
+    "retention": "cumulative_no_delete"
+  },
+  "topics": [
+    {
+      "id": "three-d-reconstruction",
+      "labelZh": "3D 重建与 3DGS",
+      "board": "AI 3D / World Models",
+      "terms": {
+        "3d gaussian": 10,
+        "gaussian splatting": 10,
+        "3d reconstruction": 8,
+        "novel view synthesis": 7,
+        "neural radiance field": 7,
+        "nerf": 6,
+        "point cloud": 5,
+        "mesh generation": 6,
+        "text-to-3d": 8,
+        "image-to-3d": 8,
+        "3d generation": 7,
+        "camera pose": 4
+      }
+    },
+    {
+      "id": "world-spatial-models",
+      "labelZh": "世界模型与空间智能",
+      "board": "AI 3D / World Models",
+      "terms": {
+        "world model": 9,
+        "spatial intelligence": 9,
+        "spatial reasoning": 7,
+        "3d scene": 6,
+        "scene generation": 6,
+        "scene representation": 5,
+        "scene graph": 4,
+        "digital twin": 7
+      }
+    },
+    {
+      "id": "physical-ai",
+      "labelZh": "物理 AI 与具身智能",
+      "board": "AI 3D / World Models",
+      "terms": {
+        "physical ai": 10,
+        "embodied ai": 8,
+        "sim2real": 8,
+        "vision-language-action": 9,
+        "robot manipulation": 7,
+        "robot learning": 6,
+        "physics-aware": 7,
+        "physical consistency": 7,
+        "physical reasoning": 7
+      }
+    },
+    {
+      "id": "architecture-design",
+      "labelZh": "建筑、室内与 CAD",
+      "board": "AI-CAD / AEC",
+      "terms": {
+        "architectural design": 9,
+        "building design": 9,
+        "building information modeling": 10,
+        "floor plan": 8,
+        "indoor scene": 6,
+        "interior design": 9,
+        "computer-aided design": 8,
+        "urban design": 8,
+        "parametric design": 7
+      }
+    },
+    {
+      "id": "video-generation",
+      "labelZh": "视频生成与自动剪辑",
+      "board": "AI Product / Model Launch",
+      "terms": {
+        "video generation": 8,
+        "video editing": 8,
+        "text-to-video": 9,
+        "image-to-video": 9,
+        "video diffusion": 7,
+        "video synthesis": 7,
+        "video understanding": 5,
+        "4d generation": 8
+      }
+    },
+    {
+      "id": "agents",
+      "labelZh": "Agent 与工具调用",
+      "board": "AI Agent",
+      "terms": {
+        "ai agent": 7,
+        "autonomous agent": 7,
+        "multi-agent": 6,
+        "agentic": 5,
+        "tool use": 5,
+        "tool-using": 5,
+        "computer use": 6,
+        "long-horizon": 6
+      }
+    },
+    {
+      "id": "creative-tools",
+      "labelZh": "生成式设计与内容工具",
+      "board": "Workflow / Tutorial / Usage Tips",
+      "terms": {
+        "procedural generation": 8,
+        "particle effects": 9,
+        "unreal engine": 7,
+        "blender": 8,
+        "design automation": 8,
+        "content creation": 5,
+        "editable generation": 6,
+        "digital human": 6
+      }
+    },
+    {
+      "id": "foundation-models",
+      "labelZh": "基础模型与多模态方法",
+      "board": "AI Product / Model Launch",
+      "terms": {
+        "diffusion model": 5,
+        "multimodal model": 5,
+        "vision-language model": 5,
+        "foundation model": 5,
+        "image generation": 6,
+        "generative model": 5
+      }
+    }
+  ],
+  "conferences": [
+    {
+      "id": "ICLR",
+      "name": "International Conference on Learning Representations",
+      "officialUrl": "https://openreview.net/group?id=ICLR.cc/2026/Conference",
+      "cadence": "weekly_and_release_window"
+    },
+    {
+      "id": "CVPR",
+      "name": "IEEE/CVF Conference on Computer Vision and Pattern Recognition",
+      "officialUrl": "https://openaccess.thecvf.com/CVPR2026",
+      "cadence": "weekly_and_release_window"
+    },
+    {
+      "id": "ICML",
+      "name": "International Conference on Machine Learning",
+      "officialUrl": "https://proceedings.mlr.press/",
+      "cadence": "weekly_and_release_window"
+    },
+    {
+      "id": "NeurIPS",
+      "name": "Conference on Neural Information Processing Systems",
+      "officialUrl": "https://papers.nips.cc/paper/",
+      "cadence": "weekly_and_release_window"
+    }
+  ]
+}

@@ -1,0 +1,233 @@
+{
+  "schemaVersion": "1.0.0",
+  "checkedAt": "2026-10-14T06:55:46.499Z",
+  "date": "2026-10-14",
+  "status": "resolved",
+  "cause": {
+    "upstream": "OSS Insight event-derived ranking is unavailable at roughly 0.3% capture baseline",
+    "oldPolicy": "OSS primary failure marked GitHub warning even when official Trending and all mandatory evidence succeeded",
+    "effect": "Daily publication required every current channel to be success, so main remained on 2026-10-13"
+  },
+  "changes": {
+    "primary": "Official GitHub Trending all-language/Python/TypeScript daily and all-language weekly",
+    "optional": "Four configured OSS Insight source failures remain truthful source notices",
+    "required": "Current official rankings, successful active searches, complete exact mandatory repository evidence and no tracked refresh failures",
+    "legacyFinalizer": "Delegates to the same full reviewer",
+    "publicVerification": "Large catalogs use a bounded 60-second timeout and at most two attempts; dates, counts and hashes remain mandatory"
+  },
+  "tests": {
+    "passed": 177,
+    "failed": 0,
+    "log": ".codex-logs/github-policy-tests-final-2026-10-14.log"
+  },
+  "gate": {
+    "checkedAt": "2026-10-14T06:52:11.657Z",
+    "status": "success",
+    "action": "noop",
+    "currentFingerprint": "a77f6c791a1bb94cc0762818fceb010cb128c445a470c6aec0094260a20ecf21",
+    "previewFingerprint": "a77f6c791a1bb94cc0762818fceb010cb128c445a470c6aec0094260a20ecf21",
+    "date": "2026-10-14",
+    "ready": true,
+    "channels": {
+      "ai": {
+        "asOf": "2026-10-14",
+        "status": "success",
+        "schedule": "07:30"
+      },
+      "github": {
+        "asOf": "2026-10-14",
+        "status": "success",
+        "schedule": "07:30"
+      },
+      "skills": {
+        "asOf": "2026-10-14",
+        "status": "success",
+        "schedule": "07:40"
+      },
+      "papers": {
+        "asOf": "2026-10-14",
+        "status": "success",
+        "schedule": "07:30"
+      }
+    },
+    "blockers": []
+  },
+  "github": {
+    "asOf": "2026-10-14",
+    "status": "success",
+    "coverage": {
+      "mandatory": 41,
+      "accessible": 41,
+      "readme": 41,
+      "demoOrInstall": 41,
+      "commits": 41,
+      "issues": 41,
+      "pullRequests": 41,
+      "releases": 41,
+      "watchSamples": 5,
+      "trackedProjectsTotal": 260,
+      "trackedProjectsSelected": 47,
+      "trackedProjectsRefreshed": 25,
+      "trackedProjectsReused": 22,
+      "trackedRefreshFailures": 0
+    },
+    "sourcePolicy": {
+      "policy": "official-github-trending-primary-v1",
+      "ready": true,
+      "primarySource": {
+        "id": "github-trending-24h-all",
+        "status": "success",
+        "count": 9,
+        "url": "https://github.com/trending?since=daily",
+        "checkedAt": "2026-10-14T06:44:11.946Z",
+        "role": "required",
+        "period": "past_24_hours"
+      },
+      "blockers": [],
+      "notices": [
+        {
+          "id": "ossinsight-24h-typescript",
+          "status": "unavailable",
+          "count": 0,
+          "url": "https://api.ossinsight.io/v1/trends/repos/?period=past_24_hours&language=TypeScript",
+          "checkedAt": "2026-10-14T06:44:13.531Z",
+          "role": "optional",
+          "error": "This ranking is ordered by recent star/PR/issue event counts, and our capture of those events fell to roughly 0.3% of baseline, so the ordering would be noise. An empty result here means the metric cannot be computed, not that there are no matching repositories.",
+          "dataQuality": {
+            "status": "unavailable",
+            "metric": "github_event_derived_ranking",
+            "source": "github_public_events_firehose",
+            "unavailable_since": "2026-03-01",
+            "reason": "This ranking is ordered by recent star/PR/issue event counts, and our capture of those events fell to roughly 0.3% of baseline, so the ordering would be noise. An empty result here means the metric cannot be computed, not that there are no matching repositories.",
+            "alternative": "Totals synced directly from GitHub remain accurate: use /gh/repos/{owner}/{repo} for star and fork counts, or /v1/collections/{id}/repos for collection membership.",
+            "docs": "https://ossinsight.io/docs/data-quality"
+          }
+        },
+        {
+          "id": "ossinsight-weekly-all",
+          "status": "unavailable",
+          "count": 0,
+          "url": "https://api.ossinsight.io/v1/trends/repos/?period=past_week&language=All",
+          "checkedAt": "2026-10-14T06:44:13.942Z",
+          "role": "optional",
+          "error": "This ranking is ordered by recent star/PR/issue event counts, and our capture of those events fell to roughly 0.3% of baseline, so the ordering would be noise. An empty result here means the metric cannot be computed, not that there are no matching repositories.",
+          "dataQuality": {
+            "status": "unavailable",
+            "metric": "github_event_derived_ranking",
+            "source": "github_public_events_firehose",
+            "unavailable_since": "2026-03-01",
+            "reason": "This ranking is ordered by recent star/PR/issue event counts, and our capture of those events fell to roughly 0.3% of baseline, so the ordering would be noise. An empty result here means the metric cannot be computed, not that there are no matching repositories.",
+            "alternative": "Totals synced directly from GitHub remain accurate: use /gh/repos/{owner}/{repo} for star and fork counts, or /v1/collections/{id}/repos for collection membership.",
+            "docs": "https://ossinsight.io/docs/data-quality"
+          }
+        },
+        {
+          "id": "ossinsight-24h-python",
+          "status": "unavailable",
+          "count": 0,
+          "url": "https://api.ossinsight.io/v1/trends/repos/?period=past_24_hours&language=Python",
+          "checkedAt": "2026-10-14T06:44:14.615Z",
+          "role": "optional",
+          "error": "This ranking is ordered by recent star/PR/issue event counts, and our capture of those events fell to roughly 0.3% of baseline, so the ordering would be noise. An empty result here means the metric cannot be computed, not that there are no matching repositories.",
+          "dataQuality": {
+            "status": "unavailable",
+            "metric": "github_event_derived_ranking",
+            "source": "github_public_events_firehose",
+            "unavailable_since": "2026-03-01",
+            "reason": "This ranking is ordered by recent star/PR/issue event counts, and our capture of those events fell to roughly 0.3% of baseline, so the ordering would be noise. An empty result here means the metric cannot be computed, not that there are no matching repositories.",
+            "alternative": "Totals synced directly from GitHub remain accurate: use /gh/repos/{owner}/{repo} for star and fork counts, or /v1/collections/{id}/repos for collection membership.",
+            "docs": "https://ossinsight.io/docs/data-quality"
+          }
+        },
+        {
+          "id": "ossinsight-24h-all",
+          "status": "unavailable",
+          "count": 0,
+          "url": "https://api.ossinsight.io/v1/trends/repos/?period=past_24_hours&language=All",
+          "checkedAt": "2026-10-14T06:44:14.806Z",
+          "role": "optional",
+          "error": "This ranking is ordered by recent star/PR/issue event counts, and our capture of those events fell to roughly 0.3% of baseline, so the ordering would be noise. An empty result here means the metric cannot be computed, not that there are no matching repositories.",
+          "dataQuality": {
+            "status": "unavailable",
+            "metric": "github_event_derived_ranking",
+            "source": "github_public_events_firehose",
+            "unavailable_since": "2026-03-01",
+            "reason": "This ranking is ordered by recent star/PR/issue event counts, and our capture of those events fell to roughly 0.3% of baseline, so the ordering would be noise. An empty result here means the metric cannot be computed, not that there are no matching repositories.",
+            "alternative": "Totals synced directly from GitHub remain accurate: use /gh/repos/{owner}/{repo} for star and fork counts, or /v1/collections/{id}/repos for collection membership.",
+            "docs": "https://ossinsight.io/docs/data-quality"
+          }
+        }
+      ]
+    }
+  },
+  "publication": {
+    "checkedAt": "2026-10-14T06:54:09.068Z",
+    "action": "check",
+    "status": "success",
+    "stage": "complete",
+    "config": {
+      "mode": "local",
+      "localUrl": "http://127.0.0.1:8080",
+      "publicUrl": "https://wagmii.cn"
+    },
+    "localReady": true,
+    "publicReady": true,
+    "publicStatus": "current",
+    "generatedAt": "2026-10-14T06:50:27.710Z",
+    "asOf": {
+      "github": "2026-10-14",
+      "ai": "2026-10-14",
+      "skills": "2026-10-14"
+    },
+    "local": {
+      "status": "current",
+      "generatedAt": "2026-10-14T06:50:27.710Z",
+      "asOf": {
+        "github": "2026-10-14",
+        "ai": "2026-10-14",
+        "skills": "2026-10-14"
+      },
+      "asset": "/assets/index-Blvh9hG1.js",
+      "contentHashes": {
+        "main": "77325ac75522c3fa68ceba388e3cf9a4d7d52cbf50379dd574764cc0eece0f70",
+        "skills": "d3ecae6c412960e84ca3b1fe8ff3c8eed4a43495f1c41d179c0020328a856efd",
+        "papers": "b5c3b1618cb41ea519fa7b435356a77f1a77201ec2f840b4af63ee6288013daa"
+      }
+    },
+    "public": {
+      "status": "current",
+      "generatedAt": "2026-10-14T06:50:27.710Z",
+      "asOf": {
+        "github": "2026-10-14",
+        "ai": "2026-10-14",
+        "skills": "2026-10-14"
+      },
+      "asset": "/assets/index-Blvh9hG1.js",
+      "contentHashes": {
+        "main": "77325ac75522c3fa68ceba388e3cf9a4d7d52cbf50379dd574764cc0eece0f70",
+        "skills": "d3ecae6c412960e84ca3b1fe8ff3c8eed4a43495f1c41d179c0020328a856efd",
+        "papers": "b5c3b1618cb41ea519fa7b435356a77f1a77201ec2f840b4af63ee6288013daa"
+      }
+    },
+    "message": "Configured public website matches the complete main publication."
+  },
+  "health": {
+    "status": "healthy",
+    "http": 200,
+    "checkedAt": "2026-10-14T06:54:37.338Z"
+  },
+  "notifications": {
+    "sentByThisChat": false
+  },
+  "files": [
+    "scripts/github-source-policy.mjs",
+    "scripts/discover-github-trends.mjs",
+    "scripts/run-github-radar-review.mjs",
+    "scripts/finalize-github-radar.mjs",
+    "scripts/promotion.mjs",
+    "scripts/validate-dev-data.mjs",
+    "scripts/publication.mjs",
+    "GITHUB_RADAR_FRAMEWORK.md",
+    "DINGTALK_PUSH_RUNBOOK.md"
+  ]
+}

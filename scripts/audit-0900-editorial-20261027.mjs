@@ -1,0 +1,20 @@
+import {readFile,writeFile} from 'node:fs/promises';
+const read=async p=>JSON.parse(await readFile(p,'utf8'));
+const path='data/dev/ai-editorial-repairs-2026-10-27.json';
+const manifest=await read(path),results=await read('data/dev/source-archives/audit-0900-2026-10-27/fetch-results.json');
+const now=new Date().toISOString();
+const webUrls=new Set([0,4,5,6,7,8,11].map(i=>results[i].url));
+const reviews=manifest.verifiedSources.filter(s=>results.some(r=>r.url===s.url&&(r.success||webUrls.has(r.url)))).map(s=>{
+ const result=results.find(r=>r.url===s.url);
+ return {...s,checkedAt:webUrls.has(s.url)?now:result.checkedAt,method:webUrls.has(s.url)?'web.open full official body plus independent official RSS date':'Independent original body read, factual comparison and source date review',auditBatchId:'wagmi-09-00:2026-10-27',evidencePath:webUrls.has(s.url)?'data/dev/source-archives/audit-0900-2026-10-27/openai-web-bodies-'+([6,7,8].includes(result.i)?'2':'1')+'.json':result.path};
+});
+const paperSummary='这篇综述把具身三维生成分为资产数据生成、交互仿真环境与现实到仿真的迁移桥梁，强调关节、材质、物理有效性与任务可执行性。原始提交日为4月29日；arXiv最新修订为10月23日，项目页另记10月24日资源列表更新，两者不作为首次发表日期。';
+const catalogPath='data/dev/papers-catalog.json',catalog=await read(catalogPath);
+catalog.papers.find(p=>p.arxivId==='2604.26509').summaryZh=paperSummary;
+for(const r of reviews.filter(r=>r.url==='https://arxiv.org/abs/2604.26509'))r.contentExcerpt=paperSummary+' 摘要级阅读，未运行仿真或逐篇验证引用论文。';
+reviews.push({url:'https://3dgen4robot.github.io/',checkedAt:now,success:true,verification:'verified',sourceClass:'original_research',method:'web.open author project page body and News dates compared with arXiv submission history',contentExcerpt:'作者项目页News独立注明2026-04-29首次发布、2026-10-24 v2资源更新新增84篇；arXiv则标记v4为2026-10-23。两套版本号分别属于项目列表与论文，不混用。',eventIds:['ai-2026-10-27-paper-2604-26509'],auditBatchId:'wagmi-09-00:2026-10-27'});
+manifest.verifiedSources.push(...reviews);
+manifest.audit0900={batchId:'wagmi-09-00:2026-10-27',checkedAt:now,noNewEvents:true,discoveryChecked:true,newEventIds:[],independentReviews:reviews.length,memene:{recordId:'167413132250054656',candidates:22},notes:['已核验事件与今天Memene新增候选重合；额外财务、并购、产品预告未获得足够原始事实与时间，未正式收录。','Codex alpha.1.1为08:36新增但release正文仅版本号，无可核验功能细节，保留观察。','Google AI Quest为教育材料，优先级不足以新增行业事件；NVIDIA、Autodesk、Planner5D、Meshy与DeepMind列表未发现新合格窗口事件。','更正综述项目资源版本与arXiv版本的表述；原始发表日保持4月29日。']};
+await writeFile(path,JSON.stringify(manifest,null,2)+'\n');
+await writeFile(catalogPath,JSON.stringify(catalog)+'\n');
+console.log(JSON.stringify(manifest.audit0900,null,2));

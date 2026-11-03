@@ -1,0 +1,312 @@
+{
+  "schemaVersion": "1.0.0",
+  "updatedAt": "2026-10-17",
+  "policy": {
+    "scope": "跟踪与建筑、空间、设计、3D、视频、世界模型和物理 AI 相关的生成式模型及其官方或关键社区衍生版本。",
+    "sourcePriority": [
+      "模型发布方官方页面",
+      "Hugging Face 模型卡与模型树",
+      "官方代码仓库、论文和技术报告",
+      "经过核验的社区微调与工作流实现"
+    ],
+    "requiredDistinctions": [
+      "开放源码与开放权重必须分开标注",
+      "官方模型与社区微调必须分开标注",
+      "公开下载与需要申请访问必须分开标注",
+      "许可证、商业使用门槛和内容安全要求必须显式记录"
+    ],
+    "priorityDirections": [
+      "图像生成与图像编辑",
+      "视频生成、视频编辑与数字人",
+      "3D、3DGS、世界模型和空间智能",
+      "建筑、室内、产品与视觉设计",
+      "物理 AI、具身智能与仿真",
+      "多模态理解和生成"
+    ],
+    "safety": "只保存模型元数据和官方跳转，不自动下载或执行第三方权重。"
+  },
+  "models": [
+    {
+      "id": "huggingface-conradlocke-krea2-identity-edit",
+      "name": "Krea 2 Identity Edit",
+      "modelId": "conradlocke/krea2-identity-edit",
+      "source": "huggingface",
+      "url": "https://huggingface.co/conradlocke/krea2-identity-edit",
+      "publisher": "conradlocke",
+      "level": "A",
+      "relationship": "community-finetune",
+      "releaseType": "open-weight",
+      "access": "public",
+      "license": "Krea 2 Community License",
+      "modalities": [
+        "image"
+      ],
+      "tasks": [
+        "身份保持图像编辑",
+        "人物与场景重组",
+        "局部重绘与扩图",
+        "虚拟试穿",
+        "角色参考图生成"
+      ],
+      "priorityDomains": [
+        "image-generation",
+        "image-editing",
+        "identity-preservation",
+        "design-tools"
+      ],
+      "summaryZh": "Krea 2 社区身份保持编辑 LoRA；官方模型卡当前推荐 v1.2，改善换景保真并支持参考图、局部重绘与扩图。",
+      "valueZh": "它把通用图像生成推进到可控的人物与场景重组，对品牌角色一致性、广告素材生产、空间场景换人和连续视觉内容制作具有直接应用价值。",
+      "riskNoteZh": "社区而非 Krea 官方产品；多人身份、局部编辑与删除仍有误差。沿用 Krea Community 许可及商业收入门槛，不是无限制开源。",
+      "upstreamModels": [
+        "krea/Krea-2-Raw"
+      ],
+      "relatedRepositories": [
+        {
+          "repo": "lbouaraba/comfyui-krea2edit",
+          "url": "https://github.com/lbouaraba/comfyui-krea2edit",
+          "roleZh": "原始 ComfyUI 节点与工作流实现"
+        }
+      ],
+      "metrics": {
+        "likes": 828,
+        "downloadsLastMonth": null,
+        "downloadsTracked": false,
+        "downloadsApi": 0,
+        "checkedAt": "2026-10-14T03:49:34.103Z"
+      },
+      "reviewedAt": "2026-10-08",
+      "intakeDecision": "approved",
+      "decisionReason": "方向与生成式设计、身份一致性和可控图像编辑高度相关；模型卡、基座、许可证和可运行工作流均可核验，因此纳入重点关注。",
+      "metadataFetchedAt": "2026-10-14T03:49:34.103Z"
+    },
+    {
+      "id": "huggingface-krea-krea-2-raw",
+      "name": "Krea 2 Raw",
+      "modelId": "krea/Krea-2-Raw",
+      "source": "huggingface",
+      "url": "https://huggingface.co/krea/Krea-2-Raw",
+      "publisher": "Krea",
+      "level": "A+",
+      "relationship": "official-base-model",
+      "releaseType": "open-weight",
+      "access": "gated",
+      "license": "Krea 2 Community License",
+      "modalities": [
+        "image"
+      ],
+      "tasks": [
+        "文生图",
+        "图像模型微调基座",
+        "设计探索",
+        "视觉内容生成"
+      ],
+      "priorityDomains": [
+        "image-generation",
+        "open-model",
+        "design-tools",
+        "model-finetuning"
+      ],
+      "summaryZh": "Krea 官方发布的 12B 级文生图开放权重基座，定位为可继续微调和后训练的原始模型，而不是面向普通用户的直接成品。",
+      "valueZh": "它提供了生成式视觉模型的上游能力底座，社区微调、品牌风格模型、身份编辑和行业工作流都可沿模型树持续追踪，适合作为设计生成生态的重要观察对象。",
+      "riskNoteZh": "模型需要申请访问，许可证不是标准 OSI 开源许可证；推理成本、商业使用门槛、内容政策和衍生模型合规要求需要在应用前逐项核验。",
+      "upstreamModels": [],
+      "relatedRepositories": [],
+      "metrics": {
+        "likes": 1053,
+        "downloadsLastMonth": 161375,
+        "downloadsTracked": true,
+        "downloadsApi": 87339,
+        "checkedAt": "2026-10-14T03:49:34.103Z"
+      },
+      "reviewedAt": "2026-10-08",
+      "intakeDecision": "approved",
+      "decisionReason": "官方开放权重基座、衍生模型数量和设计生成方向价值均较高，是追踪 Krea 2 生态及社区行业应用的核心入口。",
+      "metadataFetchedAt": "2026-10-14T03:49:34.103Z"
+    },
+    {
+      "id": "huggingface-francisring-prism",
+      "name": "Prism Preview",
+      "modelId": "FrancisRing/Prism",
+      "publisher": "Prism / Tencent Hunyuan research team",
+      "relationship": "official-derivative",
+      "releaseType": "open-weight",
+      "license": "MIT (模型卡声明；基础模型与组件需分别复核)",
+      "modalities": [
+        "video",
+        "audio"
+      ],
+      "tasks": [
+        "同步音视频生成",
+        "高分辨率视频研究"
+      ],
+      "priorityDomains": [
+        "video-generation",
+        "virtual-production"
+      ],
+      "upstreamModels": [
+        "MOVA-360p (仓库声明的基础检查点)"
+      ],
+      "relatedRepositories": [
+        {
+          "repo": "Tencent-Hunyuan/Prism",
+          "url": "https://github.com/Tencent-Hunyuan/Prism",
+          "roleZh": "作者发布的训练与推理代码"
+        }
+      ],
+      "summaryZh": "动态稀疏注意力音视频联合生成研究的预览权重，模型卡与官方代码相互指向。",
+      "valueZh": "为同步音画与高分辨率内容生产提供可复核实验入口。",
+      "riskNoteZh": "预览版能力、演示真实性和基础模型许可应独立验证；模型卡 MIT 不应替代全部组件合规检查。",
+      "decisionReason": "作者代码与模型卡来源关系已核验，纳入观察而非宣称生产成熟。",
+      "source": "huggingface",
+      "url": "https://huggingface.co/FrancisRing/Prism",
+      "access": "public",
+      "level": "A",
+      "intakeDecision": "observe",
+      "reviewedAt": "2026-10-08",
+      "metadataFetchedAt": "2026-10-14T03:49:34.103Z",
+      "metrics": {
+        "likes": 177,
+        "downloadsApi": 0,
+        "checkedAt": "2026-10-14T03:49:34.103Z"
+      }
+    },
+    {
+      "id": "huggingface-kandinskylab-kandinsky6-pro-distill",
+      "name": "Kandinsky 6.0 Pro Distill",
+      "modelId": "kandinskylab/Kandinsky-6.0-Pro-distill-5s-Diffusers",
+      "publisher": "Kandinsky Lab",
+      "relationship": "official-derivative",
+      "releaseType": "open-weight",
+      "license": "MIT (该检查点模型卡)",
+      "modalities": [
+        "video",
+        "audio"
+      ],
+      "tasks": [
+        "文生同步音视频",
+        "图生同步音视频"
+      ],
+      "priorityDomains": [
+        "video-generation",
+        "virtual-production"
+      ],
+      "upstreamModels": [
+        "kandinskylab/Kandinsky-6.0-Pro-5s-Diffusers"
+      ],
+      "relatedRepositories": [
+        {
+          "repo": "kandinskylab/kandinsky-6",
+          "url": "https://github.com/kandinskylab/kandinsky-6",
+          "roleZh": "官方推理与集成代码"
+        }
+      ],
+      "summaryZh": "官方 Pro 蒸馏检查点，以十步采样生成约五秒同步音视频，支持文字与图像条件。",
+      "valueZh": "适合音画联合制作、工具集成和开放模型研究。",
+      "riskNoteZh": "设备耗时、显存和生成质量依检查点而异；超分组件单独处理，不能把演示或参数量当成功率。",
+      "decisionReason": "官方组织、模型卡与仓库相互链接，按开放权重观察收录。",
+      "source": "huggingface",
+      "url": "https://huggingface.co/kandinskylab/Kandinsky-6.0-Pro-distill-5s-Diffusers",
+      "access": "public",
+      "level": "A",
+      "intakeDecision": "observe",
+      "reviewedAt": "2026-10-08",
+      "metadataFetchedAt": "2026-10-14T03:49:34.103Z",
+      "metrics": {
+        "likes": 30,
+        "downloadsApi": 536,
+        "checkedAt": "2026-10-14T03:49:34.103Z"
+      }
+    },
+    {
+      "id": "huggingface-meta-models-muse-spark-open-816b-a42b",
+      "name": "Muse Spark Open",
+      "modelId": "meta-models/Muse-Spark-Open-816B-A42B",
+      "source": "huggingface",
+      "url": "https://huggingface.co/meta-models/Muse-Spark-Open-816B-A42B",
+      "publisher": "Meta",
+      "level": "A",
+      "relationship": "official-base-model",
+      "releaseType": "open-weight",
+      "access": "gated",
+      "license": "Muse Model License (Muse Spark Open)",
+      "modalities": [
+        "text",
+        "image",
+        "audio",
+        "video"
+      ],
+      "tasks": [
+        "多模态理解",
+        "Agent 编码与工具调用"
+      ],
+      "priorityDomains": [
+        "multimodal",
+        "coding",
+        "agent"
+      ],
+      "summaryZh": "Meta 的 Muse Spark Open 于 10 月 15 日发布。Hugging Face 原始集成文章记录其约 8160 亿总参数、每 Token 激活约 420 亿参数，接受文本、图像、音频和视频并输出文本。官方模型元数据列出 BF16 权重及自定义 Muse 许可，当前访问为人工审批；本次未下载权重或实测性能。",
+      "valueZh": "面向编码和多模态 Agent 的开放权重选择扩大，但总体内存开销仍由全部专家权重决定，不能把激活参数规模等同于部署占用，也不能将自定义许可称为完全开源。",
+      "riskNoteZh": "自定义许可、人工申请访问；大规模专家权重仍需大内存。官方模型 API 可读，直接 README 与 LICENSE 文件请求返回401；未绕过访问限制。",
+      "upstreamModels": [],
+      "relatedRepositories": [
+        {
+          "repo": "sgl-project/sglang",
+          "url": "https://github.com/sgl-project/sglang",
+          "roleZh": "Hugging Face 原始集成说明列出的推理路径"
+        }
+      ],
+      "reviewedAt": "2026-10-16",
+      "metadataFetchedAt": "2026-10-16T01:04:58.554Z",
+      "intakeDecision": "observe",
+      "decisionReason": "发布方、模型、许可和访问条件可核验；门控模型卡及完整运行条件需继续评估后再批准内部测试。",
+      "evidence": [
+        "https://huggingface.co/blog/meta-muse-spark-open",
+        "https://huggingface.co/api/models/meta-models/Muse-Spark-Open-816B-A42B"
+      ]
+    },
+    {
+      "id": "huggingface-reflection-beam-1-0-501b-a23b",
+      "name": "Beam 1.0 501B A23B",
+      "modelId": "reflection/Beam-1.0-501B-A23B",
+      "source": "huggingface",
+      "url": "https://huggingface.co/reflection/Beam-1.0-501B-A23B",
+      "publisher": "Reflection",
+      "level": "A",
+      "relationship": "official-base-model",
+      "releaseType": "open-weight",
+      "access": "public",
+      "license": "Apache-2.0",
+      "modalities": [
+        "text"
+      ],
+      "tasks": [
+        "编码与工具调用",
+        "长任务 Agent 编排"
+      ],
+      "priorityDomains": [
+        "design-tools",
+        "open-model"
+      ],
+      "summaryZh": "Reflection 官方开放权重文本 MoE 模型，约501B总参数、23B激活，模型卡提供百万token上下文与多精度部署路径。",
+      "valueZh": "可用于自托管编码及设计工具Agent的候选模型，需用真实任务评估质量与成本。",
+      "riskNoteZh": "性能为发布方结果；本次只核验原文和元数据，未下载权重或运行推理。模型开放权重不代表训练数据和完整训练流程公开。",
+      "upstreamModels": [],
+      "relatedRepositories": [
+        {
+          "repo": "vllm-project/vllm",
+          "url": "https://github.com/vllm-project/vllm",
+          "roleZh": "官方公告列出的推理集成"
+        },
+        {
+          "repo": "sgl-project/sglang",
+          "url": "https://github.com/sgl-project/sglang",
+          "roleZh": "官方公告列出的推理集成"
+        }
+      ],
+      "reviewedAt": "2026-10-17",
+      "intakeDecision": "approved",
+      "decisionReason": "发布方原文、模型卡、Apache-2.0与公开权重入口均可核验；纳入自托管Agent模型观察。",
+      "metadataFetchedAt": "2026-10-17T01:03:21.408Z"
+    }
+  ]
+}

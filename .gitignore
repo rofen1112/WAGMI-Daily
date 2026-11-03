@@ -1,5 +1,33 @@
 node_modules/
+.local-backups/
+.local-server/
 dist/
 *.log
+.tmp-vite-public*.log
+.tmp-cloudflared-public.pid
+.tmp-sites-*
 tsconfig.tsbuildinfo
 .DS_Store
+*.sqlite
+*.sqlite-*
+*.db
+.env*.local
+.env.admin
+.env.public
+data/dev/*
+!data/dev/.gitkeep
+data/local-reports/
+public/data/main/*
+!public/data/main/.gitkeep
+
+# Machine-specific state and runtime artifacts.
+.codex/
+.codex-logs/
+.openai/
+.tmp-*
+*.log.*
+.env*
+!.env*.example
+
+# Internal report originals stay local; public/reports contains sanitized mirrors.
+/reports/

@@ -1,0 +1,4221 @@
+{
+  "schemaVersion": "1.0.0",
+  "updatedAt": "2026-10-30",
+  "policy": {
+    "heatRequired": false,
+    "requiredDecisionFields": [
+      "industryFit",
+      "priorityDomains",
+      "originality",
+      "maintenanceEvidence",
+      "intakeDecision",
+      "decisionReason"
+    ]
+  },
+  "repositories": [
+    {
+      "repo": "YuliCao/Text-To-3D-Generation",
+      "name": "Text-To-3D-Generation",
+      "category": "3D 生成 / 设计工具",
+      "level": "B",
+      "priorityDomains": [
+        "3d-generation",
+        "design-tools"
+      ],
+      "summary": "将 Stable Diffusion 1.5 文生图、Depth Anything V2 单目深度、Open3D 点云/网格与 TripoSR 图生 3D 组织为 CLI、Gradio 和自动实验报告的一体化原型工具。",
+      "riskNote": "真正的文本直出 3D 管线目前仍是占位实现，主要生成与几何能力来自第三方模型；仓库未指定开源许可证，单目深度和 Poisson 网格也不能作为测量级结果。",
+      "intakeDecision": "observe",
+      "decisionReason": "仓库包含可运行的流程编排、参数消融、结果记录和网页演示，适合 3D AI 学习与产品原型；但它不是原创 Text-to-3D 模型，且许可证与几何质量边界尚未解决，因此作为设计工具观察收录。"
+    },
+    {
+      "repo": "Robbyant/lingbot-map",
+      "name": "LingBot-Map",
+      "category": "3D 重建",
+      "level": "A",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "面向流式图像与视频的前馈式 3D 基础模型，可持续估计相机轨迹并重建长序列场景。",
+      "riskNote": "依赖 CUDA、Kaolin 和较高显存，长序列效果仍受训练范围与关键帧策略影响。",
+      "decisionReason": "官方团队仓库，提供模型权重、推理代码、基准脚本和长视频示例，直接符合 3D 重建主线。"
+    },
+    {
+      "repo": "facebookresearch/vggt",
+      "name": "VGGT",
+      "category": "3D 重建",
+      "level": "A+",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "从一组图像统一预测相机、深度、点图与轨迹的视觉几何基础模型，是多视图重建的重要底座。",
+      "riskNote": "研究模型计算成本较高，仓库许可证需要结合模型权重和具体使用场景单独核对。",
+      "decisionReason": "Meta 官方研究仓库，包含原创实现和模型资源，行业适配度高。"
+    },
+    {
+      "repo": "microsoft/MoGe",
+      "name": "MoGe",
+      "category": "3D 重建",
+      "level": "A",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "面向开放域图像的单目几何估计模型，可输出深度与三维几何线索，适合作为重建前处理能力。",
+      "riskNote": "研究代码最近推送频率较低，生产接入前需要验证模型许可、尺度稳定性和推理资源。",
+      "decisionReason": "Microsoft 官方研究实现，原创论文与代码关系明确。"
+    },
+    {
+      "repo": "Stability-AI/stable-fast-3d",
+      "name": "Stable Fast 3D",
+      "category": "3D 重建",
+      "level": "B+",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "从单张图片快速生成带 UV 与材质信息的 3D 网格，适合产品和资产原型流程。",
+      "riskNote": "仓库更新已放缓，模型许可和生成质量边界需要在商业使用前单独验证。",
+      "decisionReason": "Stability AI 官方原创实现，具有清晰的图像到 3D 应用价值。"
+    },
+    {
+      "repo": "nerfstudio-project/nerfstudio",
+      "name": "Nerfstudio",
+      "category": "3D 重建",
+      "level": "A",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "3dgs"
+      ],
+      "summary": "覆盖 NeRF 与 Gaussian Splatting 数据处理、训练、评估和可视化的协作型重建工具链；Splatfacto-big 以更多 Gaussians 和约 12GB 显存换取更高质量。",
+      "riskNote": "功能面较宽且 issue 数量较高，版本、CUDA 和插件兼容性需要固定；Splatfacto-big 的训练速度与输出体积高于默认配置。",
+      "decisionReason": "成熟原创工具链，长期被 3D 重建研究与工程流程采用；高质量实景扫描优先验证 Splatfacto-big。"
+    },
+    {
+      "repo": "graphdeco-inria/gaussian-splatting",
+      "name": "3D Gaussian Splatting",
+      "category": "3DGS",
+      "level": "A+",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction"
+      ],
+      "summary": "3D Gaussian Splatting 论文作者的官方参考实现，是实时辐射场渲染和后续 3DGS 项目的基础。",
+      "riskNote": "参考实现依赖特定 CUDA 工具链，许可证与商业使用范围需按仓库条款核对。",
+      "decisionReason": "论文作者官方原创实现，属于 3DGS 必收录的基础仓库。"
+    },
+    {
+      "repo": "nerfstudio-project/gsplat",
+      "name": "gsplat",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs"
+      ],
+      "summary": "面向 Gaussian Splatting 的 CUDA 加速光栅化库，为训练和渲染提供可复用底层能力；内置 MCMC densification 策略可用于高质量重建。",
+      "riskNote": "对 CUDA、PyTorch 和显卡架构兼容性敏感；MCMC 在超大 Gaussian 数量下显存占用明显，升级前需要做性能回归。",
+      "decisionReason": "Nerfstudio 团队维护的原创基础设施，近期仍持续更新；MCMC 是高质量实景扫描的重要实验路线。"
+    },
+    {
+      "repo": "apple/ml-sharp",
+      "name": "SHARP",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "Apple 的单图 3DGS 前馈模型，可在一次网络推理中生成具备真实尺度的 Gaussian 表示，适合快速试验与近视角浏览。",
+      "riskNote": "单图只能可靠补全输入视角附近区域，不等同于完整 360 度场景扫描；视频渲染仍要求 CUDA GPU。",
+      "decisionReason": "Apple 官方论文代码、模型权重与命令行流程完整，是单图快速试验的首选基线。"
+    },
+    {
+      "repo": "ByteDance-Seed/Depth-Anything-3",
+      "name": "Depth Anything 3",
+      "category": "3DGS",
+      "level": "A+",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "统一支持单图、多图和长视频的视觉几何模型，可预测深度、相机位姿与 3D Gaussians，并导出 GLB、PLY 和渲染视频。",
+      "riskNote": "大型与 Nested 模型显存和推理成本高，部分模型权重带非商业限制，产品接入前需逐项核对模型卡。",
+      "decisionReason": "ByteDance Seed 官方代码和模型齐全，输入形态与导出链路完整，适合作为产品原型的统一几何底座。"
+    },
+    {
+      "repo": "InternRobotics/AnySplat",
+      "name": "AnySplat",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "从未标定、数量不固定的随手拍多图中同时估计相机、深度和 3D Gaussians，面向稀疏自由视角的前馈重建。",
+      "riskNote": "跨域效果依赖 VGGT 几何先验与输入覆盖度，复杂场景仍可能需要后优化；训练资源要求较高。",
+      "decisionReason": "作者团队公开训练、推理、模型与 Gradio 演示，直接覆盖随手拍稀疏多图重建。"
+    },
+    {
+      "repo": "Wang-pengfei/One2Scene",
+      "name": "One2Scene",
+      "category": "3D 世界生成",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-generation",
+        "3d-reconstruction"
+      ],
+      "summary": "从单张图像先生成全景锚点，再建立前馈 3DGS 几何支架并补全可探索的 360 度场景，适合 AI 世界原型。",
+      "riskNote": "依赖 HunyuanWorld、超分与约 19GB 去噪模型等多段管线，部署复杂且生成区域存在内容幻觉风险。",
+      "decisionReason": "ICLR 2026 作者官方代码与模型已公开，是单图生成可探索 360 度 AI 世界的代表项目。"
+    },
+    {
+      "repo": "J-C-Zhao/StructSplat",
+      "name": "StructSplat",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "面向未标定稀疏视图的可泛化前馈 3DGS，以结构化几何、语义和纹理表示提升跨数据集重建质量。",
+      "riskNote": "2026 年新项目，生态和真实生产数据验证仍少；训练依赖 VGGT、DINOv3 与大规模 DL3DV 数据。",
+      "decisionReason": "ECCV 2026 作者官方训练、评测代码与权重已公开，属于未标定稀疏视图的最新 SOTA 路线。"
+    },
+    {
+      "repo": "donydchen/mvsplat",
+      "name": "MVSplat",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction"
+      ],
+      "summary": "通过多视图 Transformer 与代价体，从少量有位姿图像直接预测 3D Gaussians，是稀疏多图前馈重建的重要基线。",
+      "riskNote": "更适合训练分布内的少视图新视角合成，自定义实拍数据仍需关注相机位姿、遮挡和跨域泛化。",
+      "decisionReason": "ECCV 2024 Oral 作者官方代码与预训练模型完整，被多项后续稀疏视图方法作为基础。"
+    },
+    {
+      "repo": "donydchen/mvsplat360",
+      "name": "MVSplat360",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction",
+        "3d-generation"
+      ],
+      "summary": "以少于五张稀疏有位姿图像建立粗 3DGS，再结合视频扩散补全宽视角和 360 度新视图。",
+      "riskNote": "扩散补全可能偏离真实几何，输入需要可靠位姿；完整环境和模型链路比纯前馈 3DGS 更重。",
+      "decisionReason": "NeurIPS 2024 作者官方代码与模型公开，补足稀疏多图到 360 度场景合成路线。"
+    },
+    {
+      "repo": "cvg/depthsplat",
+      "name": "DepthSplat",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction"
+      ],
+      "summary": "联合深度估计与 Gaussian Splatting，可从 2 至 12 张输入图快速重建并导出 PLY，兼顾深度与新视角质量。",
+      "riskNote": "高分辨率 12 视图性能基于 A100 级 GPU，CUDA 与数据预处理要求较高，产品部署需实测资源。",
+      "decisionReason": "CVPR 2025 作者官方代码、模型与多视图配置齐全，是多图产品原型和高质量重建的重要基线。"
+    },
+    {
+      "repo": "cvg/NoPoSplat",
+      "name": "NoPoSplat",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction"
+      ],
+      "summary": "从 2 至 3 张无位姿稀疏图像在统一坐标系预测 3D Gaussians，并同步估计相机位姿。",
+      "riskNote": "训练配置资源消耗很高，输出质量依赖视角重叠和训练域；实拍数据需验证尺度与位姿稳定性。",
+      "decisionReason": "ICLR 2025 Oral 作者官方代码和多组预训练权重可用，是无位姿稀疏多图的关键基线。"
+    },
+    {
+      "repo": "dcharatan/pixelsplat",
+      "name": "pixelSplat",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction"
+      ],
+      "summary": "从图像对预测像素对齐的 3D Gaussian Splats，用于可扩展的泛化式场景重建与新视角合成。",
+      "riskNote": "主要面向双视图研究基准，依赖定制 CUDA 光栅化组件，对大视角移动和真实扫描完整度有限。",
+      "decisionReason": "CVPR 2024 Oral 与最佳论文候选作者代码，是后续 MVSplat、NoPoSplat 等方法的基础参照。"
+    },
+    {
+      "repo": "ziplab/VolSplat",
+      "name": "VolSplat",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "将多视图特征提升到体素空间后自适应预测 3D Gaussians，减少像素对齐方法的孔洞并适配不同场景复杂度。",
+      "riskNote": "依赖 MinkowskiEngine、CUDA 12.1 和多套预训练深度模型，环境搭建与训练成本较高。",
+      "decisionReason": "ECCV 2026 作者官方训练、评测代码与模型已公开，是体素对齐前馈 3DGS 的最新路线。"
+    },
+    {
+      "repo": "fastgs/FastGS",
+      "name": "FastGS",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction"
+      ],
+      "summary": "面向实景 3DGS 的训练加速框架，目标在约 100 秒内完成高质量训练，并覆盖稀疏视图、动态场景和表面重建分支。",
+      "riskNote": "论文级结果建议 24GB 显存并依赖 COLMAP 与 CUDA 编译环境；不同分支的稳定性需分别验证。",
+      "decisionReason": "CVPR 2026 官方代码、模型和多任务分支已发布，适合评估高质量扫描的吞吐与成本。"
+    },
+    {
+      "repo": "cvg/resplat",
+      "name": "ReSplat",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "利用渲染误差进行无梯度循环修正，以更少 Gaussians 在不同视图数、分辨率和数据集上实现鲁棒前馈重建。",
+      "riskNote": "2026 年新代码要求 PyTorch 2.7 与 CUDA 12.8，提交历史和生产案例仍少，需要先做兼容性验证。",
+      "decisionReason": "ECCV 2026 作者官方代码和模型已公开，提供比一次性前馈模型更可控的测试时质量提升路径。"
+    },
+    {
+      "repo": "chenguolin/DiffSplat",
+      "name": "DiffSplat",
+      "category": "3D 世界生成",
+      "level": "B+",
+      "priorityDomains": [
+        "3dgs",
+        "3d-generation",
+        "open-model"
+      ],
+      "summary": "将图像扩散模型改造为 3D Gaussian 生成器，可从文本或单图在秒级生成 3D 对象表示。",
+      "riskNote": "更偏对象生成而非真实场景扫描，生成结果可能偏离输入几何；训练权重和商业使用边界需单独核对。",
+      "decisionReason": "ICLR 2025 作者官方实现与模型公开，补足单图 3DGS 生成和快速资产原型方向。"
+    },
+    {
+      "repo": "playcanvas/supersplat",
+      "name": "SuperSplat",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "design-tools"
+      ],
+      "summary": "可在浏览器中查看、清理、裁剪和编辑 Gaussian Splat 场景的开源 3DGS 编辑器。",
+      "riskNote": "大场景编辑仍受浏览器显存和数据体积限制，导出流程需要结合目标引擎验证。",
+      "decisionReason": "PlayCanvas 官方原创编辑器，产品完成度和近期维护状态均较好。"
+    },
+    {
+      "repo": "sparkjsdev/spark",
+      "name": "Spark",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "design-tools"
+      ],
+      "summary": "面向 Three.js 的高级 Gaussian Splatting 渲染器，适合把 3DGS 内容接入网页和交互应用。",
+      "riskNote": "项目仍在快速迭代，API 稳定性和大型场景性能需要持续跟踪。",
+      "decisionReason": "由 World Labs 团队推动的原创渲染项目，仓库活跃且使用路径清晰。"
+    },
+    {
+      "repo": "manycore-research/SpatialLM",
+      "name": "SpatialLM",
+      "category": "室内与空间",
+      "level": "A",
+      "priorityDomains": [
+        "interior-design",
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "将点云和空间信息转换为结构化室内模型的空间语言模型，可识别房间、墙体与对象关系。",
+      "riskNote": "偏研究场景，许可证、数据格式和模型泛化能力需要在真实项目中复核。",
+      "decisionReason": "官方论文代码与模型方向明确，直接服务室内空间理解和结构化建模。"
+    },
+    {
+      "repo": "manycore-research/SpatialGen",
+      "name": "SpatialGen",
+      "category": "室内与空间",
+      "level": "B+",
+      "priorityDomains": [
+        "interior-design",
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "根据 3D 语义布局和文本或参考图生成多视角室内场景，面向布局驱动的空间生成。",
+      "riskNote": "完整数据仍有访问限制，训练与生成成本较高，部分上游模型许可包含非商业约束。",
+      "decisionReason": "3DV 2026 官方实现，原创训练代码与室内生成任务高度相关。"
+    },
+    {
+      "repo": "manycore-research/InteriorGS",
+      "name": "InteriorGS",
+      "category": "室内与空间",
+      "level": "B+",
+      "priorityDomains": [
+        "interior-design",
+        "3dgs"
+      ],
+      "summary": "包含语义标注、占用地图和楼层平面的室内 3DGS 数据集，可用于空间理解、生成与导航。",
+      "riskNote": "核心价值主要在数据集，使用前需核对数据许可、下载规模和标注质量。",
+      "decisionReason": "官方数据仓库，覆盖室内设计与 3DGS 的交叉重点方向。"
+    },
+    {
+      "repo": "neu-vi/houseCrafter",
+      "name": "HouseCrafter",
+      "category": "室内与空间",
+      "level": "B+",
+      "priorityDomains": [
+        "interior-design",
+        "3d-reconstruction"
+      ],
+      "summary": "根据二维户型图生成多视角 RGBD 并融合为三维室内场景，连接平面设计与 3D 空间生成。",
+      "riskNote": "推理建议至少 24GB 显存，代码更新频率较低且依赖研究环境。",
+      "decisionReason": "ICCV 2025 Highlight 官方代码与预训练模型，原创性和场景价值明确。"
+    },
+    {
+      "repo": "ywyue/RoomFormer",
+      "name": "RoomFormer",
+      "category": "室内与空间",
+      "level": "B+",
+      "priorityDomains": [
+        "interior-design",
+        "architecture-aec",
+        "3d-reconstruction"
+      ],
+      "summary": "从扫描数据中重建房间轮廓和户型结构的单阶段 Transformer，可用于楼层平面提取。",
+      "riskNote": "项目年代较早，环境依赖和新数据集适配需要额外工程工作。",
+      "decisionReason": "CVPR 2023 官方原创实现，是户型重建方向的有效基础项目。"
+    },
+    {
+      "repo": "facebookresearch/scenescript",
+      "name": "SceneScript",
+      "category": "室内与空间",
+      "level": "B+",
+      "priorityDomains": [
+        "interior-design",
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "用结构化语言描述室内场景几何和对象关系，为从传感数据生成可编辑空间表示提供基础。",
+      "riskNote": "研究代码规模较小，模型许可和下游编辑能力需要结合发布说明核验。",
+      "decisionReason": "Meta 官方研究代码，面向室内空间结构化表达，非第三方复刻。"
+    },
+    {
+      "repo": "specklesystems/speckle-server",
+      "name": "Speckle",
+      "category": "建筑 / AEC",
+      "level": "A",
+      "priorityDomains": [
+        "architecture-aec",
+        "design-tools"
+      ],
+      "summary": "面向 AEC 的开源数据平台，连接 Revit、Rhino、Grasshopper、AutoCAD 与 3D Web 协作流程。",
+      "riskNote": "完整自托管涉及服务、数据库和连接器体系，部署与版本升级成本较高。",
+      "decisionReason": "Speckle 官方主仓库，属于建筑数据协作与自动化的核心基础设施。"
+    },
+    {
+      "repo": "IfcOpenShell/IfcOpenShell",
+      "name": "IfcOpenShell",
+      "category": "建筑 / AEC",
+      "level": "A+",
+      "priorityDomains": [
+        "architecture-aec",
+        "design-tools"
+      ],
+      "summary": "开源 IFC 解析、几何和 BIM 工具链，也是 Bonsai 开源 BIM 工作流的核心底座。",
+      "riskNote": "代码面广且 issue 数量较高，不同 IFC 版本和几何内核的兼容性需要专项测试。",
+      "decisionReason": "长期维护的原创 IFC 基础设施，建筑与 BIM 方向必须收录。"
+    },
+    {
+      "repo": "FreeCAD/FreeCAD",
+      "name": "FreeCAD",
+      "category": "建筑 / AEC",
+      "level": "A+",
+      "priorityDomains": [
+        "architecture-aec",
+        "design-tools",
+        "3d-reconstruction"
+      ],
+      "summary": "成熟的开源参数化 3D CAD 平台，覆盖建筑、BIM、工程、制造和插件扩展。",
+      "riskNote": "项目体量大，工作台和插件生态存在版本差异，自动化接入需要限定目标模块。",
+      "decisionReason": "官方主仓库、持续维护且行业覆盖完整，是 CAD/AEC 基础项目。"
+    },
+    {
+      "repo": "dcy0577/Text2BIM",
+      "name": "Text2BIM",
+      "category": "建筑 / AEC",
+      "level": "B",
+      "priorityDomains": [
+        "architecture-aec",
+        "design-tools"
+      ],
+      "summary": "使用大语言模型多智能体把自然语言需求转换为建筑信息模型，探索文本到 BIM 的生成流程。",
+      "riskNote": "社区规模和近期维护信号有限，落地前需要复现实验并检查 BIM 输出可靠性。",
+      "decisionReason": "论文对应的原创实现，方向高度匹配，即使热度较低也应纳入观察库。"
+    },
+    {
+      "repo": "compas-dev/compas",
+      "name": "COMPAS",
+      "category": "建筑 / AEC",
+      "level": "B+",
+      "priorityDomains": [
+        "architecture-aec",
+        "design-tools"
+      ],
+      "summary": "面向建筑计算设计的 Python 框架，提供几何、数据结构以及 Rhino、Grasshopper、Blender 集成。",
+      "riskNote": "价值依赖具体 CAD 环境与插件组合，跨版本集成需要持续维护。",
+      "decisionReason": "计算建筑领域的原创基础框架，近期仍在维护。"
+    },
+    {
+      "repo": "hypar-io/Elements",
+      "name": "Hypar Elements",
+      "category": "建筑 / AEC",
+      "level": "B+",
+      "priorityDomains": [
+        "architecture-aec",
+        "design-tools"
+      ],
+      "summary": "轻量化开源 BIM 与建筑几何库，支持构件、空间、IFC 和 glTF 工作流。",
+      "riskNote": "主要面向 .NET 生态，和现有 Python 或前端技术栈整合需要额外适配。",
+      "decisionReason": "Hypar 官方原创 BIM 库，活跃且定位清晰。"
+    },
+    {
+      "repo": "Adam-CAD/CADAM",
+      "name": "CADAM",
+      "category": "设计工具",
+      "level": "A",
+      "priorityDomains": [
+        "design-tools",
+        "3d-reconstruction",
+        "architecture-aec"
+      ],
+      "summary": "浏览器内运行的开源文本到 CAD 应用，可生成参数化模型并导出 STL、SCAD 和 DXF。",
+      "riskNote": "部分生成能力依赖外部 AI API，项目较新，参数正确性和复杂零件能力仍需验证。",
+      "decisionReason": "原创开源产品，具备完整交互、导出和近期发布记录。"
+    },
+    {
+      "repo": "penpot/penpot",
+      "name": "Penpot",
+      "category": "设计工具",
+      "level": "A+",
+      "priorityDomains": [
+        "design-tools"
+      ],
+      "summary": "成熟的开源产品设计与原型协作平台，可作为 UI/UX 设计工具和设计系统基础设施。",
+      "riskNote": "自托管组件较多，团队迁移时需要评估字体、组件和现有 Figma 资产兼容性。",
+      "decisionReason": "官方主仓库、长期维护、非复刻演示，具备真实团队使用价值。"
+    },
+    {
+      "repo": "open-pencil/open-pencil",
+      "name": "OpenPencil",
+      "category": "设计工具",
+      "level": "A",
+      "priorityDomains": [
+        "design-tools"
+      ],
+      "summary": "AI 原生开源矢量设计编辑器，支持画布、组件、自动布局、设计变量和多模型接入。",
+      "riskNote": "项目创建于 2026 年，功能迭代快，文件兼容性、协作和插件生态尚未成熟。",
+      "decisionReason": "官方原创实现、近期持续推送，符合 AI 设计工具方向。"
+    },
+    {
+      "repo": "Roblox/cube",
+      "name": "Cube 3D",
+      "category": "开放模型",
+      "level": "A",
+      "priorityDomains": [
+        "open-model",
+        "3d-reconstruction"
+      ],
+      "summary": "Roblox 发布的 3D 智能基础模型，可根据文本生成形状，并支持部件可控的三维资产生成。",
+      "riskNote": "模型推理资源要求较高，输出拓扑、版权和模型权重许可需按实际使用场景复核。",
+      "decisionReason": "Roblox 官方模型与代码仓库，2026 年继续发布 CubePart 更新。"
+    },
+    {
+      "repo": "OpenDriveLab/WorldEngine",
+      "name": "WorldEngine",
+      "category": "开放模型",
+      "level": "B+",
+      "priorityDomains": [
+        "open-model",
+        "3dgs",
+        "3d-reconstruction"
+      ],
+      "summary": "面向自动驾驶世界模型后训练的开源工程，结合仿真、3DGS 与端到端驾驶数据。",
+      "riskNote": "领域偏自动驾驶，迁移到建筑或通用空间设计需要验证数据与任务差异。",
+      "decisionReason": "OpenDriveLab 官方原创项目，2026 年创建并持续维护。"
+    },
+    {
+      "repo": "openai/gpt-oss",
+      "name": "GPT-OSS",
+      "category": "开放模型",
+      "level": "A+",
+      "priorityDomains": [
+        "open-model"
+      ],
+      "summary": "OpenAI 官方开放权重语言模型仓库，提供 20B 与 120B 模型及运行参考。",
+      "riskNote": "大模型部署资源成本高，具体场景仍需评估许可证、量化效果和安全边界。",
+      "decisionReason": "模型发布方官方仓库，开放权重、代码和使用路径完整。"
+    },
+    {
+      "repo": "QwenLM/Qwen3",
+      "name": "Qwen3",
+      "category": "开放模型",
+      "level": "A+",
+      "priorityDomains": [
+        "open-model"
+      ],
+      "summary": "阿里云 Qwen 团队的官方大语言模型系列仓库，汇总模型、推理方式和生态接入。",
+      "riskNote": "不同模型尺寸和衍生版本的许可证、显存需求与推理框架兼容性需要分别确认。",
+      "decisionReason": "官方主仓库，属于开放模型生态的核心长期跟踪对象。"
+    },
+    {
+      "repo": "NVIDIA/Isaac-GR00T",
+      "name": "Isaac GR00T",
+      "category": "开放模型",
+      "level": "A",
+      "priorityDomains": [
+        "open-model",
+        "3d-reconstruction"
+      ],
+      "summary": "NVIDIA 面向通用机器人的开放基础模型，整合视觉、语言、动作和三维环境理解。",
+      "riskNote": "训练和推理依赖机器人数据、NVIDIA 硬件与完整仿真栈，和设计业务的直接距离较远。",
+      "decisionReason": "NVIDIA 官方模型仓库，2026 年持续发布新版本，适合作为空间智能前沿观察项。"
+    },
+    {
+      "repo": "Fysics-AI/Fysiverse-3D-SimReady",
+      "name": "Fysiverse 3D SimReady",
+      "category": "仿真就绪 3D",
+      "level": "B+",
+      "priorityDomains": [
+        "3d-generation",
+        "3d-reconstruction",
+        "simulation"
+      ],
+      "summary": "把单张图像中的对象分割、场景图、3D 资产生成和 Blender/GLB 打包串成可交互的 SimReady 场景流程。",
+      "riskNote": "仓库刚发布、样本和提交仍少，当前版本依赖多个第三方模型与外部场景图服务，完整物理引擎尚未开放。",
+      "decisionReason": "用户指定方向，仓库提供 MIT 许可、实际推理代码、Gradio 工作流和独立对象场景输出，虽无热度仍具原创产品价值。",
+      "trackingStatus": "delisted",
+      "delistedAt": "2026-09-08",
+      "delistedReason": "GitHub 官方仓库页面返回 HTTP 404/410"
+    },
+    {
+      "repo": "facebookresearch/map-anything",
+      "name": "MapAnything",
+      "category": "3D 重建",
+      "level": "A+",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "Meta 的通用前馈式度量 3D 重建模型，覆盖相机标定、深度补全、多视图立体和图像到三维。",
+      "riskNote": "大规模场景的显存、精度与下游格式转换需要按业务数据单独评估。",
+      "decisionReason": "Meta 官方研究仓库，Apache-2.0 许可、原创模型与完整任务范围明确，属于 LingBot-Map 同类核心底座。"
+    },
+    {
+      "repo": "apple-aiml-research/ml-finerecon",
+      "name": "FineRecon",
+      "category": "3D 重建",
+      "level": "B+",
+      "priorityDomains": [
+        "3d-reconstruction"
+      ],
+      "summary": "Apple 发布的细节感知 3D 室内重建研究实现，面向从 RGB-D 序列恢复高质量场景表面。",
+      "riskNote": "仓库近期维护较少，许可证标识和旧依赖需要在生产使用前复核。",
+      "decisionReason": "Apple 官方机器学习研究仓库，论文与实现关系明确，适合补齐高精度室内重建路线。",
+      "aliases": [
+        "apple/ml-finerecon"
+      ],
+      "migrationEvidence": "data/dev/source-archives/audit-1200-2026-10-31/finerecon-metadata.json"
+    },
+    {
+      "repo": "SkyworkAI/Matrix-3D",
+      "name": "Matrix-3D",
+      "category": "3D 世界生成",
+      "level": "A",
+      "priorityDomains": [
+        "3d-generation",
+        "3d-reconstruction",
+        "world-model"
+      ],
+      "summary": "从单图或文本生成可探索的大尺度三维场景与高质量全景视频，连接世界模型和场景生成。",
+      "riskNote": "生成一致性、长距离几何和训练数据许可需要结合实际输出复核。",
+      "decisionReason": "官方原创项目，MIT 许可，明确覆盖 3D 场景生成、重建、全景合成与世界模型。"
+    },
+    {
+      "repo": "DSL-Lab/StreamSplat",
+      "name": "StreamSplat",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction"
+      ],
+      "summary": "面向未标定视频流的在线动态 3D 重建方法，重点解决连续输入与 Gaussian Splatting 场景更新。",
+      "riskNote": "ICLR 2026 研究代码仍需验证实时吞吐、长序列稳定性和动态物体处理边界。",
+      "decisionReason": "论文作者官方实现，聚焦在线动态重建，和 LingBot-Map 的流式空间理解路线直接相关。"
+    },
+    {
+      "repo": "HorizonRobotics/EmbodiedGen",
+      "name": "EmbodiedGen",
+      "category": "3D 世界生成",
+      "level": "A",
+      "priorityDomains": [
+        "3d-generation",
+        "simulation",
+        "world-model"
+      ],
+      "summary": "地平线机器人面向具身智能发布的生成式 3D 世界引擎，用于构建可交互训练环境。",
+      "riskNote": "具身训练场景与建筑设计需求存在距离，资产许可、物理正确性和仿真兼容性需单独验证。",
+      "decisionReason": "企业官方原创项目，2026 年仍持续更新，覆盖生成式场景和具身仿真的关键交叉方向。"
+    },
+    {
+      "repo": "LightwheelAI/Lightwheel-simready-asset",
+      "name": "Lightwheel SimReady Assets",
+      "category": "仿真就绪 3D",
+      "level": "B+",
+      "priorityDomains": [
+        "simulation",
+        "3d-generation"
+      ],
+      "summary": "面向机器人仿真和训练公开的一组 SimReady 三维数字资产，可作为场景装配与交互测试素材。",
+      "riskNote": "仓库声明仅限非商业免费使用，资产覆盖和授权范围需逐项检查。",
+      "decisionReason": "Lightwheel 官方资产库，定位清晰且直接补足 SimReady 数据与场景资产层。"
+    },
+    {
+      "repo": "LightwheelAI/Lightwheel_Kitchen",
+      "name": "Lightwheel Kitchen",
+      "category": "室内与空间",
+      "level": "B+",
+      "priorityDomains": [
+        "interior-design",
+        "simulation",
+        "3d-generation"
+      ],
+      "summary": "为 Isaac Sim 构建的完整厨房场景，支持机器人训练、空间交互和室内仿真实验。",
+      "riskNote": "场景用途和许可需按仓库条款核对，并依赖 NVIDIA Isaac Sim 运行环境。",
+      "decisionReason": "官方原创室内仿真场景，直接连接厨房空间、可交互资产与机器人训练。"
+    },
+    {
+      "repo": "InternRobotics/MesaTask",
+      "name": "MesaTask",
+      "category": "3D 世界生成",
+      "level": "B+",
+      "priorityDomains": [
+        "3d-generation",
+        "simulation",
+        "interior-design"
+      ],
+      "summary": "通过三维空间推理生成任务驱动的桌面场景，为具身智能提供可执行的场景与数据。",
+      "riskNote": "偏研究型桌面任务，迁移到完整室内或建筑空间前需要验证尺度和对象覆盖。",
+      "decisionReason": "NeurIPS 2025 Spotlight 官方实现，MIT 许可，原创任务驱动场景生成路线明确。"
+    },
+    {
+      "repo": "AgibotTech/genie_sim",
+      "name": "Genie Sim",
+      "category": "仿真就绪 3D",
+      "level": "A",
+      "priorityDomains": [
+        "simulation",
+        "3d-generation",
+        "world-model"
+      ],
+      "summary": "智元机器人开放的仿真平台，为具身智能提供场景、资产、任务和训练工作流。",
+      "riskNote": "完整能力依赖机器人与仿真技术栈，许可证未标准化标识，部署成本需要评估。",
+      "decisionReason": "企业官方主仓库、近期持续维护且已有稳定关注度，是生成式仿真基础设施的重要样本。"
+    },
+    {
+      "repo": "ByteDance-Seed/SimArt",
+      "name": "SimArt",
+      "category": "仿真就绪 3D",
+      "level": "A",
+      "priorityDomains": [
+        "simulation",
+        "3d-generation",
+        "open-model"
+      ],
+      "summary": "使用多模态大模型把整体网格拆解为可关节运动的 SimReady 资产，面向物理仿真与具身交互。",
+      "riskNote": "项目较新且 Star 很少，当前开放范围、复杂关节准确率和资产兼容性需持续跟踪。",
+      "decisionReason": "字节 Seed 官方 SIGGRAPH 2026 项目，Apache-2.0 许可，原创性和 SimReady 方向高度明确。"
+    },
+    {
+      "repo": "Tencent-Hunyuan/HunyuanWorld-Mirror",
+      "name": "WorldMirror",
+      "category": "3D 重建",
+      "level": "A+",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "3d-generation",
+        "world-model"
+      ],
+      "summary": "腾讯混元发布的快速通用 3D 重建模型，面向多类输入和可扩展空间任务。",
+      "riskNote": "模型权重许可、显存开销和不同输入条件下的度量稳定性需要分别验证。",
+      "decisionReason": "腾讯混元官方 ICML 2026 项目，原创模型、代码和世界模型方向均清晰。"
+    },
+    {
+      "repo": "Tencent-Hunyuan/HY-World-2.0",
+      "name": "HY-World 2.0",
+      "category": "3D 世界生成",
+      "level": "A+",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "3d-generation",
+        "simulation",
+        "world-model"
+      ],
+      "summary": "覆盖三维世界重建、生成与模拟的多模态世界模型，面向可交互空间内容生产。",
+      "riskNote": "大型模型资源要求高，开放组件、权重许可和物理模拟可靠性需要逐项核对。",
+      "decisionReason": "腾讯混元官方项目，2026 年发布并获得持续关注，完整覆盖本次扩充的三个核心方向。"
+    },
+    {
+      "repo": "Tencent-Hunyuan/HunyuanWorld-Voyager",
+      "name": "HunyuanWorld Voyager",
+      "category": "3D 世界生成",
+      "level": "A",
+      "priorityDomains": [
+        "3d-generation",
+        "3d-reconstruction",
+        "world-model"
+      ],
+      "summary": "受相机输入控制的交互式 RGBD 视频生成模型，并支持实时三维重建与场景探索。",
+      "riskNote": "几何长期一致性、交互延迟和模型权重使用范围需要在目标场景中评估。",
+      "decisionReason": "腾讯混元官方原创项目，把可控世界生成与实时 3D 重建连接在同一工作流中。"
+    },
+    {
+      "repo": "microsoft/TRELLIS",
+      "name": "TRELLIS",
+      "category": "开放模型",
+      "level": "A+",
+      "priorityDomains": [
+        "3d-generation",
+        "open-model"
+      ],
+      "summary": "Microsoft 的结构化三维潜变量模型，可扩展支持图像或文本到多种 3D 表示的生成。",
+      "riskNote": "高质量生成需要较高显存，输出拓扑、纹理和商业资产许可仍需单独检查。",
+      "decisionReason": "Microsoft 官方 CVPR 2025 Spotlight 项目，MIT 许可且工程生态成熟，是 3D 生成基础模型核心仓库。"
+    },
+    {
+      "repo": "nv-tlabs/3dgrut",
+      "name": "3DGRUT",
+      "category": "3DGS",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction"
+      ],
+      "summary": "NVIDIA Toronto AI Lab 的 Gaussian 粒子光线追踪与混合光栅化技术，增强 3DGS 渲染能力。",
+      "riskNote": "依赖 NVIDIA GPU、CUDA 和特定渲染管线，性能优势需结合目标硬件验证。",
+      "decisionReason": "NVIDIA 研究团队官方原创实现，Apache-2.0 许可、近期维护活跃且直接服务 3DGS 工程。"
+    },
+    {
+      "repo": "wgsxm/PartCrafter",
+      "name": "PartCrafter",
+      "category": "3D 世界生成",
+      "level": "A",
+      "priorityDomains": [
+        "3d-generation",
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "通过组合式潜变量扩散 Transformer 生成带部件结构的三维网格，便于后续编辑和装配。",
+      "riskNote": "复杂部件关系、网格可制造性和推理资源要求需要在专业设计流程中验证。",
+      "decisionReason": "NeurIPS 2025 官方实现，MIT 许可，提供结构化而非单体式 3D 资产生成能力。"
+    },
+    {
+      "repo": "HKUST-SAIL/CraftsMan3D",
+      "name": "CraftsMan",
+      "category": "3D 世界生成",
+      "level": "B+",
+      "priorityDomains": [
+        "3d-generation",
+        "open-model"
+      ],
+      "summary": "使用原生三维扩散与交互式几何细化器生成高保真网格，支持资产生成和局部优化。",
+      "riskNote": "近期维护频率一般，许可证、细化交互和复杂拓扑稳定性需进一步检查。",
+      "decisionReason": "HKUST SAIL 官方原创模型代码，方向清晰且具备可编辑几何价值。"
+    },
+    {
+      "repo": "IGL-HKUST/DiffusionAsShader",
+      "name": "Diffusion as Shader",
+      "category": "3D 世界生成",
+      "level": "B+",
+      "priorityDomains": [
+        "3d-generation",
+        "design-tools"
+      ],
+      "summary": "把三维感知视频扩散作为可控着色器，用于相机控制、对象操作和运动迁移。",
+      "riskNote": "主要输出仍是视频表现，和可编辑三维几何之间存在距离，生产价值需按场景验证。",
+      "decisionReason": "SIGGRAPH 2025 官方项目，Apache-2.0 许可，提供 3D 控制与生成式视觉设计的新路线。"
+    },
+    {
+      "repo": "VAST-AI-Research/TripoSG",
+      "name": "TripoSG",
+      "category": "3D 世界生成",
+      "level": "A",
+      "priorityDomains": [
+        "3d-generation",
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "使用大规模整流流模型生成高保真三维形状，面向图像到 3D 资产生产。",
+      "riskNote": "仓库更新阶段性放缓，模型许可、生成细节和输出网格质量需结合业务验证。",
+      "decisionReason": "Tripo 团队官方原创项目，MIT 许可、模型路线和图像到 3D 用途明确。"
+    },
+    {
+      "repo": "NVlabs/neuralangelo",
+      "name": "Neuralangelo",
+      "category": "3D 重建",
+      "level": "A",
+      "priorityDomains": [
+        "3d-reconstruction"
+      ],
+      "summary": "NVIDIA 的高保真神经表面重建方法，从图像恢复具有细节的三维几何表面。",
+      "riskNote": "研究实现维护频率较低，训练耗时、CUDA 版本和大场景扩展成本较高。",
+      "decisionReason": "NVIDIA 官方 CVPR 2023 实现，原创性和高精度表面重建价值明确。"
+    },
+    {
+      "repo": "TencentARC/FreeSplatter",
+      "name": "FreeSplatter",
+      "category": "3DGS",
+      "level": "B+",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction"
+      ],
+      "summary": "无需已知相机位姿即可从稀疏视图生成 Gaussian Splatting 场景，降低重建输入门槛。",
+      "riskNote": "稀疏视角下的遮挡、尺度和相机估计误差需要通过真实室内数据评估。",
+      "decisionReason": "腾讯 ARC 官方 ICCV 2025 实现，原创论文与代码对应，直接补充无位姿 3DGS 重建路线。"
+    },
+    {
+      "repo": "ant-research/FLARE",
+      "name": "FLARE",
+      "category": "3D 重建",
+      "level": "B+",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "3dgs"
+      ],
+      "summary": "面向稀疏输入的前馈式三维场景重建方法，结合几何预测与可渲染空间表示。",
+      "riskNote": "许可证未标准化标识，复杂场景泛化和与现有 3DGS 工具链兼容性需复核。",
+      "decisionReason": "蚂蚁研究官方原创实现，属于前馈重建与快速场景建模的重点候选。"
+    },
+    {
+      "repo": "zju3dv/NeuralRecon",
+      "name": "NeuralRecon",
+      "category": "3D 重建",
+      "level": "B+",
+      "priorityDomains": [
+        "3d-reconstruction"
+      ],
+      "summary": "从单目视频实时恢复一致的三维场景几何，是视频流重建的重要经典实现。",
+      "riskNote": "项目年代较早且近期维护少，环境依赖与新硬件兼容性需要额外适配。",
+      "decisionReason": "CVPR 2021 Oral 论文作者官方代码，Apache-2.0 许可，作为实时单目重建基线仍有价值。"
+    },
+    {
+      "repo": "nv-dvl/vgg-ttt",
+      "name": "VGG-T3",
+      "category": "3D 重建",
+      "level": "A",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "面向大规模离线场景的前馈式三维重建模型，强调长序列与规模扩展能力。",
+      "riskNote": "CVPR 2026 新项目，许可证未标准化标识，模型资源和长序列精度仍需持续验证。",
+      "decisionReason": "NVIDIA Deep Vision Lab 官方论文代码，属于 LingBot-Map 同类前馈重建新路线。"
+    },
+    {
+      "repo": "ShirleyMaxx/REST3D",
+      "name": "REST3D",
+      "category": "物理一致 3D",
+      "level": "A",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "simulation",
+        "interior-design"
+      ],
+      "summary": "从单张图像构建场景树和物体支撑关系，再通过碰撞、稳定性与重力约束优化生成可交互的仿真就绪场景。",
+      "riskNote": "采用 CC BY-NC 4.0 非商业许可，并依赖 Gemini API、SAM 3D Objects 与 Isaac Gym，商用和部署成本需单独评估。",
+      "decisionReason": "论文作者官方仓库且已发布完整代码，直接覆盖场景图、支撑关系、碰撞修正与重力稳定这一前沿方向。",
+      "license": "CC-BY-NC-4.0"
+    },
+    {
+      "repo": "CHNxindong/SAM3D-Phys_code",
+      "name": "SAM3D-Phys",
+      "category": "物理一致 3D",
+      "level": "B",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "simulation"
+      ],
+      "summary": "从多视图重建中恢复被遮挡物体的完整几何，并通过物理约束空间优化和外观蒸馏恢复可仿真的场景状态。",
+      "riskNote": "官方仓库目前仍只有代码即将发布说明，暂不能运行验证，需要持续监测后续提交。",
+      "decisionReason": "项目页直链的作者官方仓库，研究主题高度匹配；作为代码发布观察项收录，不将其标记为已可用。",
+      "intakeDecision": "observe"
+    },
+    {
+      "repo": "xinzhang007/PhysOmni",
+      "name": "TelePhysics",
+      "category": "物理一致 3D",
+      "level": "A",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "simulation",
+        "3d-generation"
+      ],
+      "summary": "从单图完成多物体场景重建、统一坐标对齐、材料参数估计与多求解器物理模拟，并生成可控交互视频。",
+      "riskNote": "完整流程依赖多套大模型、CUDA 12.6 和高端 GPU，作者实时结果基于 H100，普通工作站部署成本较高。",
+      "decisionReason": "ACM MM 2026 作者官方代码，直接处理物体穿透、空间错位、碰撞响应和多材料动力学。",
+      "aliases": [
+        "xinzhang007/TelePhysics"
+      ],
+      "migrationEvidence": "data/dev/source-archives/audit-1200-2026-10-31/telephysics-redirect.json"
+    },
+    {
+      "repo": "PhySimGS/PhySimGS",
+      "name": "PhySimGS",
+      "category": "3DGS 物理仿真",
+      "level": "B",
+      "priorityDomains": [
+        "3dgs",
+        "simulation",
+        "3d-reconstruction"
+      ],
+      "summary": "在 3D Gaussian Splatting 场景中自动分离对象、估计材料并进行多对象多材料物理动态模拟。",
+      "riskNote": "当前作者匿名、论文与许可信息不完整，仓库说明以研究展示为主，复现成熟度需要后续验证。",
+      "decisionReason": "官方项目页直链仓库，补充了 3DGS 从静态视觉表示走向对象级物理模拟的重要路线。"
+    },
+    {
+      "repo": "Scene-Weaver/SceneWeaver",
+      "name": "SceneWeaver",
+      "category": "物理场景生成",
+      "level": "A",
+      "priorityDomains": [
+        "3d-generation",
+        "simulation",
+        "interior-design"
+      ],
+      "summary": "由自反思智能体编排多种场景生成工具，反复检查并修正室内场景的物理、视觉与语义问题，可导出 USD 到 Isaac Sim。",
+      "riskNote": "安装涉及多环境、Blender 工具链和外部 LLM API，端到端复现与成本控制需要专项验证。",
+      "decisionReason": "NeurIPS 2025 官方实现，具备碰撞规避、边界约束和可交互室内场景输出能力。"
+    },
+    {
+      "repo": "nepfaff/scenesmith",
+      "name": "SceneSmith",
+      "category": "仿真就绪 3D",
+      "level": "A+",
+      "priorityDomains": [
+        "3d-generation",
+        "simulation",
+        "interior-design"
+      ],
+      "summary": "使用智能体从文本自动生成室内场景、独立对象与物理属性，并导出可直接进入物理模拟器的完整场景。",
+      "riskNote": "依赖 Blender、多 GPU 资产生成及较大的 HSSD/Objaverse 数据准备，生产部署资源要求较高。",
+      "decisionReason": "MIT 与 Toyota Research Institute 的 ICML 2026 Spotlight 官方代码，MIT 许可且工程链条完整。",
+      "license": "MIT"
+    },
+    {
+      "repo": "wangpuyi/SceneCode",
+      "name": "SceneCode",
+      "category": "仿真就绪 3D",
+      "level": "A",
+      "priorityDomains": [
+        "3d-generation",
+        "simulation",
+        "interior-design",
+        "design-tools"
+      ],
+      "summary": "把自然语言编译成可编辑的室内世界程序，用 Blender Python 生成分件对象，并输出含碰撞与关节元数据的 SDF 资产。",
+      "riskNote": "依赖 Blender 4.4、图像生成后端和可选外部 API，复杂对象程序的几何可靠性仍需实测。",
+      "decisionReason": "论文作者官方开源仓库，MIT 许可，连接了空间设计、程序化建模、可编辑资产和物理仿真。",
+      "license": "MIT"
+    },
+    {
+      "repo": "troyehuang/REACT3D",
+      "name": "REACT3D",
+      "category": "仿真就绪 3D",
+      "level": "A",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "simulation",
+        "interior-design"
+      ],
+      "summary": "将静态室内扫描自动转换为可交互场景，完成可开合对象检测、部件分割、关节推断、隐藏几何补全和模拟器导出。",
+      "riskNote": "环境依赖 GroundingDINO、PyTorch3D、Kaolin、CUDA 扩展和多套检查点，安装维护复杂。",
+      "decisionReason": "ETH Zurich 与 Microsoft 作者官方 RA-L 2026 代码，直接解决静态重建无法物理交互的问题。"
+    },
+    {
+      "repo": "PhyScene/PhyScene",
+      "name": "PhyScene",
+      "category": "物理场景生成",
+      "level": "A-",
+      "priorityDomains": [
+        "3d-generation",
+        "simulation",
+        "interior-design"
+      ],
+      "summary": "在室内布局扩散模型中加入对象碰撞、房间边界与机器人可达性引导，生成包含刚体和关节对象的可交互场景。",
+      "riskNote": "依赖 3D-FRONT、GAPartNet、ProcTHOR 和 Isaac Sim，数据准备和跨资产库匹配成本较高。",
+      "decisionReason": "CVPR 2024 Highlight 官方完整实现，是物理约束室内场景生成的重要公开基线。"
+    },
+    {
+      "repo": "NVIDIA/simready-foundation",
+      "name": "SimReady Foundation",
+      "category": "仿真标准与验证",
+      "level": "A+",
+      "priorityDomains": [
+        "simulation",
+        "design-tools"
+      ],
+      "summary": "为 OpenUSD 仿真资产定义碰撞体、刚体、关节、材料和语义标签规范，并提供自动验证与格式适配框架。",
+      "riskNote": "它是标准与验证工具而非生成模型，主要服务 OpenUSD、PhysX 和 Isaac 生态，需要与上游重建流程集成。",
+      "decisionReason": "NVIDIA 官方 Apache-2.0 项目，可作为判断 AI 生成资产是否真正达到 SimReady 的工程基准。",
+      "license": "Apache-2.0"
+    },
+    {
+      "repo": "3dlg-hcvc/SceneEval",
+      "name": "SceneEval",
+      "category": "3D 场景评测",
+      "level": "A-",
+      "priorityDomains": [
+        "3d-generation",
+        "simulation",
+        "interior-design"
+      ],
+      "summary": "从对象数量、属性、关系和碰撞等显式与隐式要求评估文本生成室内场景，并提供 SceneEval-500 基准。",
+      "riskNote": "项目提供评测而不负责生成或修复，物理指标覆盖面低于 PhyMix 的完整九项约束体系。",
+      "decisionReason": "WACV 2026 Oral 作者官方代码，可作为物理场景生成质量核验和自动回归测试基础。"
+    },
+    {
+      "repo": "AndreeaDogaru/Gen3DSR",
+      "name": "Gen3DSR",
+      "category": "3D 场景重建",
+      "level": "B+",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "interior-design"
+      ],
+      "summary": "将单图场景分解为对象与背景，分别完成几何恢复后再依据深度和相机信息组合成可编辑三角网格场景。",
+      "riskNote": "重点是视觉与布局重建而非完整物理一致性，需配合 REST3D 或其他物理优化层使用。",
+      "decisionReason": "3DV 2025 作者官方实现，是 REST3D、PhyMix 等方法使用和比较的单图场景重建基础路线。"
+    },
+    {
+      "repo": "VincentHancoder/REPARO",
+      "name": "REPARO",
+      "category": "3D 场景重建",
+      "level": "B+",
+      "priorityDomains": [
+        "3d-reconstruction",
+        "3d-generation",
+        "design-tools"
+      ],
+      "summary": "从单张多对象图像分别生成三维资产，并使用可微布局对齐恢复对象之间的空间组合关系。",
+      "riskNote": "布局优化主要解决视觉对齐，尚不等价于重力、支撑、接触和动态稳定性的完整物理验证。",
+      "decisionReason": "论文作者官方实现，可作为从多对象视觉重建走向场景级物理修正的关键上游组件。"
+    },
+    {
+      "repo": "MichaelYang-lyx/AIDABench",
+      "name": "AIDABench",
+      "category": "WAICA 2026 / 数据智能",
+      "level": "A",
+      "priorityDomains": [
+        "waic-2026",
+        "ai-benchmark",
+        "data-agent"
+      ],
+      "summary": "面向 AI 数据分析智能体的公开基准，覆盖真实分析任务、执行结果和端到端能力评测。",
+      "riskNote": "这是评测基准而非生产分析平台，实际接入仍需自行配置模型、执行环境与数据权限。",
+      "decisionReason": "WAICA 2026 主会议录用项目，论文标题、作者与官方仓库可相互核验。"
+    },
+    {
+      "repo": "InternLM/InternBootcamp",
+      "name": "InternBootcamp",
+      "category": "WAICA 2026 / Agent 训练",
+      "level": "A",
+      "priorityDomains": [
+        "waic-2026",
+        "agent",
+        "open-model"
+      ],
+      "summary": "为智能体构建可执行、可交互、可验证的任务环境，支持轨迹采集、训练、评测和失败分析。",
+      "riskNote": "环境和训练链路较重，落地前需要评估任务适配成本、模型服务与算力依赖。",
+      "decisionReason": "官方仓库明确标注 InternBootcamp 技术报告被 WAICA 2026 接收，并提供对应代码版本。"
+    },
+    {
+      "repo": "MINT-SJTU/RoboFAC",
+      "name": "RoboFAC",
+      "category": "WAICA 2026 / 视频理解",
+      "level": "A",
+      "priorityDomains": [
+        "waic-2026",
+        "video-intelligence",
+        "robotics"
+      ],
+      "summary": "从机器人执行视频中理解任务失败、诊断原因并生成纠正计划，包含数据集、模型和评测流程。",
+      "riskNote": "重点是机器人失败视频，迁移到通用影视理解或剪辑场景需要重新标注与适配。",
+      "decisionReason": "WAICA 2026 主会议录用，上海交大团队官方仓库提供完整的视频诊断与纠错实现。"
+    },
+    {
+      "repo": "facebookresearch/sam2",
+      "name": "SAM 2",
+      "category": "视频算法 / 分割",
+      "level": "A+",
+      "priorityDomains": [
+        "video-intelligence",
+        "video-editing",
+        "computer-vision"
+      ],
+      "summary": "Meta 的图像与视频统一分割模型，可通过点、框或掩码持续跟踪视频中的目标对象。",
+      "riskNote": "高分辨率长视频会带来显存和时序稳定性成本，商用前需核对模型权重许可。",
+      "decisionReason": "视频抠像、目标替换、特效跟踪和自动剪辑的通用基础组件，官方代码与权重生态成熟。"
+    },
+    {
+      "repo": "facebookresearch/co-tracker",
+      "name": "CoTracker",
+      "category": "视频算法 / 跟踪",
+      "level": "A",
+      "priorityDomains": [
+        "video-intelligence",
+        "virtual-production",
+        "3d-reconstruction"
+      ],
+      "summary": "在长视频中联合跟踪大量像素点，为相机运动、动态物体和几何恢复提供稳定轨迹。",
+      "riskNote": "遮挡、强运动模糊和镜头切换仍可能导致轨迹漂移，需结合分段与置信度过滤。",
+      "decisionReason": "Meta 官方点跟踪基线，可直接支撑视频稳像、运动分析、3D 重建和虚拟摄影。"
+    },
+    {
+      "repo": "open-mmlab/mmaction2",
+      "name": "MMAction2",
+      "category": "视频算法 / 动作识别",
+      "level": "A+",
+      "priorityDomains": [
+        "video-intelligence",
+        "computer-vision"
+      ],
+      "summary": "OpenMMLab 的视频理解工具箱，覆盖动作识别、时序动作定位、骨架识别和多种主流模型。",
+      "riskNote": "模型配置和数据集体系较复杂，业务标签与预训练任务不一致时需要微调。",
+      "decisionReason": "视频内容分类、片段检索和自动摘要的成熟工程底座，维护周期长且生态完整。"
+    },
+    {
+      "repo": "MCG-NJU/VideoMAE",
+      "name": "VideoMAE",
+      "category": "视频算法 / 表征学习",
+      "level": "A",
+      "priorityDomains": [
+        "video-intelligence",
+        "open-model"
+      ],
+      "summary": "通过掩码自编码进行视频预训练，提供可迁移到动作识别、检索和视频理解任务的视觉表征。",
+      "riskNote": "属于研究基线，直接用于生产需要补齐推理服务、数据治理和任务适配。",
+      "decisionReason": "视频基础表征的高影响力官方实现，适合作为自有行业视频模型训练基线。"
+    },
+    {
+      "repo": "OpenGVLab/InternVideo",
+      "name": "InternVideo",
+      "category": "视频算法 / 基础模型",
+      "level": "A",
+      "priorityDomains": [
+        "video-intelligence",
+        "open-model",
+        "multimodal"
+      ],
+      "summary": "面向视频理解的通用基础模型系列，覆盖视频文本检索、动作识别和多模态表示学习。",
+      "riskNote": "不同版本的训练和推理接口差异较大，需按具体任务选择模型与依赖。",
+      "decisionReason": "上海人工智能实验室官方视频基础模型项目，适合长期跟踪开放模型与评测进展。"
+    },
+    {
+      "repo": "OpenGVLab/VideoChat-Flash",
+      "name": "VideoChat-Flash",
+      "category": "视频算法 / 基础模型",
+      "level": "A",
+      "priorityDomains": [
+        "video-intelligence",
+        "open-model",
+        "multimodal"
+      ],
+      "summary": "面向超长视频理解的多模态模型，可执行长视频问答、时序定位和视频内容检索。",
+      "riskNote": "超长上下文推理仍需要较高显存与预处理成本，回答结果必须保留时间片段证据。",
+      "decisionReason": "OpenGVLab 官方仓库，原 InternVideo2 地址已重定向至该 canonical 项目，可持续跟踪长视频理解能力。"
+    },
+    {
+      "repo": "DAMO-NLP-SG/VideoLLaMA2",
+      "name": "VideoLLaMA 2",
+      "category": "视频算法 / 多模态理解",
+      "level": "A-",
+      "priorityDomains": [
+        "video-intelligence",
+        "multimodal",
+        "open-model"
+      ],
+      "summary": "面向视频与音频理解的多模态语言模型，可执行视频问答、描述、事件推理和视听联合分析。",
+      "riskNote": "生成式回答可能产生事实偏差，生产使用需保留时间戳证据和可追溯片段。",
+      "decisionReason": "阿里达摩院团队官方实现，覆盖视频内容理解向自然语言检索与摘要的关键链路。"
+    },
+    {
+      "repo": "ByteDance-Seed/TraceAnything",
+      "name": "TraceAnything",
+      "category": "视频算法 / 4D 轨迹",
+      "level": "A",
+      "priorityDomains": [
+        "video-intelligence",
+        "virtual-production",
+        "3d-reconstruction"
+      ],
+      "summary": "从视频估计稠密 4D 轨迹场，统一表达像素、几何和动态物体随时间的运动。",
+      "riskNote": "对复杂遮挡、快速镜头和长视频的稳定性仍需实际验证，计算资源要求较高。",
+      "decisionReason": "字节跳动 Seed 官方 ICLR 2026 项目，是视频运动理解连接 4D 场景与虚拟制作的重要底层能力。"
+    },
+    {
+      "repo": "facebookresearch/actionmesh",
+      "name": "ActionMesh",
+      "category": "视频算法 / 人体 4D",
+      "level": "A-",
+      "priorityDomains": [
+        "video-intelligence",
+        "virtual-production",
+        "3d-reconstruction"
+      ],
+      "summary": "从单目动作视频恢复可动画人体网格与时序运动，用于角色重建、动作捕捉和数字人制作。",
+      "riskNote": "人体遮挡、服装和复杂多人交互会影响网格质量，不能替代高精度专业动捕。",
+      "decisionReason": "Meta 官方视频到可动画网格项目，直接连接算法研究与 3D 角色舞台生产。"
+    },
+    {
+      "repo": "bytedance/Bernini",
+      "name": "Bernini",
+      "category": "视频生成 / 编辑模型",
+      "level": "A",
+      "priorityDomains": [
+        "video-editing",
+        "video-generation",
+        "open-model"
+      ],
+      "summary": "统一支持视频生成与编辑的开放模型，可通过文本和视觉条件完成内容创建与局部修改。",
+      "riskNote": "模型部署对显存与推理优化要求较高，编辑一致性和商用素材合规仍需独立验证。",
+      "decisionReason": "字节跳动 2026 官方开源项目，代码与权重完整，是生成和编辑统一化的重要新路线。"
+    },
+    {
+      "repo": "bytedance/Lance",
+      "name": "Lance",
+      "category": "视频生成 / 多模态模型",
+      "level": "A-",
+      "priorityDomains": [
+        "video-intelligence",
+        "video-editing",
+        "video-generation",
+        "open-model"
+      ],
+      "summary": "以统一模型覆盖图像和视频理解、生成与编辑，探索跨任务共享表征和工作流。",
+      "riskNote": "新项目的工程接口与模型能力仍在快速变化，正式接入需锁定版本并回归测试。",
+      "decisionReason": "字节跳动 2026 官方研究仓库，方向同时覆盖视频理解、生成和编辑，适合列为前沿跟踪。"
+    },
+    {
+      "repo": "showlab/Kiwi-Edit",
+      "name": "Kiwi-Edit",
+      "category": "视频自动剪辑 / 指令编辑",
+      "level": "A",
+      "priorityDomains": [
+        "video-editing",
+        "video-generation"
+      ],
+      "summary": "支持指令与参考图驱动的视频编辑，可完成对象替换、背景变化和视觉一致性控制。",
+      "riskNote": "复杂长视频的身份和时序一致性仍有边界，输出需进行人工审片。",
+      "decisionReason": "作者团队官方 2026 项目，代码、数据和编辑范式较完整，可用于自动视频修改能力评估。"
+    },
+    {
+      "repo": "bytedance/vidi",
+      "name": "Vidi",
+      "category": "视频自动剪辑 / 内容生产",
+      "level": "A",
+      "priorityDomains": [
+        "video-intelligence",
+        "video-editing",
+        "agent"
+      ],
+      "summary": "先理解长视频内容，再自动组织故事、音乐和视觉效果，形成从分析到成片的自动编辑流程。",
+      "riskNote": "叙事质量和节奏具有主观性，实际业务需要品牌风格约束、版权检查与人工终审。",
+      "decisionReason": "字节跳动官方项目，直接命中“视频理解后自动剪辑”的完整工作流，而非单一视觉模型。"
+    },
+    {
+      "repo": "bytedance/Video-As-Prompt",
+      "name": "Video-As-Prompt",
+      "category": "视频生成 / 语义控制",
+      "level": "A-",
+      "priorityDomains": [
+        "video-editing",
+        "video-generation",
+        "virtual-production"
+      ],
+      "summary": "把参考视频作为运动和语义提示，将其动作、镜头或变化规律迁移到新的图像和视频生成中。",
+      "riskNote": "语义迁移可能携带参考素材中的偏差或版权风险，需限制输入来源和输出用途。",
+      "decisionReason": "字节跳动官方 ICLR 2026 项目，已提供低显存训练与推理路径，适合镜头运动和动效复用。"
+    },
+    {
+      "repo": "vita-epfl/Stable-Video-Infinity",
+      "name": "Stable Video Infinity",
+      "category": "视频生成 / 长视频",
+      "level": "A-",
+      "priorityDomains": [
+        "video-generation",
+        "video-editing",
+        "open-model"
+      ],
+      "summary": "通过时序扩展机制生成超长或持续视频，重点解决短视频生成模型的时长和连续性限制。",
+      "riskNote": "长时生成仍可能积累漂移、重复和身份变化，生成速度及存储成本需要评估。",
+      "decisionReason": "EPFL 团队 ICLR 2026 Oral 官方实现，是长视频生成与连续舞台背景的重要研究方向。"
+    },
+    {
+      "repo": "Tencent-Hunyuan/HunyuanVideo",
+      "name": "HunyuanVideo",
+      "category": "视频生成 / 基础模型",
+      "level": "A+",
+      "priorityDomains": [
+        "video-generation",
+        "video-editing",
+        "open-model"
+      ],
+      "summary": "腾讯混元开放视频生成模型与推理代码，支持文本到视频并形成较完整的社区工具生态。",
+      "riskNote": "模型资源消耗大，开放许可、人物生成和内容安全要求需按使用场景单独审核。",
+      "decisionReason": "腾讯官方高影响力开源视频模型，是自建视频生成能力和第三方工作流适配的核心基线。"
+    },
+    {
+      "repo": "Tencent-Hunyuan/HunyuanVideo-1.5",
+      "name": "HunyuanVideo 1.5",
+      "category": "视频生成 / 轻量模型",
+      "level": "A",
+      "priorityDomains": [
+        "video-generation",
+        "video-editing",
+        "open-model"
+      ],
+      "summary": "面向更高可用性的视频生成版本，降低部署门槛并改进生成质量与推理效率。",
+      "riskNote": "新版本接口和生态适配仍在演进，需与原版在画质、速度和显存上做实测比较。",
+      "decisionReason": "腾讯混元官方 2026 迭代，能持续反映开放视频模型向更轻量部署发展的进度。"
+    },
+    {
+      "repo": "WeChatCV/Wan-Alpha",
+      "name": "Wan-Alpha",
+      "category": "视频生成 / RGBA 合成",
+      "level": "A",
+      "priorityDomains": [
+        "video-generation",
+        "video-editing",
+        "virtual-production"
+      ],
+      "summary": "生成带透明通道的 RGBA 视频，直接输出前景与 Alpha，便于分层合成、特效和虚拟舞台制作。",
+      "riskNote": "细发丝、半透明物体和快速运动下的 Alpha 质量仍需逐镜头检查。",
+      "decisionReason": "微信视觉团队 CVPR 2026 Highlight 官方实现，直接解决视频生成进入专业合成流程的关键格式问题。"
+    },
+    {
+      "repo": "HKUDS/ViMax",
+      "name": "ViMax",
+      "category": "视频自动剪辑 / Agent",
+      "level": "B+",
+      "priorityDomains": [
+        "video-editing",
+        "agent",
+        "video-generation"
+      ],
+      "summary": "以多智能体协作规划脚本、素材和镜头，尝试自动完成从主题到视频作品的生产流程。",
+      "riskNote": "端到端效果高度依赖外部模型和素材服务，稳定性、成本及版权链路必须实测。",
+      "decisionReason": "香港大学团队官方开源视频生产智能体，适合作为自动编导和多 Agent 协作的观察样本。"
+    },
+    {
+      "repo": "calesthio/OpenMontage",
+      "name": "OpenMontage",
+      "category": "视频自动剪辑 / Agent",
+      "level": "B+",
+      "priorityDomains": [
+        "video-editing",
+        "agent",
+        "design-tools"
+      ],
+      "summary": "将研究、脚本、素材处理、剪辑和合成串成可执行的 Agent 视频生产流水线。",
+      "riskNote": "社区项目规模较小，外部 API 依赖和长期维护情况需要持续观察。",
+      "decisionReason": "实现了可运行的端到端自动视频生产链路，可补充大型研究模型缺少编排层的问题。"
+    },
+    {
+      "repo": "AcademySoftwareFoundation/OpenTimelineIO",
+      "name": "OpenTimelineIO",
+      "category": "视频自动剪辑 / 时间线",
+      "level": "A+",
+      "priorityDomains": [
+        "video-editing",
+        "virtual-production",
+        "design-tools"
+      ],
+      "summary": "影视剪辑时间线的开放交换格式和 API，可在不同剪辑工具与自动化系统之间传递镜头结构。",
+      "riskNote": "它不负责渲染或生成素材，需要与 FFmpeg、NLE 或自有渲染服务组合。",
+      "decisionReason": "Academy Software Foundation 核心项目，是 AI 自动剪辑结果进入专业后期软件的可靠基础设施。"
+    },
+    {
+      "repo": "remotion-dev/remotion",
+      "name": "Remotion",
+      "category": "视频自动剪辑 / 程序化制作",
+      "level": "A",
+      "priorityDomains": [
+        "video-editing",
+        "design-tools"
+      ],
+      "summary": "使用 React 和代码定义视频画面、动画与时间线，适合批量模板化生成和数据驱动视频。",
+      "riskNote": "复杂影视后期能力有限，商业使用还需核对 Remotion 的许可与云渲染方案。",
+      "decisionReason": "成熟的程序化视频生产工具，可把 AI 生成的脚本、素材和结构稳定转成可重复渲染的成片。"
+    },
+    {
+      "repo": "RyanChenYN/IVEBench",
+      "name": "IVEBench",
+      "category": "视频编辑 / 评测基准",
+      "level": "A-",
+      "priorityDomains": [
+        "video-editing",
+        "ai-benchmark"
+      ],
+      "summary": "覆盖风格、属性、运动、镜头和特效等多类指令视频编辑，并提供统一的人类对齐评测。",
+      "riskNote": "基准排名不能替代真实业务素材测试，中文指令、品牌风格和长视频仍需另建评测集。",
+      "decisionReason": "ICLR 2026 官方基准，可用于统一比较不同视频编辑模型，避免仅凭演示视频判断质量。"
+    },
+    {
+      "repo": "HiDream-ai/ReCo",
+      "name": "ReCo",
+      "category": "视频编辑 / 区域控制",
+      "level": "A",
+      "priorityDomains": [
+        "video-editing",
+        "video-generation"
+      ],
+      "summary": "通过区域约束和上下文生成完成对象替换、插入、移除及背景修改，并提供训练与推理代码。",
+      "riskNote": "区域边界和遮挡复杂时可能产生接缝或时序闪烁，需配合分割与质量检测。",
+      "decisionReason": "ICML 2026 官方实现，模型、数据和编辑评测链路较完整，工程可验证性较强。"
+    },
+    {
+      "repo": "WeChatCV/NovaEdit",
+      "name": "NOVA",
+      "category": "视频编辑 / 稀疏控制",
+      "level": "A",
+      "priorityDomains": [
+        "video-editing",
+        "video-generation"
+      ],
+      "summary": "以稀疏控制信号驱动稠密视频编辑，降低成对训练数据依赖并保持跨帧一致性。",
+      "riskNote": "对复杂局部变化和长时身份一致性的能力需在实际素材上验证。",
+      "decisionReason": "微信视觉团队 CVPR 2026 官方仓库，代表低标注成本视频编辑的新方向。"
+    },
+    {
+      "repo": "yehonathanlitman/EditCtrl",
+      "name": "EditCtrl",
+      "category": "视频编辑 / 实时控制",
+      "level": "A-",
+      "priorityDomains": [
+        "video-editing",
+        "video-generation"
+      ],
+      "summary": "分离局部与全局控制，实现面向生成视频的实时编辑和更精确的区域变化。",
+      "riskNote": "实时性能与输出分辨率、显存和底模强相关，需核验仓库当前释放范围。",
+      "decisionReason": "CVPR 2026 作者官方代码，适合跟踪视频编辑从离线生成走向交互式创作的进展。"
+    },
+    {
+      "repo": "GVCLab/EasyOmnimatte",
+      "name": "EasyOmnimatte",
+      "category": "视频编辑 / 分层分解",
+      "level": "A-",
+      "priorityDomains": [
+        "video-editing",
+        "video-intelligence",
+        "virtual-production"
+      ],
+      "summary": "将视频分解为可编辑图层和遮罩，便于对象移除、替换、重组与后期合成。",
+      "riskNote": "复杂遮挡、阴影和反射会影响图层分离质量，仍需要人工修补。",
+      "decisionReason": "CVPR 2026 官方实现，提供从单层视频走向结构化可编辑素材的重要能力。"
+    },
+    {
+      "repo": "Eyeline-Labs/Vista4D",
+      "name": "Vista4D",
+      "category": "视频 3D 舞台 / 重拍",
+      "level": "A+",
+      "priorityDomains": [
+        "virtual-production",
+        "video-editing",
+        "3d-reconstruction"
+      ],
+      "summary": "把输入视频重建为可编辑 4D 点云，再通过新相机轨迹重拍、扩展和重组动态场景。",
+      "riskNote": "高质量输出依赖重建质量和 GPU 资源，复杂编辑仍需专业后期流程配合。",
+      "decisionReason": "CVPR 2026 Highlight 官方代码、模型和数据已发布，直接对应视频 3D 舞台与虚拟摄影。"
+    },
+    {
+      "repo": "FuchengSu/WorldStereo",
+      "name": "WorldStereo",
+      "category": "视频 3D 舞台 / 世界生成",
+      "level": "A+",
+      "priorityDomains": [
+        "virtual-production",
+        "video-generation",
+        "3d-reconstruction",
+        "world-generation"
+      ],
+      "summary": "通过 3D 几何记忆连接相机引导视频生成和场景重建，支持可控镜头与可恢复空间。",
+      "riskNote": "部分预处理与训练组件仍在持续释放，落地前需确认对应版本的代码和权重完整度。",
+      "decisionReason": "腾讯混元与浙大团队 CVPR 2026 官方项目，代码和模型权重已发布，是视频生成与 3D 场景融合的核心路线。"
+    },
+    {
+      "repo": "yuhengliu02/OmniRoam",
+      "name": "OmniRoam",
+      "category": "视频 3D 舞台 / 全景生成",
+      "level": "A",
+      "priorityDomains": [
+        "virtual-production",
+        "video-generation",
+        "3d-reconstruction"
+      ],
+      "summary": "生成长时全景视频并恢复三维空间，服务 360 度内容、沉浸式场景和可漫游虚拟舞台。",
+      "riskNote": "长时全景一致性和接缝质量对复杂动态环境仍具挑战，实际制作需要质量筛选。",
+      "decisionReason": "SIGGRAPH 2026 作者官方项目，直接覆盖全景视频、三维重建和沉浸式舞台内容。"
+    },
+    {
+      "repo": "Stability-AI/stable-virtual-camera",
+      "name": "Stable Virtual Camera",
+      "category": "视频 3D 舞台 / 虚拟摄影机",
+      "level": "A",
+      "priorityDomains": [
+        "virtual-production",
+        "video-generation",
+        "3d-reconstruction"
+      ],
+      "summary": "根据目标相机位姿从输入图像或视图生成新视角视频，用软件方式控制虚拟摄影机运动。",
+      "riskNote": "大幅视角变化可能暴露不可见区域并产生几何幻觉，需限定镜头范围。",
+      "decisionReason": "Stability AI 官方开放项目，为产品化的虚拟摄影机、镜头预演和空间视频生成提供基线。"
+    },
+    {
+      "repo": "gohyojun15/VIST3A",
+      "name": "VIST3A",
+      "category": "视频 3D 舞台 / 文生三维",
+      "level": "A-",
+      "priorityDomains": [
+        "virtual-production",
+        "video-generation",
+        "3d-generation"
+      ],
+      "summary": "把视频生成器与多视图重建连接起来，从文本生成具有跨视角一致性的三维内容。",
+      "riskNote": "仓库部分训练和数据组件仍可能处于待发布状态，当前更适合研究验证。",
+      "decisionReason": "ICLR 2026 Oral 作者官方实现，代表利用视频先验构建 3D 资产和舞台的新方法。"
+    },
+    {
+      "repo": "BrokenSource/DepthFlow",
+      "name": "DepthFlow",
+      "category": "视频 3D 舞台 / 视差动画",
+      "level": "B+",
+      "priorityDomains": [
+        "virtual-production",
+        "video-editing",
+        "design-tools"
+      ],
+      "summary": "结合深度图和相机路径，把单张图像快速转成具有三维视差的动态视频。",
+      "riskNote": "属于 2.5D 视差效果而非完整 3D 重建，且 AGPL 许可会影响闭源服务集成。",
+      "decisionReason": "工程化程度较高，可作为低成本图片转 3D 镜头、舞台背景和短视频动效工具。"
+    },
+    {
+      "repo": "microsoft/World-R1",
+      "name": "World-R1",
+      "category": "视频 3D 舞台 / 几何一致生成",
+      "level": "A",
+      "priorityDomains": [
+        "virtual-production",
+        "video-generation",
+        "3d-reconstruction",
+        "open-model"
+      ],
+      "summary": "以三维约束和相机轨迹奖励强化文本到视频生成，提升镜头控制、重建一致性和场景几何稳定性。",
+      "riskNote": "强化训练和评测链路复杂，生产可用性取决于底模、权重释放和推理成本。",
+      "decisionReason": "微软 ICML 2026 官方仓库，明确解决视频生成缺乏 3D 一致性和镜头控制的问题。"
+    },
+    {
+      "repo": "VITA-Group/VLM-3R",
+      "name": "VLM-3R",
+      "category": "视频 3D 舞台 / 空间理解",
+      "level": "A",
+      "priorityDomains": [
+        "video-intelligence",
+        "virtual-production",
+        "3d-reconstruction",
+        "multimodal"
+      ],
+      "summary": "将单目视频的三维重建表征注入视觉语言模型，增强空间、视角和时序推理。",
+      "riskNote": "重点是三维理解与推理，不直接产出完整舞台资产，需和生成或编辑工具组合。",
+      "decisionReason": "CVPR 2026 官方实现，训练、评测和模型权重已开放，是视频空间理解连接多模态 Agent 的重要组件。"
+    },
+    {
+      "repo": "AgibotTech/ACoT-VLA",
+      "name": "ACoT-VLA",
+      "category": "WAIC 物理 AI / VLA 与机器人基础模型",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "embodied-robotics",
+        "vla",
+        "robot-learning"
+      ],
+      "summary": "把动作推理链引入视觉语言动作模型，在生成机器人动作前显式规划目标、对象和操作步骤。",
+      "riskNote": "真实机器人泛化仍受本体、相机视角和训练数据覆盖影响，部署前需按设备复测。",
+      "decisionReason": "智元机器人官方 VLA 基线，直接覆盖物理 AI 的感知、认知、决策与执行闭环。"
+    },
+    {
+      "repo": "Physical-Intelligence/openpi",
+      "name": "OpenPI",
+      "category": "WAIC 物理 AI / VLA 与机器人基础模型",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "embodied-robotics",
+        "vla",
+        "robot-learning",
+        "open-model"
+      ],
+      "summary": "Physical Intelligence 开放的机器人策略代码库，包含 π0、π0-FAST、π0.5 等通用机器人模型和微调路径。",
+      "riskNote": "不同机械臂的动作空间、数据格式和实时推理性能差异较大，迁移成本需单独评估。",
+      "decisionReason": "当前开放 VLA 体系的重要基线，模型、训练和部署链路对通用机器人研究具有高参考价值。"
+    },
+    {
+      "repo": "openvla/openvla",
+      "name": "OpenVLA",
+      "officialFork": true,
+      "intakeDecision": "approved",
+      "category": "WAIC 物理 AI / VLA 与机器人基础模型",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "embodied-robotics",
+        "vla",
+        "robot-learning",
+        "open-model"
+      ],
+      "summary": "面向通用机器人操作的开放视觉语言动作模型，提供预训练权重、微调和多机器人数据适配。",
+      "riskNote": "官方仓库基于 TRI-ML/prismatic-vlms 演进；基础版本架构迭代较快，实际效果取决于动作数据质量、控制频率和任务分布。",
+      "decisionReason": "开放 VLA 领域的核心项目，可作为新模型、数据集和机器人策略的长期比较基线。"
+    },
+    {
+      "repo": "huggingface/lerobot",
+      "name": "LeRobot",
+      "category": "WAIC 物理 AI / VLA 与机器人基础模型",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "embodied-robotics",
+        "robot-learning",
+        "robot-control",
+        "open-model"
+      ],
+      "summary": "统一机器人数据集、策略模型、训练评测和真实硬件接入的开放平台，覆盖模仿学习与 VLA 工作流。",
+      "riskNote": "硬件驱动和策略接口仍随版本演进，生产使用需要锁定依赖并建立设备回归测试。",
+      "decisionReason": "Hugging Face 官方机器人生态底座，适合持续跟踪模型从研究代码走向真实设备部署。"
+    },
+    {
+      "repo": "allenai/molmoact2",
+      "name": "MolmoAct 2",
+      "category": "WAIC 物理 AI / VLA 与机器人基础模型",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "embodied-robotics",
+        "vla",
+        "robot-learning",
+        "open-model"
+      ],
+      "summary": "以空间动作推理连接视觉理解和机器人控制，并接入 LeRobot 形成可训练、可部署的开放策略模型。",
+      "riskNote": "新版本的模型规模、数据许可和跨本体表现仍需在目标任务上独立验证。",
+      "decisionReason": "Ai2 官方开放物理 AI 模型，强调空间理解和动作生成，是多模态模型走向机器人执行的重要路线。"
+    },
+    {
+      "repo": "OpenDriveLab/UniVLA",
+      "name": "UniVLA",
+      "category": "WAIC 物理 AI / VLA 与机器人基础模型",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "embodied-robotics",
+        "vla",
+        "robot-learning"
+      ],
+      "summary": "在跨本体视频中学习任务中心的潜在动作空间，使同一策略能够适配不同机器人和操作任务。",
+      "riskNote": "跨本体潜在动作仍需要目标机器人后训练，不能直接替代低层安全控制和校准。",
+      "decisionReason": "OpenDriveLab 官方通用机器人策略项目，代表用统一动作表示降低本体碎片化的关键方向。"
+    },
+    {
+      "repo": "InternRobotics/InternVLA-M1",
+      "name": "InternVLA-M1",
+      "category": "WAIC 物理 AI / VLA 与机器人基础模型",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "embodied-robotics",
+        "vla",
+        "robot-learning",
+        "spatial-intelligence"
+      ],
+      "summary": "以上海 AI Lab 多模态底座构建空间引导的 VLA，统一语言理解、空间定位和动作预测。",
+      "riskNote": "模型训练和部署依赖较高算力，跨设备迁移仍需动作归一化与真实环境数据。",
+      "decisionReason": "上海 AI Lab 官方通用操作策略，和 WAIC 空间智能、具身交互主题高度一致。"
+    },
+    {
+      "repo": "InternRobotics/InternVLA-A-series",
+      "name": "InternVLA-A Series",
+      "category": "WAIC 物理 AI / VLA 与机器人基础模型",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "embodied-robotics",
+        "vla",
+        "robot-learning",
+        "multimodal"
+      ],
+      "summary": "统一视觉理解、内容生成与机器人动作的 VLA 系列，面向多任务操作和复杂场景泛化。",
+      "riskNote": "仓库整合多个版本，需区分各模型的权重、训练数据和当前完整释放范围。",
+      "decisionReason": "上海 AI Lab 官方 VLA 主线项目，体现理解、生成和行动统一建模的发展趋势。"
+    },
+    {
+      "repo": "starVLA/starVLA",
+      "officialFork": true,
+      "name": "starVLA",
+      "category": "WAIC 物理 AI / VLA 与机器人基础模型",
+      "level": "A-",
+      "priorityDomains": [
+        "physical-ai",
+        "embodied-robotics",
+        "vla",
+        "robot-learning"
+      ],
+      "summary": "模块化 VLA 代码库，可组合视觉语言骨干、动作头、数据和训练策略，支持多种机器人模型实验。",
+      "riskNote": "组合式框架的配置面较大，不同模型复现质量和依赖稳定性需要逐项核验。",
+      "decisionReason": "提供可比较、可扩展的 VLA 工程底座，适合跟踪 PhysBrain、NeuroVLA 等新策略。"
+    },
+    {
+      "repo": "AgibotTech/AgiBotWorldChallengeICRA2026-WorldModelBaseline",
+      "name": "AgiBot World Model Baseline",
+      "category": "WAIC 物理 AI / 世界模型与空间智能",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "embodied-robotics",
+        "world-model",
+        "robot-learning"
+      ],
+      "summary": "面向机器人操作的动作条件世界模型基线，通过预测未来视觉状态学习物体变化和动作后果。",
+      "riskNote": "生成质量不等同于可执行控制精度，闭环部署还需要状态估计、控制器和安全约束。",
+      "decisionReason": "智元机器人官方世界模型基线，直接反映物理 AI 从感知预测走向闭环行动的发展。"
+    },
+    {
+      "repo": "AgibotTech/EWMBench",
+      "name": "EWMBench",
+      "category": "WAIC 物理 AI / 世界模型与空间智能",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "world-model",
+        "ai-benchmark",
+        "embodied-robotics"
+      ],
+      "summary": "针对具身世界模型评测动作条件预测、物理一致性和任务相关性的开放基准。",
+      "riskNote": "单一基准覆盖不了所有机器人、环境和长时任务，需要与真实闭环成功率联合判断。",
+      "decisionReason": "世界模型进入机器人控制前必须有可比较的评测体系，该项目是智元官方关键基础设施。"
+    },
+    {
+      "repo": "AgibotTech/Genie-Envisioner",
+      "name": "Genie Envisioner",
+      "category": "WAIC 物理 AI / 世界模型与空间智能",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "world-model",
+        "embodied-robotics",
+        "video-generation"
+      ],
+      "summary": "从机器人观测和动作生成未来状态，用视频世界模型学习环境动力学并辅助策略规划。",
+      "riskNote": "长时预测容易累积误差，策略使用时需限制规划范围并验证真实动作可达性。",
+      "decisionReason": "智元机器人官方具身世界模型主线，可与 Genie Sim、EVAC 和 EWMBench 形成完整观察链路。"
+    },
+    {
+      "repo": "nvidia-cosmos/cosmos-predict2.5",
+      "name": "Cosmos Predict 2.5",
+      "category": "WAIC 物理 AI / 世界模型与空间智能",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "world-model",
+        "robot-simulation",
+        "open-model"
+      ],
+      "summary": "NVIDIA 面向物理 AI 的世界基础模型，支持文本、图像和视频条件下的未来世界生成与预测。",
+      "riskNote": "模型和数据许可需分别核对，生成的视觉合理性不能替代物理仿真和真实安全验证。",
+      "decisionReason": "物理 AI 世界模型的核心开放平台，可服务机器人、自动驾驶和工业数字孪生的数据生成。"
+    },
+    {
+      "repo": "facebookresearch/vjepa2",
+      "name": "V-JEPA 2",
+      "category": "WAIC 物理 AI / 世界模型与空间智能",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "world-model",
+        "video-intelligence",
+        "robot-learning"
+      ],
+      "summary": "从视频学习物理世界表征和未来预测，并通过 V-JEPA2-AC 将表征用于机器人规划。",
+      "riskNote": "表征预测能力到可靠机器人控制之间仍有任务差距，需要针对动作空间和环境做适配。",
+      "decisionReason": "Meta 官方世界模型研究主线，把大规模视频学习与真实机器人规划直接连接起来。"
+    },
+    {
+      "repo": "facebookresearch/jepa-wms",
+      "name": "JEPA World Models",
+      "category": "WAIC 物理 AI / 世界模型与空间智能",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "world-model",
+        "robot-learning",
+        "robot-simulation"
+      ],
+      "summary": "研究 JEPA 世界模型在 DROID、RoboCasa 和 MetaWorld 等环境中的物理规划和策略学习。",
+      "riskNote": "项目偏研究复现，训练规模和环境版本对结果敏感，工程使用需固定完整实验配置。",
+      "decisionReason": "Meta 官方将世界模型落到机器人规划的研究代码，适合持续观察预测表征的实用边界。"
+    },
+    {
+      "repo": "World-In-World/world-in-world",
+      "name": "World-in-World",
+      "category": "WAIC 物理 AI / 世界模型与空间智能",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "world-model",
+        "ai-benchmark",
+        "robot-simulation"
+      ],
+      "summary": "在可交互环境中闭环评测世界模型，让模型生成的未来状态接受连续动作和任务结果检验。",
+      "riskNote": "闭环仿真分数仍受模拟器和任务定义影响，不能直接替代真实机器人的可靠性测试。",
+      "decisionReason": "ICLR 2026 Oral 官方项目，解决传统世界模型只看离线视频指标、忽略行动反馈的问题。"
+    },
+    {
+      "repo": "InternRobotics/ARTDECO",
+      "name": "ARTDECO",
+      "category": "WAIC 物理 AI / 世界模型与空间智能",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "spatial-intelligence",
+        "3d-reconstruction",
+        "embodied-robotics"
+      ],
+      "summary": "以结构化场景表示进行实时高保真 3D 重建，为机器人提供可理解、可更新的空间环境模型。",
+      "riskNote": "实时重建性能依赖传感器和 GPU，动态物体、遮挡和大场景漂移仍需实地验证。",
+      "decisionReason": "上海 AI Lab ICLR 2026 官方项目，直接补齐物理 AI 从视觉输入到结构化空间状态的环节。"
+    },
+    {
+      "repo": "allenai/molmospaces",
+      "name": "MolmoSpaces",
+      "category": "WAIC 物理 AI / 仿真、合成数据与 Sim2Real",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-simulation",
+        "synthetic-data",
+        "sim2real",
+        "embodied-robotics"
+      ],
+      "summary": "面向机器人学习的开放仿真生态，提供大规模室内场景、资产、物理抓取和训练评测工具。",
+      "riskNote": "仿真资产和物理参数仍与真实环境存在差距，零样本迁移结果需在目标硬件上复测。",
+      "decisionReason": "Ai2 官方 simulation-first 物理 AI 栈，覆盖场景、数据、训练和 Sim2Real 的完整链路。"
+    },
+    {
+      "repo": "isaac-sim/IsaacLab",
+      "name": "Isaac Lab",
+      "category": "WAIC 物理 AI / 仿真、合成数据与 Sim2Real",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-simulation",
+        "synthetic-data",
+        "sim2real",
+        "robot-learning"
+      ],
+      "summary": "基于 NVIDIA Isaac Sim 的统一机器人学习框架，支持强化学习、模仿学习、传感器仿真和并行训练。",
+      "riskNote": "对 NVIDIA GPU、Isaac Sim 版本和驱动兼容性要求较高，升级需要严格回归。",
+      "decisionReason": "当前物理 AI 仿真和合成数据的重要工业底座，机器人研究与产品验证均应持续关注。"
+    },
+    {
+      "repo": "nvidia-cosmos/cosmos-transfer2.5",
+      "name": "Cosmos Transfer 2.5",
+      "category": "WAIC 物理 AI / 仿真、合成数据与 Sim2Real",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "world-model",
+        "synthetic-data",
+        "sim2real",
+        "robot-simulation"
+      ],
+      "summary": "利用深度、分割、边缘和多视角等空间控制生成物理世界视频，支持机器人多视角合成数据。",
+      "riskNote": "合成数据的域差异和标签一致性必须量化，不能只依据视觉质量判断训练价值。",
+      "decisionReason": "NVIDIA 官方物理 AI 数据生成主线，直接服务 Sim2Real、机器人感知和世界仿真。"
+    },
+    {
+      "repo": "google-deepmind/mujoco",
+      "name": "MuJoCo",
+      "category": "WAIC 物理 AI / 仿真、合成数据与 Sim2Real",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-simulation",
+        "robot-control",
+        "sim2real"
+      ],
+      "summary": "高性能刚体物理引擎，广泛用于机器人控制、强化学习、接触模拟和策略评测。",
+      "riskNote": "复杂软体、传感器噪声和真实摩擦仍需额外建模，仿真稳定不代表真实安全。",
+      "decisionReason": "Google DeepMind 官方基础设施，是机器人算法比较和可复现实验的长期核心基线。"
+    },
+    {
+      "repo": "Genesis-Embodied-AI/genesis-world",
+      "name": "Genesis",
+      "category": "WAIC 物理 AI / 仿真、合成数据与 Sim2Real",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-simulation",
+        "synthetic-data",
+        "robot-learning"
+      ],
+      "summary": "面向具身 AI 和机器人学习的通用物理平台，强调高性能仿真、可微计算和场景生成。",
+      "riskNote": "项目迭代很快，API、求解器精度和复杂场景稳定性需要按版本持续验证。",
+      "decisionReason": "新一代开放物理仿真平台，能够补充传统机器人模拟器在速度和生成式场景上的能力。"
+    },
+    {
+      "repo": "mani-skill/ManiSkill",
+      "name": "ManiSkill",
+      "category": "WAIC 物理 AI / 仿真、合成数据与 Sim2Real",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-simulation",
+        "robot-learning",
+        "robot-control",
+        "ai-benchmark"
+      ],
+      "summary": "面向机器人操作的大规模仿真、任务、数据和评测平台，支持视觉策略和并行强化学习。",
+      "riskNote": "基准成绩依赖环境版本与评测协议，迁移真实机器人仍需处理动力学和视觉域差异。",
+      "decisionReason": "操作学习领域的成熟开放平台，适合统一验证 VLA、模仿学习和强化学习策略。"
+    },
+    {
+      "repo": "facebookresearch/habitat-lab",
+      "name": "Habitat Lab",
+      "category": "WAIC 物理 AI / 仿真、合成数据与 Sim2Real",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-simulation",
+        "robot-learning",
+        "embodied-robotics"
+      ],
+      "summary": "面向具身导航、移动操作和家庭任务的训练评测框架，提供任务定义、基准和策略接口。",
+      "riskNote": "场景数据和依赖版本较复杂，真实机器人使用还需接入定位、控制和安全系统。",
+      "decisionReason": "Meta 官方具身 AI 任务层基础设施，覆盖空间导航到移动操作的关键研究路径。"
+    },
+    {
+      "repo": "facebookresearch/habitat-sim",
+      "name": "Habitat Sim",
+      "category": "WAIC 物理 AI / 仿真、合成数据与 Sim2Real",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-simulation",
+        "synthetic-data",
+        "spatial-intelligence"
+      ],
+      "summary": "高性能 3D 室内环境模拟器，为具身导航和操作生成 RGB、深度、语义等传感数据。",
+      "riskNote": "高保真渲染仍不能完整复现真实传感器误差，合成数据使用需设计域随机化策略。",
+      "decisionReason": "Meta 官方具身仿真底座，与 Habitat Lab 共同构成空间智能研究的核心平台。"
+    },
+    {
+      "repo": "StanfordVL/BEHAVIOR-1K",
+      "name": "BEHAVIOR-1K / OmniGibson",
+      "category": "WAIC 物理 AI / 仿真、合成数据与 Sim2Real",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-simulation",
+        "robot-learning",
+        "ai-benchmark",
+        "digital-twin"
+      ],
+      "summary": "以 OmniGibson 为底座构建一千类家庭活动任务，强调物体状态、接触和长程操作。",
+      "riskNote": "任务和资产规模带来较高存储与算力成本，复杂活动仍可能受仿真稳定性限制。",
+      "decisionReason": "Stanford 官方大规模交互式任务基准，适合检验机器人是否真正理解并改变物理环境。"
+    },
+    {
+      "repo": "robocasa/robocasa",
+      "name": "RoboCasa",
+      "category": "WAIC 物理 AI / 仿真、合成数据与 Sim2Real",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-simulation",
+        "synthetic-data",
+        "robot-learning",
+        "interior-design"
+      ],
+      "summary": "在多样化厨房和室内场景中生成机器人操作任务、演示数据和评测环境。",
+      "riskNote": "场景集中在家庭与厨房，迁移工业或建筑环境需要重建资产、任务和动力学分布。",
+      "decisionReason": "把高质量室内场景生成与机器人操作结合，适合关注空间设计和具身任务的交叉方向。"
+    },
+    {
+      "repo": "RoboTwin-Platform/RoboTwin",
+      "name": "RoboTwin",
+      "category": "WAIC 物理 AI / 仿真、合成数据与 Sim2Real",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-simulation",
+        "synthetic-data",
+        "sim2real",
+        "digital-twin"
+      ],
+      "summary": "面向双臂机器人和多任务操作的数字孪生平台，支持大规模演示数据生成与策略评测。",
+      "riskNote": "不同机器人配置和资产质量影响数据可迁移性，需确认目标本体的控制与标定接口。",
+      "decisionReason": "覆盖数字孪生、合成数据和双臂操作，是制造业物理 AI 需要长期关注的工程平台。"
+    },
+    {
+      "repo": "unitreerobotics/unitree_mujoco",
+      "name": "Unitree MuJoCo",
+      "category": "WAIC 物理 AI / 仿真、合成数据与 Sim2Real",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-simulation",
+        "sim2real",
+        "robot-control",
+        "humanoid"
+      ],
+      "summary": "宇树机器人官方 MuJoCo 仿真环境，为四足和人形机器人控制算法提供模型、接口和验证路径。",
+      "riskNote": "真实机器人测试具有跌倒和硬件损伤风险，策略必须经过限幅、保护和分阶段验证。",
+      "decisionReason": "连接国内主流机器人硬件与开放物理仿真的官方项目，对 WAIC 人形机器人方向具有直接价值。"
+    },
+    {
+      "repo": "InternRobotics/RoboInter",
+      "name": "RoboInter",
+      "category": "WAIC 物理 AI / 机器人学习、控制与数据",
+      "level": "A+",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-learning",
+        "vla",
+        "synthetic-data",
+        "embodied-robotics"
+      ],
+      "summary": "提供 23 万以上机器人操作轨迹、密集过程标注、空间时序问答和计划后执行的 VLA 框架。",
+      "riskNote": "数据规模大且标注类型复杂，训练成本、许可证和目标机器人的动作映射需提前核验。",
+      "decisionReason": "上海 AI Lab ICLR 2026 官方完整套件，覆盖数据、推理、规划和执行，是物理 AI 核心项目。"
+    },
+    {
+      "repo": "InternRobotics/InternManip",
+      "name": "InternManip",
+      "category": "WAIC 物理 AI / 机器人学习、控制与数据",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-learning",
+        "robot-control",
+        "ai-benchmark",
+        "embodied-robotics"
+      ],
+      "summary": "统一机器人操作数据格式、策略接口、训练和评测协议，便于比较不同模仿学习与 VLA 方法。",
+      "riskNote": "部分模型适配仍在持续加入，使用前需确认具体策略和基准的实现完成度。",
+      "decisionReason": "上海 AI Lab 官方操作学习基础设施，可降低不同数据集和模型之间的工程割裂。"
+    },
+    {
+      "repo": "InternRobotics/InternNav",
+      "name": "InternNav",
+      "category": "WAIC 物理 AI / 机器人学习、控制与数据",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-learning",
+        "robot-control",
+        "spatial-intelligence",
+        "embodied-robotics"
+      ],
+      "summary": "一体化具身导航平台，覆盖仿真、数据、视觉语言导航、策略训练和机器人部署。",
+      "riskNote": "导航模型对传感器标定、定位误差和环境变化敏感，真实部署必须保留安全避障层。",
+      "decisionReason": "上海 AI Lab 官方导航主线，连接空间理解、语言指令和真实机器人移动控制。"
+    },
+    {
+      "repo": "InternRobotics/NavDP",
+      "name": "NavDP",
+      "category": "WAIC 物理 AI / 机器人学习、控制与数据",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-learning",
+        "robot-control",
+        "sim2real",
+        "embodied-robotics"
+      ],
+      "summary": "利用仿真特权信息训练扩散导航策略，在无需真实机器人训练数据的情况下实现无地图导航。",
+      "riskNote": "跨本体与跨场景泛化仍需真实验证，模型不应绕过速度限制、碰撞保护和人工接管。",
+      "decisionReason": "ICRA 2026 官方 Sim2Real 导航项目，直接体现用高效仿真数据驱动真实机器人决策。"
+    },
+    {
+      "repo": "InternRobotics/UltraDexGrasp",
+      "name": "UltraDexGrasp",
+      "category": "WAIC 物理 AI / 机器人学习、控制与数据",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-learning",
+        "robot-control",
+        "synthetic-data",
+        "dexterous-manipulation"
+      ],
+      "summary": "使用合成数据学习双臂机器人的通用灵巧抓取策略，覆盖复杂物体和多手协同。",
+      "riskNote": "真实抓取受摩擦、柔顺性和机械误差影响明显，必须做硬件级安全和成功率测试。",
+      "decisionReason": "上海 AI Lab ICRA 2026 官方项目，命中制造和服务机器人最关键的灵巧操作能力。"
+    },
+    {
+      "repo": "InternRobotics/RoboSplat",
+      "name": "RoboSplat",
+      "category": "WAIC 物理 AI / 机器人学习、控制与数据",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-learning",
+        "3dgs",
+        "synthetic-data",
+        "embodied-robotics"
+      ],
+      "summary": "利用 Gaussian Splatting 从少量真实演示生成新视角示范数据，增强机器人一次学习的鲁棒性。",
+      "riskNote": "生成视角中的遮挡和接触关系可能失真，扩增数据必须经过几何和动作一致性检查。",
+      "decisionReason": "把 3DGS 与机器人策略训练直接结合，和平台现有 3D 重建主线具有高协同价值。"
+    },
+    {
+      "repo": "unitreerobotics/unitree_rl_gym",
+      "name": "Unitree RL Gym",
+      "category": "WAIC 物理 AI / 机器人学习、控制与数据",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-learning",
+        "robot-control",
+        "sim2real",
+        "humanoid"
+      ],
+      "summary": "宇树机器人官方强化学习环境，用于四足和人形机器人的运动控制策略训练与部署。",
+      "riskNote": "仿真策略上机前必须进行扭矩、速度和姿态保护，且需按硬件版本校准动力学参数。",
+      "decisionReason": "国内人形机器人运动控制的重要官方基线，适合持续跟踪物理 AI 从策略到硬件的落地。"
+    },
+    {
+      "repo": "img2threejs/img2threejs",
+      "aliases": [
+        "hoainho/img2threejs"
+      ],
+      "name": "img2threejs",
+      "category": "3D 生成 / 设计工具",
+      "level": "B+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "3d-generation",
+        "design-tools"
+      ],
+      "summary": "把单张参考图转换为可编辑、可动画的程序化 Three.js 模型，并提供浏览器演示与质量门控。",
+      "riskNote": "项目生成的是程序化 Three.js 代码资产，不等同于高精度网格或 3DGS 重建；输出质量仍依赖代理模型、参考图复杂度和质量门控，生产使用前需验证几何、材质、动画与第三方生成服务边界。",
+      "decisionReason": "2026-07-21 首次收录后持续进入 surging 队列，仓库已迁移到官方组织并发布 v1.5.0；Apache-2.0 许可、原创程序化 3D 流程、浏览器 Demo、近期提交和社区增长均已核验，继续正式跟踪。"
+    },
+    {
+      "repo": "kairos-agi/kairos",
+      "name": "Kairos",
+      "category": "世界模型 / 物理 AI",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "world-model",
+        "physical-ai",
+        "open-model"
+      ],
+      "summary": "面向物理 AI 的动作条件世界模型栈，公开训练、推理、基准、示例和容器化工具。",
+      "riskNote": "研究项目仍较新，真实机器人泛化、训练资源和模型权重条款需要在部署前单独验证。",
+      "decisionReason": "官方项目仓库，Apache-2.0 许可，具备原创论文、完整代码结构和明确维护证据。"
+    },
+    {
+      "repo": "alibaba-damo-academy/RynnWorld-Teleop",
+      "name": "RynnWorld-Teleop",
+      "category": "世界模型 / 机器人遥操作",
+      "level": "B+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "world-model",
+        "physical-ai",
+        "robot-learning"
+      ],
+      "summary": "阿里达摩院发布的动作条件世界模型，用于数字遥操作场景的训练与流式推理。",
+      "riskNote": "仓库较新、提交历史和社区验证仍有限，实际可用性需结合权重、数据和硬件环境复测。",
+      "decisionReason": "candidate-decisions 已批准；官方组织下的精确仓库已核验，含训练、推理、配置和示例代码。"
+    },
+    {
+      "repo": "thinking-machines-lab/tinker-cookbook",
+      "name": "Tinker Cookbook",
+      "category": "模型训练 / Agent 工程",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "agent-engineering",
+        "model-training"
+      ],
+      "summary": "Thinking Machines Lab 的模型后训练示例库，覆盖 SFT、RL、蒸馏、工具使用、多智能体和评测。",
+      "riskNote": "训练依赖 Tinker 服务和访问凭证，部分评测仍为实验状态，复现结果受配置影响明显。",
+      "decisionReason": "candidate-decisions 已批准；官方仓库、Apache-2.0 许可、持续提交、正式 release 和完整教程均已核验。"
+    },
+    {
+      "repo": "kinfey/Multi-AI-Agents-Cloud-Native",
+      "name": "Multi AI Agents Cloud Native",
+      "category": "Agent 工程 / 云原生",
+      "level": "B",
+      "license": "MIT",
+      "priorityDomains": [
+        "agent-engineering",
+        "cloud-native"
+      ],
+      "summary": "面向云原生环境的多智能体示例集合，包含 Python、TypeScript、Bicep、容器和部署素材。",
+      "riskNote": "体量和社区活跃度较低、尚无正式 release，更适合作为可运行样例而非成熟框架。",
+      "decisionReason": "candidate-decisions 已批准；精确仓库、MIT 许可、代码样例和部署结构已核验。"
+    },
+    {
+      "repo": "KellerJordan/modded-nanogpt",
+      "name": "Modded-NanoGPT",
+      "category": "开放模型 / 训练效率",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "open-model",
+        "model-training",
+        "ai-benchmark"
+      ],
+      "summary": "围绕 NanoGPT 训练速度与样本效率的公开竞赛式基准，包含可复现训练脚本、Docker、评测与历史记录。",
+      "riskNote": "官方纪录依赖 8 张 NVIDIA H100，硬件成本高；不同 CUDA、NCCL、PyTorch 与数据版本会显著影响复现结果。",
+      "decisionReason": "同日 AI 日报强制候选，OpenAI 官方报告直接链接；MIT 许可、2,000 余次提交、完整 README 与可运行训练流程均已核验。"
+    },
+    {
+      "repo": "NVIDIA/cosmos",
+      "name": "NVIDIA Cosmos",
+      "category": "世界模型 / 物理 AI",
+      "level": "A+",
+      "license": "OpenMDW-1.1",
+      "priorityDomains": [
+        "world-model",
+        "physical-ai",
+        "open-model",
+        "synthetic-data"
+      ],
+      "summary": "NVIDIA 面向机器人、自动驾驶和智能基础设施的开放世界模型、数据集与工具平台。",
+      "riskNote": "模型、数据集和下游组件可能采用不同许可与硬件要求，商用和再分发前需逐项核对。",
+      "decisionReason": "同日 AI 日报强制候选；NVIDIA 官方组织仓库，原创实现、README、活跃 issue/PR 与近期提交均已核验。"
+    },
+    {
+      "repo": "hiyouga/LlamaFactory",
+      "name": "LLaMA Factory",
+      "category": "开放模型 / 模型训练",
+      "level": "A+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "model-training"
+      ],
+      "summary": "统一支持百余种大语言与多模态模型的训练、微调、强化学习和部署工具链，提供 CLI、Web UI、Docker 与开放接口。",
+      "riskNote": "不同模型权重、数据集和训练后端有各自许可与硬件要求；生产使用前需逐项核对依赖与模型条款。",
+      "industryFit": "high",
+      "originality": "原创训练框架与工具链，拥有论文、长期提交历史、正式发行和广泛生态采用。",
+      "maintenanceEvidence": "近期仍有提交和活跃 issue/PR；README 提供安装、Docker、Web UI、API 与多硬件后端说明；最新 release 为 v0.9.5。",
+      "intakeDecision": "approved",
+      "decisionReason": "本地快照新增 Stars 25 且近期持续维护；成熟度、原创性、可安装性和开放模型方向价值均通过质量门槛。"
+    },
+    {
+      "repo": "HBAI-Ltd/Toonflow-app",
+      "name": "Toonflow",
+      "category": "视频生成 / 自动剪辑",
+      "level": "B+",
+      "license": "Custom-Apache-2.0-with-commercial-restrictions",
+      "priorityDomains": [
+        "video-generation",
+        "video-editing",
+        "design-tools"
+      ],
+      "summary": "把小说和剧本转为动画短剧的跨平台桌面工具，覆盖 AI 编剧、分镜、角色、视频生成与成片编排。",
+      "riskNote": "LICENSE 在 Apache-2.0 文本后附加商业分发、标识保留和授权收费限制，不能按标准 Apache-2.0 处理；商用前必须单独审查。",
+      "industryFit": "high",
+      "originality": "原创端到端视频创作应用，具有完整桌面端代码、模型服务配置、构建流程与发行包。",
+      "maintenanceEvidence": "公开仓库未归档，近期有 PR 活动，已发布 ToonFlow v1.1.8，并提供桌面应用与工作流文档。",
+      "intakeDecision": "approved",
+      "decisionReason": "命中 OSS Insight 24 小时趋势且产品实现完整；在明确记录非标准许可风险的前提下纳入持续跟踪。"
+    },
+    {
+      "repo": "ReconWorldLab/godot-gaussian-splatting",
+      "name": "Godot Gaussian Splatting",
+      "category": "3DGS / 三维工具",
+      "level": "B+",
+      "license": "MIT",
+      "priorityDomains": [
+        "3dgs",
+        "3d-generation",
+        "design-tools"
+      ],
+      "summary": "面向 Godot 的实时 3D Gaussian Splatting 插件，包含渲染、编辑器集成、碰撞扩展、示例场景和安装文档。",
+      "riskNote": "项目较新且提交历史仍短；部分着色器和实现继承上游归属，生产集成需保留相应许可声明并验证大场景性能。",
+      "industryFit": "high",
+      "originality": "在注明上游来源的基础上提供 Godot 专用插件实现、编辑器工具、碰撞功能和示例，具备可辨识的增量价值。",
+      "maintenanceEvidence": "公开仓库未归档，README 给出明确安装步骤、示例与限制说明；MIT 许可，已发布 gdgs_2.1.0。",
+      "intakeDecision": "approved",
+      "decisionReason": "进入 OSS Insight 24 小时前 20，且与 3DGS/设计工具主线高度一致；可运行性、许可和近期发行均已核验。"
+    },
+    {
+      "repo": "CesiumGS/cesium-ai-integrations",
+      "name": "Cesium AI Integrations",
+      "category": "3D 地理空间 / Agent 工具",
+      "level": "B+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "3d",
+        "design-tools",
+        "agent-engineering"
+      ],
+      "summary": "Cesium 官方维护的 AI 集成参考库，包含面向 3D 地理空间应用的 MCP、检索管线和 Agent Skills。",
+      "riskNote": "仓库定位为参考集成与实验集合，尚无正式 release；各子项目的外部服务和数据条款需单独核对。",
+      "industryFit": "high",
+      "originality": "Cesium 官方组织提供的原创 MCP、技能与 3D 地理空间 AI 集成样例。",
+      "maintenanceEvidence": "公开未归档，119 次提交，README、子项目安装说明、Demo、issue/PR 和 Apache-2.0 许可完整。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；官方关系明确，可运行集成与 3D/设计自动化方向高度相关。"
+    },
+    {
+      "repo": "elevenlabs/skills",
+      "name": "ElevenLabs Skills",
+      "category": "Agent Skills / 音频生成",
+      "level": "B+",
+      "license": "MIT",
+      "priorityDomains": [
+        "agent-engineering",
+        "audio-generation"
+      ],
+      "summary": "ElevenLabs 官方 Agent Skills 集合，覆盖语音合成、转写、语音代理、音效、音乐和变声工作流。",
+      "riskNote": "核心调用依赖 ElevenLabs API 与密钥，能力、价格和数据处理边界受外部服务条款影响。",
+      "industryFit": "medium",
+      "originality": "官方产品团队维护的技能实现、SDK 示例与触发/功能评测，而非第三方资源列表。",
+      "maintenanceEvidence": "公开未归档，204 次提交，提供一键安装、Python/JavaScript/cURL 示例和 evals；MIT 许可。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；官方、可安装、有测试且对多媒体 Agent 工作流有直接实用价值。"
+    },
+    {
+      "repo": "google-gemini/gemini-skills",
+      "name": "Gemini Skills",
+      "category": "Agent Skills / Gemini 开发",
+      "level": "B+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "agent-engineering",
+        "developer-tools"
+      ],
+      "summary": "Gemini API、SDK 与模型/Agent 交互的可安装技能集合。",
+      "riskNote": "README 明确声明不是 Google 正式支持产品；具体能力仍依赖 Gemini API、账户和配额。",
+      "industryFit": "medium",
+      "originality": "Google Gemini 官方组织内的技能实现与安装文档，具有明确的可执行内容。",
+      "maintenanceEvidence": "公开未归档，110 次提交，可通过 skills CLI 安装，Apache-2.0 许可并有安全说明。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；精确官方仓库、可安装性和维护证据均已核验，同时保留非正式支持风险。"
+    },
+    {
+      "repo": "google/tunix",
+      "name": "Tunix",
+      "category": "模型后训练 / Agentic RL",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "model-training",
+        "agent-engineering"
+      ],
+      "summary": "Google 基于 JAX 的轻量 LLM 后训练库，覆盖 SFT、偏好优化、强化学习和 Agentic RL。",
+      "riskNote": "仍处于活跃开发期，TPU/JAX 与推理后端组合的部署复杂度和兼容性需要实际验证。",
+      "industryFit": "high",
+      "originality": "Google 官方原创训练库，包含核心包、测试、文档、示例、Docker 和研究实现。",
+      "maintenanceEvidence": "公开未归档，1,600 余次提交、活跃 issue/PR、完整安装文档和 v0.1.7 release；Apache-2.0。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；官方 Agentic RL 更新直接对应仓库，原创性、维护和可复现性证据充分。"
+    },
+    {
+      "repo": "NVIDIA-Omniverse/omniverse-labs",
+      "name": "Omniverse Labs",
+      "category": "3D / OpenUSD 实验",
+      "level": "B",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "3d",
+        "design-tools",
+        "agent-engineering"
+      ],
+      "summary": "NVIDIA Omniverse 团队发布的实验性 3D、OpenUSD、RTX 与 Agent 样例集合。",
+      "riskNote": "官方明确按实验样例原样提供，不保证持续维护；仅 14 次提交，生产采用需锁定版本并独立验证。",
+      "industryFit": "high",
+      "originality": "NVIDIA Omniverse 官方团队的实验代码、项目、脚本和技能，不是镜像或资源列表。",
+      "maintenanceEvidence": "公开未归档，包含项目、samples、scripts、skills、文档与安全说明；Apache-2.0。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；与 OpenUSD/3D 工具链高度相关，但因实验性质和较短历史定为 B。"
+    },
+    {
+      "repo": "openai/codex",
+      "name": "OpenAI Codex",
+      "category": "编码 Agent / 开发工具",
+      "level": "A+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "agent-engineering",
+        "developer-tools"
+      ],
+      "summary": "OpenAI 官方开源的本地终端编码 Agent，提供 CLI、沙箱、审批、工具调用和多平台安装构建链路。",
+      "riskNote": "云端模型与账户能力仍受 OpenAI 服务条款、配额和版本兼容性约束；自动化执行需保留审批边界。",
+      "industryFit": "high",
+      "originality": "OpenAI 官方核心实现，拥有完整 Rust 代码、测试、文档、安装、发布与社区协作。",
+      "maintenanceEvidence": "公开未归档，README、安装构建、安全策略和活跃 issue/PR 完整；2026-07-21 发布 0.145.0，Apache-2.0。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；官方 release、原创实现、维护频率和开发者实用性均达到 A+。"
+    },
+    {
+      "repo": "facebook/astryx",
+      "name": "Astryx",
+      "category": "设计系统 / AI 辅助设计",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "design-tools",
+        "agent-engineering"
+      ],
+      "summary": "Meta 内部长期演化后开源的 React/StyleX 设计系统，提供 150+ 可访问组件、主题、模板、CLI、文档、Storybook 与 Agent 友好工作流。",
+      "riskNote": "项目仍处于 Beta，部分图表包仅有 canary 版本；生产接入需固定版本并验证迁移成本。",
+      "industryFit": "high",
+      "originality": "Meta 官方组织发布的原创设计系统，拥有多年内部使用历史和完整组件、主题、CLI 与测试实现。",
+      "maintenanceEvidence": "公开未归档，2,600 余次提交，MIT 许可，2026-07-21 发布 v0.1.7，README、文档、Storybook、贡献与安全说明完整，issue/PR 活跃。",
+      "intakeDecision": "approved",
+      "decisionReason": "P0 AI 设计工具候选；官方关系、原创实现、可安装性、Demo、release 和维护证据充分，综合质量达到 A。"
+    },
+    {
+      "repo": "earthtojake/text-to-cad",
+      "name": "CAD Skills",
+      "category": "CAD / Agent Skills",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "aec",
+        "design-tools",
+        "agent-engineering"
+      ],
+      "summary": "面向 CAD、机器人与硬件设计 Agent 的可安装技能库，可生成、检查和交付 STEP、STL、3MF、DXF、GLB、URDF、SRDF 与 SDF 资产。",
+      "riskNote": "重型资产依赖 Git LFS，部分生成与查看流程依赖本地 CAD 运行时；正式生产前需验证几何精度、依赖许可和设备安全边界。",
+      "industryFit": "high",
+      "originality": "原创 CAD Agent 技能、浏览器查看器、基准资产与本地验证工具链，不是资源列表或薄封装。",
+      "maintenanceEvidence": "公开未归档，MIT 许可，README、文档、Demo、基准和安装说明完整；2026-07-23 仍有连续提交、PR 合并与版本更新。",
+      "intakeDecision": "approved",
+      "decisionReason": "P0 CAD/设计自动化候选；精确仓库、原创性、可运行工作流、活跃维护和交付格式覆盖均已核验，综合质量达到 A。"
+    },
+    {
+      "repo": "RLinf/RLinf",
+      "name": "RLinf",
+      "category": "具身智能 / Agentic RL",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "physical-ai",
+        "agent-engineering",
+        "open-model"
+      ],
+      "summary": "面向具身智能与 Agentic AI 的可扩展强化学习基础设施，覆盖 VLA、仿真和分布式训练工作流。",
+      "riskNote": "部署依赖较重且开放 issue/PR 数量较高；采用前需固定训练后端、硬件组合和复现配置。",
+      "industryFit": "high",
+      "originality": "原创强化学习基础设施，提供核心训练代码、文档、示例和多后端集成，不是教程或镜像。",
+      "maintenanceEvidence": "公开未归档，Apache-2.0，2026-07-22 有推送，约 4,219 Stars、609 forks、267 个开放 issue，协作与维护活跃。",
+      "intakeDecision": "approved",
+      "decisionReason": "P0 物理 AI 候选；原创实现、近期提交、README、安装文档和社区协作证据充分，综合质量达到 A。"
+    },
+    {
+      "repo": "microsoft/discovery",
+      "name": "Microsoft Discovery",
+      "category": "AI for Science / 科研 Agent",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "agent-engineering",
+        "design-tools"
+      ],
+      "summary": "Microsoft Discovery 的官方社区仓库，提供本地 Windows 应用、科研 Agent 目录、starter kits、自动注册表和部署技能。",
+      "riskNote": "本地应用当前仅支持 Windows，云端能力依赖 Azure；第三方 Agent 的代码、模型和条款需逐项核对。",
+      "industryFit": "high",
+      "originality": "Microsoft 官方平台仓库，包含原创应用分发、Agent/Starter Kit 规范、注册表生成和验证工作流。",
+      "maintenanceEvidence": "公开未归档，MIT 许可，71 次提交、6 个开放 PR、完整 README/安装/安全/贡献文档，提供 v0.15.7 应用并有正式 release。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；Microsoft 官方关系、可安装应用、科研 Agent 目录、starter kits 和协作维护均已核验，综合质量达到 A。"
+    },
+    {
+      "repo": "ROCm/ROCm",
+      "name": "AMD ROCm",
+      "category": "AI 计算基础设施 / GPU",
+      "level": "A+",
+      "license": "MIT",
+      "priorityDomains": [
+        "open-model",
+        "model-training",
+        "physical-ai"
+      ],
+      "summary": "AMD 官方开放 GPU 计算软件栈入口，为模型训练、推理和科学计算提供驱动、编译器、运行时与生态组件。",
+      "riskNote": "硬件、操作系统和组件兼容矩阵复杂；生产部署需锁定 ROCm、驱动、框架和 GPU 型号组合。",
+      "industryFit": "high",
+      "originality": "AMD ROCm 官方上游仓库与生态入口，核心软件栈和跨仓库组件关系明确。",
+      "maintenanceEvidence": "公开未归档，约 6,700 Stars、582 forks、253 个开放 issue、19 个开放 PR，文档、安装、release 与持续维护完整。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；AMD 官方基础设施、稳定公开仓库、活跃维护和模型训练实用性充分，综合质量达到 A+。"
+    },
+    {
+      "repo": "PixarAnimationStudios/OpenUSD",
+      "name": "OpenUSD",
+      "category": "3D 场景描述 / 设计基础设施",
+      "level": "A+",
+      "license": "Tomorrow Open Source Technology License 1.0",
+      "priorityDomains": [
+        "3d",
+        "design-tools",
+        "aec"
+      ],
+      "summary": "Pixar 开源的通用场景描述系统，用于大规模 3D 场景的创作、读取、流式传输和工具链互操作。",
+      "riskNote": "主许可修改了 Apache-2.0 的商标条款，仓库还包含多种第三方组件许可；集成和再分发需审查 NOTICE 与依赖。",
+      "industryFit": "high",
+      "originality": "Pixar 官方上游实现，是 3D 内容与数字孪生生态的重要基础设施。",
+      "maintenanceEvidence": "公开未归档，持续提交、构建状态、贡献与安全文档完整；2026-07-20 发布 Version 26.08。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；官方 release 与精确仓库已核验，对 3D/AEC/设计互操作具有基础设施级价值。"
+    },
+    {
+      "repo": "huggingface/diffusers",
+      "name": "Hugging Face Diffusers",
+      "category": "生成模型 / 推理基础设施",
+      "level": "A+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "model-inference",
+        "design-tools"
+      ],
+      "summary": "Hugging Face 官方扩散模型工具库，提供图像、视频与音频生成管线、训练脚本、调度器和可复用推理组件。",
+      "riskNote": "具体模型权重、数据集和第三方管线可能采用不同许可；生产使用需逐项核对模型卡、内容安全和显存需求。",
+      "industryFit": "high",
+      "originality": "官方上游实现，包含核心推理与训练代码、文档、示例、测试和广泛模型集成，不是资源列表或薄封装。",
+      "maintenanceEvidence": "公开未归档，Apache-2.0，README、安装、示例和活跃 issue/PR 完整；GitHub 连接器确认近期持续提交。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；精确官方仓库、原创实现、可安装性和活跃维护均已核验，综合质量达到 A+。"
+    },
+    {
+      "repo": "huggingface/kernels",
+      "name": "Hugging Face Kernels",
+      "category": "模型推理 / GPU Kernels",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "model-inference"
+      ],
+      "summary": "Hugging Face 官方 GPU kernel 分发与加载工具，用于为模型推理和训练复用、发布和动态加载优化内核。",
+      "riskNote": "内核与 GPU 架构、驱动和框架版本紧密耦合；正式采用前需固定兼容矩阵并验证回退路径。",
+      "industryFit": "high",
+      "originality": "官方原创基础设施，提供核心代码、构建与安装流程、测试和真实集成示例。",
+      "maintenanceEvidence": "公开未归档，README、安装说明、近期提交和活跃 issue/PR 均由 GitHub 连接器核验。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；官方关系、原创性、可用性和近期维护证据充分，综合质量达到 A。"
+    },
+    {
+      "repo": "OpenSenseNova/SenseNova-U1",
+      "name": "SenseNova-U1",
+      "category": "生成模型 / 原生多模态理解与生成",
+      "level": "A+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "multimodal",
+        "image-generation"
+      ],
+      "summary": "商汤日日新官方原生统一多模态模型，在单一架构内结合文本与视觉理解、推理、文生图、图像编辑和图文交错生成，并开放推理、训练代码与多组模型权重。",
+      "riskNote": "该项目当前核心是图像与文本的统一理解和生成，不应误标为视频生成模型；不同模型权重、量化版本及衍生 LoRA 的许可和显存需求仍需逐项核验。",
+      "industryFit": "high",
+      "originality": "模型团队官方原创实现，包含 NEO-unify 架构、推理与全参数训练代码、技术报告、评测、示例和官方模型权重。",
+      "maintenanceEvidence": "官方公开仓库未归档，Apache-2.0；2026-07-16 仍发布信息图生成与编辑模型 V3，README 记录持续更新、训练代码和模型权重。",
+      "intakeDecision": "approved",
+      "decisionReason": "统一多模态理解与生成、中文高密度信息图、图文交错内容和开放训练链路均具有直接产品价值，列为生成式模型 A+ 重点跟踪项目。"
+    },
+    {
+      "repo": "black-forest-labs/flux",
+      "name": "FLUX",
+      "category": "图像生成 / 开放模型",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "design-tools"
+      ],
+      "summary": "Black Forest Labs 官方 FLUX 推理代码与示例仓库，为图像生成模型提供可运行实现和集成入口。",
+      "riskNote": "该仓库可确认 FLUX 系列官方关系，但不能单凭仓库名推断 FLUX 3 Dev 权重已经开放；权重许可须单独核验。",
+      "industryFit": "high",
+      "originality": "模型厂商官方原创实现，包含推理代码、安装说明、模型说明和示例。",
+      "maintenanceEvidence": "公开未归档，README、安装、Demo、近期提交和活跃 issue/PR 均已核验。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；精确官方仓库可验证，但对 FLUX 3 权重开放状态保持审慎，不作超出证据的推断。"
+    },
+    {
+      "repo": "github/gh-aw",
+      "name": "GitHub Agentic Workflows",
+      "category": "Agent 工程 / GitHub 自动化",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "agent-engineering",
+        "design-tools"
+      ],
+      "summary": "GitHub 官方 Agentic Workflows 工具，为仓库自动化提供可审计的 Agent 工作流、CLI、策略和运行示例。",
+      "riskNote": "Agent 工作流可能触发仓库写操作或调用外部服务；启用前需最小化权限并审查工作流与密钥边界。",
+      "industryFit": "high",
+      "originality": "GitHub 官方原创实现，包含 CLI、运行时、文档、示例、测试和安全控制。",
+      "maintenanceEvidence": "公开未归档，README、安装、Demo、近期提交及活跃 issue/PR 完整。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；官方关系、可安装实现、文档和活跃维护均已核验，综合质量达到 A。"
+    },
+    {
+      "repo": "github/github-mcp-server",
+      "name": "GitHub MCP Server",
+      "category": "Agent 工程 / MCP",
+      "level": "A+",
+      "license": "MIT",
+      "priorityDomains": [
+        "agent-engineering",
+        "design-tools"
+      ],
+      "summary": "GitHub 官方 MCP Server，为 AI 工具提供仓库、issue、PR、Actions 和安全上下文的结构化访问能力。",
+      "riskNote": "连接器权限可覆盖敏感仓库写操作；部署时必须采用最小权限 token、工具白名单和审计策略。",
+      "industryFit": "high",
+      "originality": "GitHub 官方上游实现，包含服务端、工具集、文档、容器化部署、测试和安全说明。",
+      "maintenanceEvidence": "公开未归档，README、安装、示例、近期提交和活跃 issue/PR 均已核验。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；官方关系、协议实现、可部署性与维护活跃度均达到 A+。"
+    },
+    {
+      "repo": "modelcontextprotocol/conformance",
+      "name": "MCP Conformance",
+      "category": "Agent 协议 / 兼容性测试",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "agent-engineering"
+      ],
+      "summary": "Model Context Protocol 官方一致性测试套件，用于验证客户端和服务端对协议规范的实现兼容性。",
+      "riskNote": "测试套件随协议演进快速变化；采用时应锁定规范版本并避免把通过测试等同于完整安全审计。",
+      "industryFit": "high",
+      "originality": "协议官方原创测试基础设施，提供测试实现、运行方式、示例和持续演进的规范映射。",
+      "maintenanceEvidence": "公开未归档，README、测试说明、近期提交与活跃 issue/PR 已由 GitHub 连接器核验。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；官方关系、协议价值、原创实现和维护证据充分，综合质量达到 A。"
+    },
+    {
+      "repo": "nunchaku-ai/nunchaku",
+      "name": "Nunchaku",
+      "category": "生成模型 / 高效推理",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "model-inference",
+        "design-tools"
+      ],
+      "summary": "面向扩散模型的高效量化与推理引擎，提供 FLUX 等模型的低显存运行、安装包、示例和集成。",
+      "riskNote": "量化质量、CUDA 架构和预编译包兼容性需按目标 GPU 验证；模型权重仍受各自许可约束。",
+      "industryFit": "high",
+      "originality": "原创高效推理实现，包含核心 CUDA/Python 代码、安装包、基准、文档与多种集成。",
+      "maintenanceEvidence": "公开未归档，README、安装、Demo、近期提交和活跃 issue/PR 完整。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；原创实现、可安装性、模型生成价值和维护活跃度均已核验，综合质量达到 A。"
+    },
+    {
+      "repo": "rootonchair/diffuse-compressor",
+      "name": "Diffuse Compressor",
+      "category": "生成模型 / 模型压缩",
+      "level": "B+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "model-inference"
+      ],
+      "summary": "扩散模型压缩与加速实现，提供低比特量化、推理脚本、配置和实验复现入口。",
+      "riskNote": "社区项目规模较小，公开 issue 量有限；采用前需复现实验、核对权重来源并验证不同硬件上的质量损失。",
+      "industryFit": "high",
+      "originality": "包含原创压缩实现、训练与推理代码、实验说明和可运行示例，不是资源列表。",
+      "maintenanceEvidence": "公开未归档，README、安装与示例完整，GitHub 连接器确认近期提交；社区协作规模仍较小。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；原创性和可用性证据充分，但生态与长期维护证据较短，定为 B+。"
+    },
+    {
+      "repo": "openclaw/openclaw",
+      "name": "OpenClaw",
+      "category": "个人 AI 助手 / Agent 平台",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "agent-engineering",
+        "developer-tools"
+      ],
+      "summary": "OpenClaw Foundation 开放开发的本地优先个人 AI 助手，覆盖多渠道消息、语音、设备端运行、Canvas 和可扩展 Agent 工作流。",
+      "riskNote": "助手可连接消息、设备和外部服务，部署时必须最小化权限、隔离凭据并审查插件与自动执行边界；高 issue/PR 量需与真实缺陷严重度分开解读。",
+      "industryFit": "high",
+      "originality": "官方上游原创实现，包含跨平台运行时、渠道适配、文档、CI、发行包和活跃社区协作。",
+      "maintenanceEvidence": "GitHub 连接器确认仓库公开未归档、MIT 许可、README 与安装路径完整，2026-07-27 仍有合并提交及活跃 issue/PR。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；官方关系、原创实现、可安装性、持续发布和维护活跃度充分，综合质量达到 A。"
+    },
+    {
+      "repo": "MoonshotAI/Kimi-K3",
+      "name": "Kimi K3",
+      "category": "开放模型 / 多模态 Agent",
+      "level": "A+",
+      "license": "Kimi-K3-License",
+      "priorityDomains": [
+        "open-model",
+        "agent-engineering",
+        "multimodal"
+      ],
+      "summary": "Moonshot AI 官方开放权重多模态 Agent 模型仓库，包含技术报告、权重入口、架构说明和部署资料。",
+      "riskNote": "2.8T 总参数带来极高算力与部署成本；模型许可不是标准 OSI 开源许可，商用前需逐条核对。",
+      "industryFit": "high",
+      "originality": "Moonshot AI 官方上游模型发布，包含原创架构说明、技术报告、权重与推理生态入口。",
+      "maintenanceEvidence": "GitHub 连接器确认仓库公开未归档，README、技术报告、权重链接和官方组织关系完整。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；官方关系、开放权重、技术新鲜度和行业影响显著，综合质量达到 A+。"
+    },
+    {
+      "repo": "NVIDIA/flashdreams",
+      "name": "FlashDreams",
+      "category": "世界模型 / 视频生成推理",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "model-inference",
+        "video-generation",
+        "physical-ai"
+      ],
+      "summary": "NVIDIA 官方实时自回归视频与世界模型推理服务库，提供文档、模型集成、容器和交互式演示。",
+      "riskNote": "推荐 80GB 以上显存、CUDA 13 和大量本地存储；真实部署成本与硬件兼容性必须实测。",
+      "industryFit": "high",
+      "originality": "NVIDIA 官方原创高性能推理与服务实现，包含运行时、模型集成、文档、示例和交互演示。",
+      "maintenanceEvidence": "GitHub 连接器确认仓库公开未归档，README、Apache-2.0 许可、安装路径和官方文档完整。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；官方实现、世界模型方向、可运行性与工程价值充分，综合质量达到 A。"
+    },
+    {
+      "repo": "isaac-for-healthcare/Cosmos-H-Dreams",
+      "name": "Cosmos-H-Dreams",
+      "category": "医疗仿真 / 世界模型",
+      "level": "B+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "physical-ai",
+        "video-generation",
+        "model-inference"
+      ],
+      "summary": "基于 NVIDIA FlashDreams 的动作条件手术视频实时仿真项目，提供离线推理、WebRTC 与 VR 控制路径。",
+      "riskNote": "仓库并非 NVIDIA 官方组织；模型权重采用 NVIDIA Open Model License，医疗场景不能将研究演示等同临床验证。",
+      "industryFit": "high",
+      "originality": "在官方 FlashDreams 运行时之上提供手术场景微调、实时流式服务、WebRTC 与 VR 控制的原创集成。",
+      "maintenanceEvidence": "GitHub 连接器确认仓库公开未归档，README、容器、安装、权重入口和可运行示例完整。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；物理 AI 与医疗仿真价值明确、实现可运行，但官方关系和临床证据边界需持续提示，定为 B+。"
+    },
+    {
+      "repo": "vllm-project/vllm",
+      "name": "vLLM",
+      "category": "模型推理 / 基础设施",
+      "level": "A+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "model-inference",
+        "developer-tools"
+      ],
+      "summary": "高吞吐、低延迟的大模型推理与服务基础设施，覆盖主流模型、分布式部署和 OpenAI 兼容 API。",
+      "riskNote": "GPU、驱动、量化与分布式后端兼容性需按版本矩阵验证；生产升级应锁定版本并做回归压测。",
+      "industryFit": "high",
+      "originality": "原创推理引擎与调度实现，包含核心运行时、分布式服务、文档、基准和广泛模型适配。",
+      "maintenanceEvidence": "GitHub 连接器确认仓库公开未归档，README、安装、持续提交及活跃协作完整。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；基础设施影响力、原创实现、维护活跃度与可用性均达到 A+。"
+    },
+    {
+      "repo": "lbouaraba/comfyui-krea2edit",
+      "name": "ComfyUI Krea2 Edit",
+      "category": "生成模型 / 图像编辑 / ComfyUI",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "model-inference",
+        "image-generation",
+        "image-editing",
+        "design-tools"
+      ],
+      "summary": "Krea 2 Identity Edit 的原始 ComfyUI 节点与工作流实现，提供双图条件、身份保持编辑、换景、局部修改和角色参考图等可运行流程。",
+      "riskNote": "运行依赖 Krea 2 社区许可证权重、Qwen3-VL 和较高显存；身份编辑涉及人像授权、冒充与深度伪造风险，生产使用必须增加来源、授权和内容审核。",
+      "industryFit": "high",
+      "originality": "上游原始节点实现，包含自定义节点、示例工作流、安装说明和 Krea 2 Identity Edit 的实际运行集成。",
+      "maintenanceEvidence": "公开上游仓库、Apache-2.0 代码许可证、完整 README 与工作流说明；模型卡和仓库相互引用，可核验版本与依赖链。",
+      "intakeDecision": "approved",
+      "decisionReason": "为 Krea 2 身份保持图像编辑提供可复现的原始运行实现，直接服务生成式设计和可控视觉内容生产，因此纳入正式跟踪。"
+    },
+    {
+      "repo": "malloydata/malloy",
+      "name": "Malloy",
+      "category": "Agent 数据语义 / 查询基础设施",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "agent-engineering",
+        "developer-tools"
+      ],
+      "summary": "构建在 SQL 之上的开源语义建模与查询语言，为数据应用和 Agent 提供可复用、可治理的业务语义层。",
+      "riskNote": "生产采用需验证目标数据库方言、权限隔离、查询成本与语义模型变更治理；Credible Data 的产品能力不应与上游开源仓库能力混为一谈。",
+      "industryFit": "high",
+      "originality": "Malloy 官方上游原创实现，包含语言、编译与运行时、连接器、编辑器集成、文档、测试和可交互示例。",
+      "maintenanceEvidence": "GitHub 连接器确认仓库公开未归档，README 提供 MIT 许可、Node 安装与浏览器试用入口，2026-07-27 仍有提交且 issue 协作活跃。",
+      "intakeDecision": "approved",
+      "decisionReason": "同日 AI 强制候选；官方关系、原创语义层实现、可安装性和持续维护证据充分，综合质量达到 A。"
+    },
+    {
+      "repo": "openai/codex-security",
+      "name": "Codex Security",
+      "category": "AI 安全 / 开发者工具",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "agent-engineering",
+        "developer-tools",
+        "security"
+      ],
+      "summary": "OpenAI 官方 Codex Security CLI 与 TypeScript SDK，用于发现、验证并修复代码安全漏洞。",
+      "riskNote": "安全扫描结果仍需人工复核；部分能力依赖账户 Trusted Access，不能把自动修复直接视为生产变更授权。",
+      "industryFit": "high",
+      "originality": "OpenAI 官方原创 CLI/SDK 实现，包含安装入口、文档、测试与持续发布。",
+      "maintenanceEvidence": "GitHub 连接器确认仓库公开且未归档；README 提供 Quick start；2026-07-30 发布 0.1.4 并有当日提交、Issue 与 PR 协作证据。",
+      "intakeDecision": "approved",
+      "decisionReason": "candidate-decisions 已批准 openai-codex-security-plugin；精确官方仓库、可安装实现、当日发布与维护证据均已核验。"
+    },
+    {
+      "repo": "perplexityai/numbat",
+      "name": "Numbat",
+      "category": "Agent 安全 / 端点可观测",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "agent-engineering",
+        "security",
+        "developer-tools"
+      ],
+      "summary": "Perplexity 官方开源的 Agent 端点可观测与取证工具，可本地监控多种 CLI、IDE 和桌面 Agent，支持 CEL 检测、可选阻断及会话重建。",
+      "riskNote": "阻断能力默认关闭且仅覆盖部分同步钩子；规则误报、敏感日志留存、平台覆盖差异与取证链完整性仍需生产环境验证。",
+      "industryFit": "high",
+      "originality": "Perplexity 官方原创 Go 实现，包含跨平台单文件发行、规则引擎、NDJSON/Schema、文档、测试与本地隐私控制。",
+      "maintenanceEvidence": "GitHub 连接器确认仓库公开、未归档且非 fork；README 提供安装、覆盖矩阵和安全边界；2026-08-01 仍有修复提交与 Issue 协作。",
+      "intakeDecision": "approved",
+      "decisionReason": "最新已完成周报强制候选；官方关系、原创 Agent 安全实现、跨平台可安装性和近期维护证据均通过质量门槛。"
+    },
+    {
+      "repo": "googleapis/js-genai",
+      "name": "Google Gen AI JS SDK",
+      "category": "AI SDK / Agent 工程",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "agent-engineering",
+        "developer-tools",
+        "multimodal"
+      ],
+      "summary": "Google 官方 Gemini TypeScript/JavaScript SDK，覆盖 Gemini Developer API 与企业 Agent 平台，并提供多模态、视频生成、Live API 和函数调用接口。",
+      "riskNote": "重大版本会调整自动函数调用和 Node.js 支持；生产端需固定版本、服务端保护 API Key，并验证 Gemini API 区域、配额与兼容性。",
+      "industryFit": "high",
+      "originality": "Google APIs 官方原创 SDK，包含 npm 包、生成代码指引、API 文档、样例、测试和持续发布。",
+      "maintenanceEvidence": "GitHub 连接器确认仓库公开、未归档且非 fork；README 提供 npm 与官方文档入口；2026-07-31 仍有视频生成文档和环境测试提交，Issue 协作活跃。",
+      "intakeDecision": "approved",
+      "decisionReason": "最新已完成周报强制候选；官方身份、可安装 SDK、持续维护与 Agent/多模态工程价值均通过质量门槛。"
+    },
+    {
+      "repo": "vladmandic/sdnext",
+      "name": "SD.Next",
+      "category": "AI 图像与视频生成工具",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "image-generation",
+        "video-generation",
+        "design-tools"
+      ],
+      "summary": "成熟的开源 AI 图像与视频生成 WebUI，支持 Stable Diffusion 及多种模型、跨平台硬件、图像编辑、放大、字幕和视频工作流。",
+      "riskNote": "模型与扩展组合复杂，升级可能带来性能或兼容性回归；部署时还需单独审查模型许可、内容安全、显存需求和第三方扩展。",
+      "industryFit": "high",
+      "originality": "原创、长期维护的完整 WebUI 与服务端实现，包含安装器、文档、测试、模型适配和发布记录，不是薄包装或资源列表。",
+      "maintenanceEvidence": "GitHub 连接器确认仓库公开、未归档且非 fork；README 提供安装、文档和完整工作流；近期仍有提交、Issue 与版本维护证据。",
+      "intakeDecision": "approved",
+      "decisionReason": "命中 AI 图像/视频生成与设计工具 P0 方向；原创性、可安装性、许可、成熟度和持续维护均通过质量门槛。"
+    },
+    {
+      "repo": "pascalorg/editor",
+      "name": "Pascal Editor",
+      "category": "AEC / 3D 建筑设计",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "architecture-aec",
+        "3d",
+        "design-tools"
+      ],
+      "summary": "Pascal 官方开源 3D 建筑编辑器，基于 React Three Fiber 与 WebGPU，提供建筑场景编辑、IFC 转换、插件节点、MCP 和可安装 npm 包。",
+      "riskNote": "当前仍处于 1.0 beta 阶段；生产采用前需验证大型模型性能、IFC 互操作、数据持久化和浏览器/WebGPU 兼容性。",
+      "industryFit": "high",
+      "originality": "Pascal 官方组织的原创 monorepo，包含编辑器、查看器、节点系统、IFC 转换器、MCP、文档与在线演示。",
+      "maintenanceEvidence": "GitHub 连接器确认仓库公开、未归档且非 fork；README 提供 MIT 许可、npm 安装和在线 Demo；2026-08-03 有提交，最新正式页面显示 1.0 beta 发布与活跃 Issue/PR 协作。",
+      "intakeDecision": "approved",
+      "decisionReason": "命中 AEC/3D P0 方向；官方关系、原创实现、安装与演示入口、近期发布及维护活跃度均通过质量门槛。"
+    },
+    {
+      "repo": "google-gemini/robotics-samples",
+      "name": "Gemini Robotics Samples",
+      "category": "物理 AI / 世界模型与智能空间",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "physical-ai",
+        "world-model",
+        "robotics",
+        "agent-engineering"
+      ],
+      "summary": "Google Gemini 官方物理 Agent 示例仓库，提供 Gemini Robotics ER Live API、连续音视频交互、工具调度，以及 Boston Dynamics Spot、Tinybot 和人工遥操作等具身集成。",
+      "riskNote": "示例依赖 Gemini API、具体机器人 SDK 与真实硬件安全边界；高层具身推理不能替代低层实时控制、碰撞防护和人工急停，部署前必须单独验证延迟、权限与失败恢复。",
+      "industryFit": "high",
+      "originality": "Google Gemini 官方原创示例，实现从多模态 Live API 到物理机器人控制接口的完整参考链路。",
+      "maintenanceEvidence": "GitHub 官方数据确认仓库公开、未归档、非 fork，Apache-2.0 许可；2026-07-30 仍有提交，官方 Gemini Robotics 2 与 ER 2 发布页直接引用该仓库。",
+      "intakeDecision": "approved",
+      "decisionReason": "7 月 31 日 AI 日报强制候选；仓库直接对应 Gemini Robotics 2/ER 2 的物理 Agent、连续视频理解、任务编排和多机器人协作，符合 ark.insight 物理 AI 与智能空间最高优先方向。"
+    },
+    {
+      "repo": "Robbyant/lingbot-video",
+      "name": "LingBot-Video",
+      "category": "视频生成 / 物理 AI",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "video-generation",
+        "physical-ai",
+        "open-model"
+      ],
+      "summary": "面向具身智能的开源 MoE 视频生成模型，提供代码、模型权重、技术报告、演示与可运行推理流程。",
+      "riskNote": "模型规模与显存要求较高；训练数据、生成内容安全、人物授权与模型许可证边界仍需在生产使用前逐项审查。",
+      "industryFit": "high",
+      "originality": "RobbyAnt 官方原创模型与实现，包含 Dense/MoE 权重、提示词重写器、论文、文档和多种推理后端。",
+      "maintenanceEvidence": "GitHub 连接器确认仓库公开、未归档且非 fork；README 提供权重、安装和视频 Demo；本轮核验到近期提交、Issue 与 PR 协作。",
+      "intakeDecision": "approved",
+      "decisionReason": "连续观察后出现新的持续维护证据，且仓库具备原创模型、开放权重、可运行安装路径和物理 AI 视频生成价值，因此由 observe 转为正式跟踪。"
+    },
+    {
+      "repo": "huggingface/transformers.js",
+      "name": "Transformers.js",
+      "category": "浏览器 AI / 模型推理",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "model-inference",
+        "developer-tools",
+        "multimodal"
+      ],
+      "summary": "Hugging Face 官方 JavaScript 推理库，可在浏览器和 Node.js 中通过 ONNX Runtime 运行文本、视觉、音频与多模态模型。",
+      "riskNote": "WebGPU、WASM 和模型转换兼容性依赖浏览器与硬件；生产端需固定版本并核验每个模型的独立许可和资源占用。",
+      "industryFit": "high",
+      "originality": "Hugging Face 官方原创实现，提供 npm 包、CDN、文档、模型转换与跨模态 pipeline API。",
+      "maintenanceEvidence": "连接器确认仓库、README、近期提交及 Issue/PR 活跃；官方 Releases 最新为 4.2.0，README 提供 npm 与浏览器快速开始。",
+      "intakeDecision": "approved",
+      "decisionReason": "官方关系、原创浏览器推理实现、Apache-2.0 许可、可安装性、近期发布和持续协作均通过质量门槛。"
+    },
+    {
+      "repo": "sgl-project/sglang",
+      "name": "SGLang",
+      "category": "模型推理 / Agent 基础设施",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "model-inference",
+        "agent-engineering",
+        "video-generation"
+      ],
+      "summary": "高性能大模型与多模态模型服务框架，覆盖语言模型、扩散图像/视频生成和大规模推理优化。",
+      "riskNote": "部署依赖复杂 GPU/CUDA 组合；升级前需验证模型兼容、量化精度、调度策略、资源隔离和回滚路径。",
+      "industryFit": "high",
+      "originality": "SGLang 项目官方原创服务框架，包含运行时、调度、推理内核、文档、测试和多硬件后端。",
+      "maintenanceEvidence": "连接器核验到当日提交与活跃 Issue/PR；README 提供 PyPI、文档和部署入口，官方 Release 最新为 v0.5.16。",
+      "intakeDecision": "approved",
+      "decisionReason": "原创性、规模化可用性、开放模型 Day-0 支持、持续发布和活跃维护证据充分，正式纳入推理基础设施跟踪。"
+    },
+    {
+      "repo": "alibaba/MNN",
+      "name": "MNN",
+      "category": "端侧 AI / 模型推理",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "model-inference",
+        "open-model",
+        "image-generation",
+        "multimodal"
+      ],
+      "summary": "阿里巴巴官方轻量深度学习框架，面向移动端与嵌入式设备的训练和推理，并提供 LLM、图像编辑与 3D Avatar 应用。",
+      "riskNote": "跨芯片后端、模型转换和端侧量化可能产生兼容或精度差异；生产采用前需按目标设备做性能、安全与回归验证。",
+      "industryFit": "high",
+      "originality": "阿里巴巴官方原创推理框架，包含多硬件后端、转换工具、应用样例、文档和持续发行。",
+      "maintenanceEvidence": "连接器核验近期提交与活跃 Issue/PR；README 提供完整应用与文档入口，官方 Release 最新为 3.6.1。",
+      "intakeDecision": "approved",
+      "decisionReason": "官方身份、成熟原创实现、Apache-2.0 许可、端侧多模态价值、近期发布与维护活跃度均通过质量门槛。"
+    },
+    {
+      "repo": "Comfy-Org/ComfyUI",
+      "name": "ComfyUI",
+      "category": "生成式设计 / 节点工作流",
+      "level": "A",
+      "license": "GPL-3.0",
+      "priorityDomains": [
+        "image-generation",
+        "video-generation",
+        "design-tools",
+        "open-model"
+      ],
+      "summary": "Comfy 官方节点式生成内容引擎，支持图像、视频、音频与多模型工作流，并为 MiniMax H3 提供 Day-0 运行支持。",
+      "riskNote": "自定义节点与模型来源复杂；部署时需隔离执行环境，审查扩展代码、模型许可证、显存需求和生成内容安全。",
+      "industryFit": "high",
+      "originality": "Comfy 官方原创核心引擎，包含节点执行器、前后端、模型适配、模板生态、文档和持续发行。",
+      "maintenanceEvidence": "同日 AI 强制候选；连接器确认 README、当日提交和活跃 Issue/PR，官方 Release 最新为 v0.30.0。",
+      "intakeDecision": "approved",
+      "decisionReason": "MiniMax H3 Day-0 支持提供新的官方活跃证据；原创内容生产引擎、可用工作流与持续维护均达到 A 级。"
+    },
+    {
+      "repo": "Comfy-Org/workflow_templates",
+      "name": "ComfyUI Workflow Templates",
+      "category": "生成式设计 / 官方工作流",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "video-generation",
+        "image-generation",
+        "design-tools",
+        "open-model"
+      ],
+      "summary": "Comfy 官方工作流模板与子图蓝图库，包含 MiniMax H3 文生、图生和参考视频工作流及可浏览模板站点。",
+      "riskNote": "模板依赖外部模型、节点和社区许可证；复用前需固定依赖版本并核验素材、模型和输出的商业使用边界。",
+      "industryFit": "high",
+      "originality": "Comfy 官方原创模板仓库，提供可安装 Python 包、模板清单、预览资产、蓝图组件与模板网站。",
+      "maintenanceEvidence": "同日 AI 强制候选；连接器确认近期提交及 Issue/PR 活跃，README 提供安装和站点开发路径，最新 Release 为 v0.11.28。",
+      "intakeDecision": "approved",
+      "decisionReason": "官方仓库直接承载 H3 Day-0 可复现制作流程，具备原创模板、可安装分发和持续维护证据，因此正式收录。"
+    },
+    {
+      "repo": "pion/webrtc",
+      "name": "Pion WebRTC",
+      "category": "实时 Agent / WebRTC 基础设施",
+      "level": "B",
+      "license": "MIT",
+      "priorityDomains": [
+        "agent-engineering",
+        "realtime-ai",
+        "developer-tools"
+      ],
+      "summary": "Pion 官方纯 Go WebRTC 实现，是实时语音与多模态 Agent 低延迟传输及 WARP 支持的重要基础设施候选。",
+      "riskNote": "实时媒体生产部署需单独验证 NAT/TURN、拥塞控制、加密、移动网络、会话恢复和新 WARP 草案的兼容边界。",
+      "industryFit": "medium",
+      "originality": "Pion 官方原创、成熟的纯 Go WebRTC 协议栈，包含完整 API、示例、测试和版本发行。",
+      "maintenanceEvidence": "同日 AI 强制候选；连接器确认近期提交与活跃 Issue/PR，官方最新 Release 为 v4.2.18。",
+      "intakeDecision": "approved",
+      "decisionReason": "虽然不是 AI 模型仓库，但它是 GPT-Live/WARP 事件直接指向的成熟实时 Agent 传输基础设施，质量和维护证据充分，按 B 级跟踪。"
+    },
+    {
+      "repo": "syswonder/robonix",
+      "name": "Robonix",
+      "category": "具身智能 / 机器人操作系统",
+      "level": "B",
+      "license": "MulanPSL-2.0",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-simulation",
+        "agent-engineering"
+      ],
+      "summary": "Syswonder 的具身智能操作系统，以统一能力接口连接模型、技能、服务和异构机器人，提供仿真与真实机器人部署。",
+      "riskNote": "项目仍处早期开发，README 明确提示 API 与内部设计可能在正式版本前变化；真实机器人部署需单独完成硬件安全、调试和验收。",
+      "industryFit": "high",
+      "originality": "原创系统级实现，包含能力注册、规划执行、场景状态、通信、安全门、技能服务模型和多类机器人适配，而非教程、列表或薄封装。",
+      "maintenanceEvidence": "GitHub 连接器确认公开、未归档、非分叉仓库及 README、近期提交和 Issue/PR 协作；官方数据为 275 Stars、42 Forks、2026-08-04 最近提交，最新 Release 为 v0.1-rc1。",
+      "intakeDecision": "approved",
+      "decisionReason": "命中物理 AI P0；具备原创实现、MulanPSL-2.0 许可、可运行安装与 Webots Demo、七类机器人部署和持续维护证据，按 B 级正式跟踪。"
+    },
+    {
+      "repo": "cursor/mixture-of-kittens",
+      "name": "Mixture-of-Kittens",
+      "category": "大模型训练 / MoE 系统内核",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "agent-engineering",
+        "developer-tools"
+      ],
+      "summary": "Cursor Research 从零实现的确定性 MoE 训练 megakernel，将计算与跨 GPU 通信融合，已用于 Composer 的生产训练。",
+      "riskNote": "复现要求 NVIDIA Blackwell SM100/SM103、NVL72 级集群、Python 3.12、PyTorch 2.10 和 CUDA 13；公开基准与内部端到端生产结果需区分解读。",
+      "industryFit": "high",
+      "originality": "Cursor 官方原创 CUDA/Python 实现，覆盖 BF16 与 MXFP8 前向和反向、调度、工作区、测试、基准及安装路径，而非论文列表或薄封装。",
+      "maintenanceEvidence": "2026-08-05 AI 日报强制候选；GitHub 连接器确认官方公开仓库、README、Apache-2.0 LICENSE、最近提交及 Issue/PR 查询，README 记录最高 2.37 倍公开基准和生产使用。",
+      "intakeDecision": "approved",
+      "decisionReason": "官方关系、原创系统实现、明确许可、可安装性、公开基准与生产维护证据充分，符合新发布开放工程仓库优先方向，按 A 级正式跟踪。"
+    },
+    {
+      "repo": "basketikun/infinite-canvas",
+      "name": "Infinite Canvas",
+      "category": "AI 设计工具 / 无限画布",
+      "level": "B",
+      "license": "AGPL-3.0",
+      "priorityDomains": [
+        "design-tools",
+        "image-generation",
+        "video-generation",
+        "agent-engineering"
+      ],
+      "summary": "面向 AI 图片与视频创作的开源无限画布工作台，提供画布编排、参考图编辑、对话助手、本地 Canvas Agent、MCP 与 Codex App 插件。",
+      "riskNote": "项目仍处开发阶段且明确不保证历史数据兼容；生产使用需评估 AGPL-3.0 网络分发义务、远程插件供应链与用户配置 API 的安全边界。",
+      "industryFit": "high",
+      "originality": "原创全栈画布工作台，包含 React 前端、可视化节点编排、本地 Agent、MCP、插件 SDK、Docker 部署与完整文档，而非资源列表或薄封装。",
+      "maintenanceEvidence": "2026-08-07 热门候选；GitHub 连接器确认仓库公开、未归档、非分叉，README 提供本地与 Docker 安装、效果展示、AGPL-3.0 许可及持续开发说明，commit/issue/PR 查询可用。",
+      "intakeDecision": "approved",
+      "decisionReason": "直接命中 AI 辅助设计工具 P0；原创性、可运行性、许可、Demo、Agent/MCP 集成与近期维护证据通过质量门槛，按 B 级早期项目正式跟踪。"
+    },
+    {
+      "repo": "huggingface/huggingface_hub",
+      "name": "Hugging Face Hub Python SDK",
+      "category": "开放模型 / 模型分发基础设施",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "open-model",
+        "model-inference",
+        "developer-tools"
+      ],
+      "summary": "Hugging Face 官方 Python 客户端与模型仓库 SDK，覆盖模型、数据集、Space、缓存、下载、上传与推理工作流。",
+      "riskNote": "依赖远程 Hub 内容与访问令牌；生产使用需固定版本、审查模型和数据许可，并隔离不可信仓库代码。",
+      "industryFit": "high",
+      "originality": "Hugging Face 官方核心 SDK，提供完整 Python API、CLI、缓存、认证、下载上传与推理集成实现。",
+      "maintenanceEvidence": "2026-08-07 AI 日报强制候选；连接器确认官方组织、公有未归档仓库、README、Apache-2.0 LICENSE，以及近期 commit、issue、PR 活跃。",
+      "intakeDecision": "approved",
+      "decisionReason": "官方关系、原创基础设施实现、明确许可、可安装性与持续维护证据充分，按 A 级正式跟踪。"
+    },
+    {
+      "repo": "huggingface/huggingface.js",
+      "name": "Hugging Face JavaScript Libraries",
+      "category": "开放模型 / JavaScript SDK",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "open-model",
+        "model-inference",
+        "developer-tools"
+      ],
+      "summary": "Hugging Face 官方 JavaScript/TypeScript 库集合，提供 Hub、推理、任务与浏览器/Node.js 集成能力。",
+      "riskNote": "多包仓库与云端 API 演进较快；生产使用需锁定版本、核验包级许可和远程模型数据边界。",
+      "industryFit": "high",
+      "originality": "Hugging Face 官方 TypeScript monorepo，包含可发布软件包、类型定义、测试、文档与持续维护，而非示例集合或薄包装。",
+      "maintenanceEvidence": "2026-08-07 AI 日报强制候选；连接器确认官方组织、公有未归档仓库、README、MIT LICENSE，以及近期 commit、issue、PR 活跃。",
+      "intakeDecision": "approved",
+      "decisionReason": "官方身份、原创 SDK 实现、明确许可、安装路径与维护活跃度通过质量门槛，按 A 级正式跟踪。"
+    },
+    {
+      "repo": "Pan-Chera/Multi-Agent-CAD",
+      "name": "Multi-Agent CAD",
+      "category": "AI CAD / 生成式设计",
+      "level": "B",
+      "license": "MIT",
+      "priorityDomains": [
+        "aec-cad",
+        "design-tools",
+        "3d-generation",
+        "agent-engineering"
+      ],
+      "summary": "清华 IEI Lab 的多 Agent 文生 CAD 系统，以结构化状态连接规划、几何建模、代码生成和质量修复，输出可打印 STEP/STL 模型。",
+      "riskNote": "项目较新，公开性能与成本结果主要来自作者自测；运行会执行模型生成的 Python 代码并依赖外部模型 API，生产使用需隔离执行环境并独立复验几何质量。",
+      "industryFit": "high",
+      "originality": "原创多 Agent CAD 实现，包含 LangGraph 流程、build123d 代码生成、双引擎质量检查、Web UI、基准数据和真实打印 Demo，不是资源列表或薄封装。",
+      "maintenanceEvidence": "2026-08-08 hot 候选；GitHub 连接器确认公开、未归档、非分叉仓库，README、MIT LICENSE、安装说明与 Demo 完整；官方页面显示 406 Stars、35 Forks、28 次提交和 1 个开放 PR，最近提交为 2026-08-05。",
+      "intakeDecision": "approved",
+      "decisionReason": "直接命中 CAD、3D 生成和 AI 设计工具 P0；原创性、可运行性、许可、Demo 与近期维护证据通过质量门槛，按 B 级新项目正式跟踪。"
+    },
+    {
+      "repo": "dexmal/dexbotic",
+      "name": "Dexbotic",
+      "category": "具身智能 / VLA 工具箱",
+      "level": "B",
+      "license": "MIT",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-simulation",
+        "model-inference"
+      ],
+      "summary": "面向具身智能的开源 VLA 开发工具箱，统一预训练、微调、推理和评测，并支持多类策略、仿真环境与真实机器人。",
+      "riskNote": "模型、仿真器、CUDA 与真实机器人依赖复杂；生产或实机部署前需复验数据格式、硬件安全、模型许可证、资源需求和控制边界。",
+      "industryFit": "high",
+      "originality": "原创 PyTorch VLA 工具箱，包含统一配置、模型注册、数据格式、训练推理、Docker、硬件适配和测试资产，而非论文列表或简单包装。",
+      "maintenanceEvidence": "2026-08-08 hot 候选；GitHub 连接器确认公开、未归档、非分叉仓库及 README、MIT LICENSE、近期 commit、Issue/PR 活跃；官方数据为约 1.3k Stars、175 Forks，最近提交为 2026-08-06。",
+      "intakeDecision": "approved",
+      "decisionReason": "命中物理 AI 与机器人仿真 P0；原创工程实现、明确许可、完整安装路径、模型与硬件覆盖以及近期维护证据充分，按 B 级正式跟踪。"
+    },
+    {
+      "repo": "APRIL-ZJU/Gaussian-LIC",
+      "name": "Gaussian-LIC2",
+      "category": "3DGS / 多传感器 SLAM",
+      "level": "B",
+      "license": "GPL-3.0",
+      "priorityDomains": [
+        "3d-generation",
+        "3dgs",
+        "physical-ai",
+        "robot-simulation"
+      ],
+      "summary": "浙江大学 APRIL Lab 的 LiDAR-惯性-相机高斯泼溅 SLAM 系统，可实时估计位姿并构建照片级 3D Gaussian 地图。",
+      "riskNote": "复现依赖 ROS、CUDA、OpenCV、LibTorch、TensorRT、外部数据集和预训练权重；公开 Issue 显示部分下载链接与环境兼容仍需维护。",
+      "industryFit": "high",
+      "originality": "ICRA 2025 与 IJRR 2026 研究的官方代码实现，包含传感器融合、实时 3DGS 建图、TensorRT 部署、配置和数据集运行入口。",
+      "maintenanceEvidence": "最新周报强制候选；GitHub 连接器确认公开、未归档、非分叉仓库，README、GPL-3.0 许可、代码与安装文档可用；官方页面显示 590 Stars、55 Forks、38 个开放 Issue，最近提交为 2026-08-06。",
+      "intakeDecision": "approved",
+      "decisionReason": "命中 3DGS、物理 AI 与机器人建图方向；官方关系、原创研究实现、明确许可、可复现路径和近期更新通过质量门槛，按 B 级正式跟踪。"
+    },
+    {
+      "repo": "jd-opensource/JoyAI-Video-Edit",
+      "name": "JoyAI-Video-Edit",
+      "category": "视频生成 / 实时视频编辑",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "video-generation",
+        "video-editing",
+        "open-model"
+      ],
+      "summary": "京东开源的实时开放式视频编辑系统，以自回归扩散对直播流或上传视频进行指令驱动的因果编辑，并发布代码、权重、论文和在线 Demo。",
+      "riskNote": "当前完整系统包含 16B 多模态扩散模型，消费级 GPU 支持、完整训练与数据流水线仍在 TODO；生产使用需复验算力、内容安全、数据授权和模型权重条款。",
+      "industryFit": "high",
+      "originality": "京东官方原创实时视频编辑研究与部署实现，包含条件编码器、因果视频 VAE、MMDiT、推理加速、部署代码、checkpoint 和流式 Demo，不是资源列表或薄封装。",
+      "maintenanceEvidence": "2026-08-10 hot 与 AI 强制候选；GitHub 连接器确认官方组织、公有未归档非分叉仓库、Apache-2.0 LICENSE、README、代码、权重、安装入口和在线 Demo；最近提交为 2026-08-07，并有 Issue 与已合并 PR 协作。",
+      "intakeDecision": "approved",
+      "decisionReason": "命中视频生成、视频编辑和开放模型 P0；官方关系、原创实现、明确许可、可运行发布、Demo 与近期维护证据均通过质量门槛，按 A 级正式跟踪。"
+    },
+    {
+      "repo": "firecrawl/firecrawl",
+      "name": "Firecrawl",
+      "category": "Agent 数据基础设施 / 网页采集与检索",
+      "level": "A+",
+      "license": "AGPL-3.0",
+      "priorityDomains": [
+        "web-data",
+        "agent",
+        "developer-tools"
+      ],
+      "summary": "面向 AI 应用的网页上下文 API，可在规模化场景中完成搜索、抓取、站点遍历和结构化抽取，并把网页转换为适合 LLM 使用的数据。",
+      "riskNote": "自托管涉及队列、浏览器、代理和反爬维护；AGPL-3.0 与云服务边界需要在商业部署前单独核验。",
+      "industryFit": "high",
+      "originality": "Firecrawl 官方核心仓库，包含抓取引擎、API、SDK、自托管组件、文档和持续维护，不是薄封装或资源列表。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉仓库；2026-08-13 仍有提交，约 16.7 万 Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "项目已形成 AI 网页数据基础设施的代表性产品形态，搜索、抓取、结构化与 Agent 接入链路完整，按 A+ 级正式跟踪。"
+    },
+    {
+      "repo": "unclecode/crawl4ai",
+      "name": "Crawl4AI",
+      "category": "Agent 数据基础设施 / 网页采集与检索",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "web-data",
+        "agent",
+        "developer-tools"
+      ],
+      "summary": "面向 LLM 和 RAG 的开源网页爬取与抽取框架，强调异步采集、Markdown 输出、结构化抽取和可控浏览器流程。",
+      "riskNote": "复杂站点仍受反爬、浏览器资源与页面变化影响；生产使用需要建立限速、代理、缓存与失败恢复策略。",
+      "industryFit": "high",
+      "originality": "原创开源爬虫框架，提供完整代码、配置、文档、示例和活跃社区，不是 Firecrawl 的复制仓库。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉；2026-08-12 有提交，约 7.8 万 Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "开源、自托管和 LLM 友好能力突出，是 Firecrawl 之外重要的技术路线，按 A 级正式跟踪。"
+    },
+    {
+      "repo": "ScrapeGraphAI/Scrapegraph-ai",
+      "name": "ScrapeGraphAI",
+      "category": "Agent 数据基础设施 / 网页采集与检索",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "web-data",
+        "agent",
+        "developer-tools"
+      ],
+      "summary": "以图式工作流和大模型驱动网页抓取、搜索与结构化数据提取的 Python 框架，可用自然语言定义抽取目标。",
+      "riskNote": "LLM 抽取会增加成本、延迟和结果波动；近期提交活跃度低于同组头部项目，需要持续观察维护节奏。",
+      "industryFit": "high",
+      "originality": "ScrapeGraphAI 官方原创实现，包含抓取图、模型适配、抽取组件、SDK 和示例。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉，MIT 许可，约 2.9 万 Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "自然语言驱动结构化抽取与 Firecrawl 形成互补，具备明确的 Agent 数据入口价值，按 A 级跟踪。"
+    },
+    {
+      "repo": "apify/crawlee",
+      "name": "Crawlee",
+      "category": "Agent 数据基础设施 / 网页采集与检索",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "web-data",
+        "browser-automation",
+        "developer-tools"
+      ],
+      "summary": "成熟的 Node.js 网页抓取与浏览器自动化库，统一 HTTP、Cheerio、Playwright 和 Puppeteer，适合构建可靠的数据采集底座。",
+      "riskNote": "它不是 AI 原生产品，语义抽取和研究工作流需要上层系统补齐；大规模运行仍需代理和调度基础设施。",
+      "industryFit": "high",
+      "originality": "Apify 官方核心开源框架，长期维护并服务真实抓取生产场景。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉；2026-08-13 有提交，约 2.5 万 Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "作为 Firecrawl 类产品下层的成熟抓取与浏览器执行基础，工程参考价值高，按 A 级跟踪。"
+    },
+    {
+      "repo": "getmaxun/maxun",
+      "name": "Maxun",
+      "category": "Agent 数据基础设施 / 网页采集与检索",
+      "level": "B+",
+      "license": "AGPL-3.0",
+      "priorityDomains": [
+        "web-data",
+        "browser-automation",
+        "agent"
+      ],
+      "summary": "开源无代码网页抓取、站点遍历、搜索和 AI 数据提取平台，可把网站快速转为结构化 API。",
+      "riskNote": "无代码录制流程对页面结构变化较敏感；自托管、登录态、安全隔离和 AGPL 商业边界需要评估。",
+      "industryFit": "high",
+      "originality": "Maxun 官方产品仓库，包含可运行平台、浏览器自动化、抽取和自托管代码。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉；2026-08-12 有提交，约 1.7 万 Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "代表网页采集从开发库走向可视化产品的路线，适合观察产品化和企业应用，按 B+ 级跟踪。"
+    },
+    {
+      "repo": "browser-use/browser-use",
+      "name": "Browser Use",
+      "category": "Agent 数据基础设施 / 浏览器执行",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "browser-automation",
+        "agent",
+        "developer-tools"
+      ],
+      "summary": "让 AI Agent 通过浏览器执行网页任务的开源框架，覆盖页面理解、动作规划、会话状态和在线工作流。",
+      "riskNote": "自主浏览器操作存在误操作、凭证泄露和网页提示注入风险，必须使用权限隔离、域名白名单与人工确认。",
+      "industryFit": "high",
+      "originality": "Browser Use 官方核心实现，包含框架、模型集成、浏览器控制和部署能力。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉；约 10.9 万 Stars，近期持续更新。",
+      "intakeDecision": "approved",
+      "decisionReason": "是网页数据之外 Agent 执行链的代表项目，与 Firecrawl 的读取能力形成互补，按 A 级跟踪。"
+    },
+    {
+      "repo": "browserbase/stagehand",
+      "name": "Stagehand",
+      "category": "Agent 数据基础设施 / 浏览器执行",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "browser-automation",
+        "agent",
+        "developer-tools"
+      ],
+      "summary": "面向浏览器 Agent 的 SDK，在 Playwright 风格控制基础上加入自然语言动作、抽取与观察能力。",
+      "riskNote": "模型驱动操作的可重复性和成本依赖具体模型与页面；云端浏览器服务和数据合规边界需单独核验。",
+      "industryFit": "high",
+      "originality": "Browserbase 官方 SDK，提供原创浏览器 Agent 抽象、代码、文档和活跃维护。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉；2026-08-13 有提交，约 2.4 万 Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "把确定性浏览器控制与 Agent 语义操作结合，是 Firecrawl 关联生态的重要执行层，按 A 级跟踪。"
+    },
+    {
+      "repo": "Skyvern-AI/skyvern",
+      "name": "Skyvern",
+      "category": "Agent 数据基础设施 / 浏览器执行",
+      "level": "A",
+      "license": "AGPL-3.0",
+      "priorityDomains": [
+        "browser-automation",
+        "agent",
+        "workflow-automation"
+      ],
+      "summary": "利用视觉和大模型自动执行浏览器业务流程，面向表单、后台系统和跨站工作流自动化。",
+      "riskNote": "业务流程自动化涉及账号权限、敏感数据和不可逆操作；生产应用必须配置审批、审计和失败回滚。",
+      "industryFit": "high",
+      "originality": "Skyvern 官方完整平台，包含浏览器执行、工作流、API、前端与部署组件。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉；2026-08-13 有提交，约 2.3 万 Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "代表浏览器 Agent 从工具库走向业务工作流平台的路线，按 A 级正式跟踪。"
+    },
+    {
+      "repo": "microsoft/playwright-mcp",
+      "name": "Playwright MCP",
+      "category": "Agent 数据基础设施 / 浏览器执行",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "browser-automation",
+        "agent",
+        "mcp"
+      ],
+      "summary": "微软官方 Playwright MCP 服务器，为 AI Agent 提供基于可访问性树和浏览器控制的标准化网页操作接口。",
+      "riskNote": "MCP 工具权限较高，使用时需限制站点、文件下载、脚本执行和凭证访问；能力范围随协议与 Playwright 更新变化。",
+      "industryFit": "high",
+      "originality": "Microsoft 官方 Playwright MCP 实现，与 Playwright 浏览器自动化能力直接衔接。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉；2026-08-12 有提交，约 3.6 万 Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "MCP 已成为 Agent 接入浏览器的重要标准路径，官方实现具备强参考价值，按 A 级跟踪。"
+    },
+    {
+      "repo": "lightpanda-io/browser",
+      "name": "Lightpanda",
+      "category": "Agent 数据基础设施 / 浏览器执行",
+      "level": "A",
+      "license": "AGPL-3.0",
+      "priorityDomains": [
+        "browser-automation",
+        "web-data",
+        "developer-tools"
+      ],
+      "summary": "专为 AI 和自动化设计的轻量无头浏览器，目标是在大规模抓取与 Agent 执行中降低浏览器资源成本。",
+      "riskNote": "浏览器兼容性、渲染完整度和生态成熟度仍需与 Chromium 路线持续对比；AGPL 与托管边界需核验。",
+      "industryFit": "high",
+      "originality": "Lightpanda 官方原创浏览器实现，不是 Chromium 套壳或简单自动化脚本。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉；2026-08-13 有提交，约 3.4 万 Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "直接回应 AI 时代网页采集和浏览器 Agent 的基础设施成本问题，按 A 级跟踪。"
+    },
+    {
+      "repo": "vercel-labs/agent-browser",
+      "name": "Agent Browser",
+      "category": "Agent 数据基础设施 / 浏览器执行",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "browser-automation",
+        "agent",
+        "developer-tools"
+      ],
+      "summary": "Vercel Labs 面向 AI Agent 的浏览器自动化命令行工具，提供结构化快照、元素定位和可组合网页动作。",
+      "riskNote": "CLI 仍需由上层 Agent 正确规划和控制；涉及登录态或写操作时必须配置权限边界和确认机制。",
+      "industryFit": "high",
+      "originality": "Vercel Labs 官方仓库，提供完整 CLI、浏览器控制实现和 Agent 使用接口。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉；2026-08-11 有提交，约 4.1 万 Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "结构化浏览器 CLI 是 Agent 执行层的新形态，热度与生态关联度较高，按 A 级跟踪。"
+    },
+    {
+      "repo": "assafelovic/gpt-researcher",
+      "name": "GPT Researcher",
+      "category": "Agent 数据基础设施 / 深度研究",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "deep-research",
+        "web-data",
+        "agent"
+      ],
+      "summary": "自主深度研究 Agent，围绕检索、网页采集、来源汇总和报告生成组织多阶段研究流程。",
+      "riskNote": "结论质量依赖检索覆盖、来源可信度和模型判断；必须保留引用、去重、事实核验与人工审阅。",
+      "industryFit": "high",
+      "originality": "GPT Researcher 官方原创项目，包含研究编排、检索与抓取适配、报告生成和多模型支持。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉，约 2.9 万 Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "展示网页采集数据如何进入完整研究产物，是 Firecrawl 上层应用链的重要代表，按 A 级跟踪。"
+    },
+    {
+      "repo": "firecrawl/firecrawl-mcp-server",
+      "name": "Firecrawl MCP Server",
+      "category": "Agent 数据基础设施 / 网页采集与检索",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "web-data",
+        "mcp",
+        "agent"
+      ],
+      "summary": "Firecrawl 官方 MCP 服务器，把网页搜索、抓取、站点遍历和内容提取能力直接暴露给支持 MCP 的 AI 客户端。",
+      "riskNote": "生产使用依赖 Firecrawl 服务、API 配额和外部网页合规边界；MCP 权限需要限制域名与数据出口。",
+      "industryFit": "high",
+      "originality": "Firecrawl 官方 MCP 集成仓库，包含完整服务器实现、工具定义、配置和维护记录。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉；2026-08-12 有提交，约 7.2k Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "它是 Firecrawl 进入 Agent 工具生态的官方桥梁，直接命中本类目，按 A 级正式跟踪。"
+    },
+    {
+      "repo": "D4Vinci/Scrapling",
+      "name": "Scrapling",
+      "category": "Agent 数据基础设施 / 网页采集与检索",
+      "level": "A",
+      "license": "BSD-3-Clause",
+      "priorityDomains": [
+        "web-data",
+        "browser-automation",
+        "developer-tools"
+      ],
+      "summary": "自适应 Python 网页抓取框架，覆盖单请求、动态页面、选择器自修复和大规模站点遍历，并提供 MCP 接入。",
+      "riskNote": "包含隐身与反检测能力，应用时需要遵守目标站点规则和数据许可；复杂浏览器抓取仍有资源成本。",
+      "industryFit": "high",
+      "originality": "原创完整抓取框架，包含解析、浏览器、爬虫、选择器、CLI 与 MCP 实现。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉；2026-08-11 有提交，约 7.4 万 Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "在传统爬虫与 AI 数据采集之间形成清晰产品能力，且关注度和工程完整性突出，按 A 级跟踪。"
+    },
+    {
+      "repo": "jackwener/OpenCLI",
+      "name": "OpenCLI",
+      "category": "Agent 数据基础设施 / 浏览器执行",
+      "level": "A",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "browser-automation",
+        "agent",
+        "developer-tools"
+      ],
+      "summary": "把任意网站转换为命令行操作，并允许 AI Agent 在保留登录态的浏览器中执行结构化网页任务。",
+      "riskNote": "复用登录态会放大账号与误操作风险；需要细粒度权限、域名白名单、敏感动作确认和审计记录。",
+      "industryFit": "high",
+      "originality": "原创浏览器 Agent CLI，提供可运行命令、Playwright 控制、会话复用和工具接口。",
+      "maintenanceEvidence": "四个趋势源同时命中并被判定为热门；GitHub 官方接口确认公有、未归档、非分叉，约 2.8 万 Stars。",
+      "intakeDecision": "approved",
+      "decisionReason": "将网页交互抽象为 Agent 可组合 CLI，是浏览器执行层近期高关注方向，按 A 级跟踪。"
+    },
+    {
+      "repo": "brightdata/brightdata-mcp",
+      "name": "Bright Data MCP",
+      "category": "Agent 数据基础设施 / 网页采集与检索",
+      "level": "B+",
+      "license": "MIT",
+      "priorityDomains": [
+        "web-data",
+        "mcp",
+        "browser-automation"
+      ],
+      "summary": "Bright Data 官方 MCP 服务器，为 Agent 提供公共网页访问、搜索、抓取、浏览器自动化和结构化数据能力。",
+      "riskNote": "完整能力依赖商业网络与数据服务；费用、数据来源合规和跨境数据边界需要按使用场景核验。",
+      "industryFit": "high",
+      "originality": "Bright Data 官方 MCP 集成，包含工具实现、配置、文档和持续维护。",
+      "maintenanceEvidence": "两个新增趋势源同时命中；GitHub 官方接口确认公有、未归档、非分叉，2026-08-12 有提交。",
+      "intakeDecision": "approved",
+      "decisionReason": "代表商业网页数据平台通过 MCP 进入 Agent 基础设施的路线，按 B+ 级跟踪。"
+    },
+    {
+      "repo": "MontFerret/ferret",
+      "name": "Ferret",
+      "category": "Agent 数据基础设施 / 网页采集与检索",
+      "level": "B+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "web-data",
+        "browser-automation",
+        "developer-tools"
+      ],
+      "summary": "面向结构化数据抽取的声明式数据自动化语言和 Go 运行时，可统一网页查询、浏览器操作与抓取流程。",
+      "riskNote": "专用 DSL 带来学习和迁移成本；Agent 语义能力需要上层集成，复杂站点仍依赖浏览器与反爬工程。",
+      "industryFit": "high",
+      "originality": "原创声明式数据自动化语言与运行时，包含解析器、执行引擎、浏览器集成和工程文档。",
+      "maintenanceEvidence": "两个新增趋势源同时命中；GitHub 官方接口确认公有、未归档、非分叉，2026-08-13 有提交。",
+      "intakeDecision": "approved",
+      "decisionReason": "提供与 API 型、无代码型不同的声明式网页数据工程路线，按 B+ 级跟踪。"
+    },
+    {
+      "repo": "firecrawl/pdf-inspector",
+      "name": "PDF Inspector",
+      "category": "Agent 数据基础设施 / 文档解析与转换",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "document-processing",
+        "web-data",
+        "developer-tools"
+      ],
+      "summary": "Firecrawl 官方 Rust PDF 解析库，可快速区分文本型、扫描型、图片型和混合 PDF，按页判断 OCR 路由，并提取带版面结构的文本、表格与 Markdown。",
+      "riskNote": "项目不执行 OCR，扫描件和编码异常页面仍需外部 OCR；复杂公式、图形、非标准字体和极端版式需要用真实业务文档复验。",
+      "industryFit": "high",
+      "originality": "Firecrawl 官方原创 PDF 数据管线组件，包含 Rust 核心、Python、Node.js、浏览器 WASM 绑定、CLI、测试和可复现实验结果。",
+      "maintenanceEvidence": "GitHub 官方接口确认公有、未归档、非分叉，MIT 许可；2026-08-13 有提交，约 15.2k Stars、1k Forks，并于 2026-08-10 发布多语言软件包版本。",
+      "intakeDecision": "approved",
+      "decisionReason": "它解决 AI 数据管线中 PDF 是否需要 OCR、如何保留阅读顺序和表格结构的关键前置问题，并与 Firecrawl 网页采集形成完整文档入口，按 A 级正式跟踪。"
+    },
+    {
+      "repo": "arcee-ai/nac",
+      "name": "nac",
+      "category": "Agent 工程基础设施 / 编码智能体",
+      "level": "B+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "ai-coding",
+        "agent",
+        "sandbox",
+        "developer-tools"
+      ],
+      "summary": "Arcee.ai 开源的轻量编码智能体，提供终端与网页会话、AGENTS.md 和 Skill 发现、长程任务执行，以及 Podman 或微虚拟机沙箱。",
+      "riskNote": "项目仍处于快速迭代期，长任务压缩、权限默认值和多模型兼容性需要持续复测；使用宿主目录挂载时必须核对写入范围。",
+      "industryFit": "high",
+      "originality": "Arcee.ai 官方原创 Rust 编码智能体，包含 TUI、Web 会话、技能发现、会话存储和两类沙箱后端。",
+      "maintenanceEvidence": "Arcee.ai 官方账号于 2026-08-15 宣布开源；GitHub 仓库公开、非分叉，采用 Apache-2.0 许可证，并提供完整安装与沙箱说明。",
+      "intakeDecision": "approved",
+      "decisionReason": "该项目直接命中开源编码智能体、长程工程执行与本地安全沙箱方向，且由 AI 大事件的一手来源触发，按 B+ 级正式跟踪。"
+    },
+    {
+      "repo": "deepseek-ai/deepseek-harness",
+      "name": "DeepSeek Harness",
+      "category": "Agent 工程基础设施 / 可组合运行时",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "ai-coding",
+        "agent",
+        "sandbox",
+        "developer-tools"
+      ],
+      "summary": "DeepSeek 官方开源的智能体 Harness，以 Cordis 为底层，把模型、工具、Skill、会话、沙箱、文件系统、循环、编排和界面实现为可替换插件。",
+      "riskNote": "项目明确处于 developer preview，可能发生破坏性兼容变更；插件权限、沙箱默认值、长期会话稳定性和第三方插件供应链仍需持续复核。",
+      "industryFit": "high",
+      "originality": "DeepSeek AI 官方原创仓库，包含完整 TypeScript/Python/原生代码、Web UI、插件系统、文档与 Cordis 集成，不是 Fork 或聚合列表。",
+      "maintenanceEvidence": "GitHub 官方接口确认仓库创建于 2026-08-13，公有、未归档、非分叉、MIT 许可；官方 README 提供 npm 与源码运行路径，二次审计时约 13.2 万 Stars、1.3 万 Forks。",
+      "intakeDecision": "approved",
+      "decisionReason": "该项目由 AI 当日二次审计触发，直接命中编码智能体、可组合 Agent 运行时与沙箱基础设施方向；官方关系、原创实现、可运行性与行业影响均通过门槛，按 A 级正式跟踪。"
+    },
+    {
+      "repo": "Bugjudger/InstantHDR",
+      "name": "InstantHDR",
+      "category": "3DGS",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction",
+        "hdr",
+        "open-model"
+      ],
+      "summary": "单次前向推理生成 HDR Gaussian Splatting 初始化，在高动态范围场景中联合恢复相机曝光、辐射场与可渲染 3D 表示。",
+      "riskNote": "论文与代码处于较新阶段，跨相机、复杂运动和极端曝光条件下的泛化仍需实测；完整训练和数据成本需要进一步核验。",
+      "industryFit": "high",
+      "originality": "论文作者官方实现，仓库提供模型、代码、数据说明与复现入口，不是第三方复刻或资源聚合。",
+      "maintenanceEvidence": "官方仓库公开、未归档、非分叉，采用 MIT 许可，并已提供 ECCV 2026 论文对应的实现与资产。",
+      "intakeDecision": "approved",
+      "decisionReason": "将 HDR 成像与前馈 3DGS 初始化直接结合，补足高光、暗部和曝光变化场景的实景重建能力，按 A 级正式跟踪。"
+    },
+    {
+      "repo": "rxjfighting/SceneMosaic",
+      "name": "SceneMosaic",
+      "category": "3D 世界生成",
+      "level": "A",
+      "license": "MIT",
+      "priorityDomains": [
+        "3d-generation",
+        "indoor-scene",
+        "simulation",
+        "physical-ai"
+      ],
+      "summary": "面向仿真就绪室内场景的生成管线，将房间布局、物体组合和可执行资产组织为多样化三维环境。",
+      "riskNote": "运行依赖受限模型资产且推荐 32GB 以上显存；生成结果的碰撞、支撑关系和物理参数仍需下游验证。",
+      "industryFit": "high",
+      "originality": "论文作者官方实现，提供场景生成管线、配置、示例与工程代码，采用 MIT 许可。",
+      "maintenanceEvidence": "官方仓库公开、未归档、非分叉，代码与论文同步发布并提供可运行说明。",
+      "intakeDecision": "approved",
+      "decisionReason": "直接连接室内空间生成、仿真数据和具身智能训练，是 3D 智能空间与物理 AI 的关键上游能力，按 A 级正式跟踪。"
+    },
+    {
+      "repo": "xmw666/AdaptSplat",
+      "name": "AdaptSplat",
+      "category": "3DGS",
+      "level": "B+",
+      "license": "Apache-2.0",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction",
+        "domain-adaptation",
+        "open-model"
+      ],
+      "summary": "以轻量适配器改善前馈 3D Gaussian Splatting 的跨域几何细节，使既有重建模型更容易迁移到新场景分布。",
+      "riskNote": "当前提供推理代码与权重，但训练代码仍未完整公开；实际收益依赖基础模型、目标域和评测设置。",
+      "industryFit": "high",
+      "originality": "论文作者官方实现，提供推理流程、模型权重与实验说明，采用 Apache-2.0 许可。",
+      "maintenanceEvidence": "官方仓库公开、未归档、非分叉；论文与推理资产已发布，训练代码仍列为待办。",
+      "intakeDecision": "approved",
+      "decisionReason": "解决前馈 3DGS 跨域迁移这一实际落地瓶颈，适合作为快速重建产品的模型适配层持续观察，按 B+ 级正式跟踪。"
+    },
+    {
+      "repo": "Tencent-Hunyuan/Prism",
+      "name": "Prism",
+      "category": "视频生成 / 音视频联合模型",
+      "level": "A",
+      "priorityDomains": [
+        "video-generation",
+        "virtual-production"
+      ],
+      "summary": "以动态稀疏注意力研究原生 2K 音视频联合生成，提供预览权重、训练配置与推理流程。",
+      "riskNote": "预览版本需要独立复测演示真实性、同步质量和训练成本；基础模型及组件许可分别核验。",
+      "intakeDecision": "observe",
+      "decisionReason": "作者论文、腾讯混元官方代码和模型卡相互链接，原创研究方向明确；先进入观察库存，不宣称生产成熟。",
+      "reviewedAt": "2026-10-08",
+      "industryFit": "high",
+      "originality": "original_research_or_tooling",
+      "evidenceUrls": [
+        "https://github.com/Tencent-Hunyuan/Prism"
+      ]
+    },
+    {
+      "repo": "kandinskylab/kandinsky-6",
+      "name": "Kandinsky 6.0",
+      "category": "视频生成 / 音视频联合模型",
+      "level": "A",
+      "priorityDomains": [
+        "video-generation",
+        "open-model"
+      ],
+      "summary": "同步音视频生成模型家族，提供文字与图像条件以及 Diffusers、ComfyUI 等官方工具集成。",
+      "riskNote": "检查点、超分与外部组件各有资源需求；显存和实际耗时依设备与配置变化。",
+      "intakeDecision": "approved",
+      "decisionReason": "官方模型、许可、代码与集成说明可核验，符合视频模型主线，纳入正式持续跟踪。",
+      "reviewedAt": "2026-10-08",
+      "industryFit": "high",
+      "originality": "original_research_or_tooling",
+      "evidenceUrls": [
+        "https://github.com/kandinskylab/kandinsky-6"
+      ]
+    },
+    {
+      "repo": "anthonytao80-crypto/ForeAct3D",
+      "name": "ForeAct3D",
+      "category": "物理 AI / VLA 世界模型",
+      "level": "A",
+      "priorityDomains": [
+        "physical-ai",
+        "robot-learning",
+        "world-model"
+      ],
+      "summary": "以策略动作条件预测当前与未来语义三维状态，并通过刚性和运动学约束连接 VLA 训练。",
+      "riskNote": "当前 README 主要给出研究说明和实验结果，训练与复现覆盖需继续检查；真实机器人评测规模有限。",
+      "intakeDecision": "observe",
+      "decisionReason": "论文明确引用该作者仓库，MIT 与原创研究可确认；复现资料尚需持续复核，作为高优先级研究观察。",
+      "reviewedAt": "2026-10-08",
+      "industryFit": "high",
+      "originality": "original_research_or_tooling",
+      "evidenceUrls": [
+        "https://github.com/anthonytao80-crypto/ForeAct3D"
+      ]
+    },
+    {
+      "repo": "LiteReality/LiteReality-Agent",
+      "name": "LiteReality-Agent",
+      "category": "室内重建 / SimReady 数字孪生",
+      "level": "A",
+      "priorityDomains": [
+        "interior-design",
+        "simulation",
+        "3d-reconstruction",
+        "design-tools"
+      ],
+      "summary": "将真实室内扫描组织为 Agent 编辑的三维资产、布局与碰撞修正，并导出 MuJoCo、URDF、MJCF 和 Blender 场景。",
+      "riskNote": "依赖扫描质量、图像生成服务、Agent CLI 与 GPU/托管推理；尚未在本机执行或验证仿真参数真实性。",
+      "intakeDecision": "approved",
+      "decisionReason": "官方项目、论文和可运行工具链相互对应，直接覆盖室内设计、真实扫描与仿真资产主线。",
+      "reviewedAt": "2026-10-08",
+      "industryFit": "high",
+      "originality": "original_research_or_tooling",
+      "evidenceUrls": [
+        "https://github.com/LiteReality/LiteReality-Agent"
+      ]
+    },
+    {
+      "repo": "InRobots/MoonBlender",
+      "name": "MoonGS / MoonBlender",
+      "category": "3DGS / 机器人地形重建",
+      "level": "A",
+      "priorityDomains": [
+        "3dgs",
+        "3d-reconstruction",
+        "physical-ai"
+      ],
+      "summary": "月面双图前馈式三维高斯研究及数据入口，提供训练、评估与 COLMAP 输入推理说明。",
+      "riskNote": "README 中语义组件与启发式重采样仍列 TODO；论文报告能力不能视为仓库已全部实现，数据和第三方组件许可需分别核查。",
+      "intakeDecision": "observe",
+      "decisionReason": "论文摘要明确给出该仓库，存在代码与数据流程；记录实现缺口，作为观察项目而非完整可复现方案。",
+      "reviewedAt": "2026-10-08",
+      "industryFit": "high",
+      "originality": "original_research_or_tooling",
+      "evidenceUrls": [
+        "https://github.com/InRobots/MoonBlender"
+      ]
+    },
+    {
+      "repo": "google-research/geospatial-reasoning-benchmarks",
+      "name": "Geospatial Reasoning Benchmarks",
+      "category": "空间智能 / 智能体评测",
+      "level": "A",
+      "priorityDomains": [
+        "aec-design",
+        "physical-ai"
+      ],
+      "industryFit": "high",
+      "originality": "official_original_benchmark_and_scoring_implementation",
+      "maintenanceEvidence": "Google Research 官方公告与仓库 README 对应，最近提交 2026-10-12；含开发数据、评分器、自动评测与测试代码；2026-10-15 已核验仓库与提交、Issues、PR、Releases。",
+      "intakeDecision": "approved",
+      "decisionReason": "Google Research 官方原创地理空间智能体基准与可运行评分实现，支持选址和基础设施分析评测，符合行业研究价值门槛；热度不是准入条件。",
+      "summary": "Earth AI 技术报告配套的 GeoKTools 与 GeoExpertQueries 开发集、专家工作流、离线评分和自动评测代码，支持空间智能体的工具选择与分析流程复核。",
+      "riskNote": "代码 Apache-2.0、数据 CC BY 4.0；第三方地理数据有独立条款，测试集未公开。自动评分与专家工作流一致不代表最终空间结论正确；未在本机安装运行。"
+    },
+    {
+      "repo": "NVlabs/Sana",
+      "name": "SANA",
+      "category": "生成式图像 / 视频与世界模型",
+      "level": "A",
+      "priorityDomains": [
+        "image-generation",
+        "video-generation",
+        "open-model"
+      ],
+      "summary": "NVIDIA 官方高效图像和视频生成研究实现，包含 SANA 系列训练、推理、SANA-WM 世界模型及流式编辑管线。",
+      "riskNote": "代码 Apache-2.0；各模型权重和外部组件须另核许可及硬件条件。性能为论文和发布方声明，本次未下载权重或执行推理；这是今日目录新收录，不是今日首发。",
+      "industryFit": "high",
+      "originality": "official_or_original_repository",
+      "maintenanceEvidence": "官方仓库最近提交2026-10-11，公开推理实现、README、提交、Issues、PR与Releases均已读取。",
+      "intakeDecision": "approved",
+      "decisionReason": "NVIDIA 官方原创图像、视频和世界模型实现，公开推理代码与Apache-2.0明确，近期持续维护；直接符合设计素材、视频和空间模型方向。"
+    },
+    {
+      "repo": "MiniMax-AI/mcode-stack",
+      "name": "MCode Stack",
+      "category": "Agent 工程 / 工作流与技能",
+      "level": "B",
+      "summary": "MiniMax Code团队公开的日常Agent工作流、可安装Skills、插件模板与校验工具，提供中文README。",
+      "riskNote": "工作流效果取决于宿主与真实任务；总体MIT，engineering系列改编内容保留CC-BY-3.0与署名义务；未在本机安装执行。",
+      "intakeDecision": "approved",
+      "industryFit": "high",
+      "priorityDomains": [
+        "agent-engineering"
+      ],
+      "originality": "original_workflow_skills_and_validation_tooling",
+      "license": "MIT；engineering改编内容CC-BY-3.0",
+      "decisionReason": "官方团队把真实工作流制作成可安装Skills和插件，并提供manifest、版本与marketplace校验脚本，具有可复用工程价值；未冒称为MiniMax Code本体代码。",
+      "reviewedAt": "2026-10-29",
+      "evidenceUrls": [
+        "https://github.com/MiniMax-AI/mcode-stack"
+      ]
+    },
+    {
+      "repo": "ViBench/vibench-public",
+      "name": "ViBench",
+      "category": "Agent 评测 / 软件交付",
+      "level": "B",
+      "summary": "以连续产品需求、真实浏览器测试计划和Harbor运行器评估编码Agent能否交付可用应用的原创基准。",
+      "riskNote": "17个应用仅8个公开；自动grader存在误判，官方成绩依赖多轮构建与服务商API成本；没有在本机复现排行榜。",
+      "intakeDecision": "approved",
+      "industryFit": "high",
+      "priorityDomains": [
+        "agent-engineering",
+        "design-tools"
+      ],
+      "originality": "original_benchmark_specs_test_plans_and_harness",
+      "license": "Apache-2.0；vendored组件分别保留MIT/Apache等许可",
+      "decisionReason": "原创逐阶段软件交付基准，公开PRD、测试计划和Harbor运行器；能用于评估设计画布等产品任务，但9个保留应用未公开、自动grader有误差且复现有成本。",
+      "reviewedAt": "2026-10-29",
+      "evidenceUrls": [
+        "https://github.com/ViBench/vibench-public"
+      ]
+    },
+    {
+      "repo": "anthropics/claude-plugins-official",
+      "name": "Claude Code 官方插件（security-guidance）",
+      "category": "Agent 安全 / 插件",
+      "level": "B",
+      "summary": "Anthropic维护的插件目录；本次重点核验security-guidance的模式检测、LLM diff审阅和提交前Agent审阅实现。",
+      "riskNote": "审阅会读取代码并调用模型，需核对权限、凭据与成本；internal与external插件边界不同，各插件许可和信任需逐项检查。",
+      "intakeDecision": "approved",
+      "industryFit": "high",
+      "priorityDomains": [
+        "agent-engineering",
+        "ai-security"
+      ],
+      "originality": "official_security_guidance_plugin_implementation",
+      "license": "Apache-2.0（security-guidance）；其他插件逐项核对",
+      "decisionReason": "Anthropic内部security-guidance插件有实际Python hooks、配置与测试，支持模式告警、diff复核及提交前Agent审阅；不把外部插件目录当作统一安全保证。",
+      "reviewedAt": "2026-10-29",
+      "evidenceUrls": [
+        "https://github.com/anthropics/claude-plugins-official"
+      ]
+    },
+    {
+      "repo": "OpenBMB/MiniCPM-OCR",
+      "name": "MiniCPM-OCR / Jev",
+      "category": "文档智能 / OCR质量判断",
+      "level": "B",
+      "summary": "OpenBMB的中英文档解析模型与区域级OCR质量判断模型，提供中文文档、可安装SDK和多后端部署入口。",
+      "riskNote": "榜单和吞吐为作者测量，未在本机复现；Jev分数用于筛查而非正确性保证，部分Jev API文档仍标注coming soon，GPU驱动和推理环境须按官方FAQ核对。",
+      "intakeDecision": "approved",
+      "industryFit": "high",
+      "priorityDomains": [
+        "open-model",
+        "agent-engineering"
+      ],
+      "originality": "official_model_and_document_parsing_sdk",
+      "license": "Apache-2.0（官方说明覆盖代码、文档和MiniCPM-OCR/Jev权重）",
+      "decisionReason": "官方README、中文说明、Apache许可与实际SDK CLI/配置实现可核验；文档解析加区域级质量评分有明确复用价值，按作者实测边界以B级收录。",
+      "reviewedAt": "2026-10-29",
+      "evidenceUrls": [
+        "https://github.com/OpenBMB/MiniCPM-OCR"
+      ]
+    },
+    {
+      "repo": "baidu/Unlimited-OCR",
+      "name": "Unlimited OCR 2",
+      "category": "文档智能 / 长文档解析",
+      "level": "B",
+      "summary": "百度的跨页长文档OCR方案，公开SR-SWA方法、批量推理客户端、Transformers示例和定制SGLang服务部署说明。",
+      "riskNote": "官方示例在A800-80GB测试，需定制SGLang wheel并注意显存、页窗口与跨页合并边界；trust_remote_code代码和权重许可须分别审阅，未复现作者性能或无限长主张。",
+      "intakeDecision": "approved",
+      "industryFit": "high",
+      "priorityDomains": [
+        "open-model",
+        "agent-engineering"
+      ],
+      "originality": "official_long_document_ocr_inference_and_evaluation_tooling",
+      "license": "MIT（仓库代码）；模型权重另核模型卡",
+      "decisionReason": "百度官方仓库的推理实现、文档批处理和后处理路径真实可读，部署方法与显存约束明确；长文档解析有实用价值，以B级收录并保留未复现与许可边界。",
+      "reviewedAt": "2026-10-29",
+      "evidenceUrls": [
+        "https://github.com/baidu/Unlimited-OCR"
+      ]
+    },
+    {
+      "repo": "herdrdev/herdr-core",
+      "name": "Herdr Core",
+      "category": "Agent 工程 / 持久终端",
+      "priorityDomains": [
+        "agent-engineering"
+      ],
+      "summary": "Rust持久终端内核，支持程序后台运行、Agent任务通信与人工接管。",
+      "riskNote": "终端可执行本机命令；安装程序、签名与远程访问需要按官方安全文档评估。",
+      "license": "Apache-2.0",
+      "level": "B",
+      "intakeDecision": "approved",
+      "industryFit": "high",
+      "originality": "original_research_or_official_engineering",
+      "officialRelationship": true,
+      "decisionReason": "已核对官方关系、README、实际实现目录、安装/评测入口、许可及当前维护元数据；具有可用的原创研究或官方工程实现，不以热度作为收录前提。",
+      "reviewedAt": "2026-10-30",
+      "evidenceUrls": [
+        "https://github.com/herdrdev/herdr-core"
+      ],
+      "evidencePaths": [
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-connector.json",
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-readmes.json",
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-contents.json"
+      ],
+      "editorialEvidence": "data/dev/github-editorial-review-2026-10-30.json",
+      "licenseReview": {
+        "checkedAt": "2026-10-30T03:34:16.786Z",
+        "metadataLicense": "Apache-2.0",
+        "method": "Actual official LICENSE read; API NOASSERTION is retained as original metadata evidence.",
+        "evidence": "data/dev/source-archives/audit-0900-2026-10-30/github-new-licenses.json"
+      }
+    },
+    {
+      "repo": "herdrdev/herdr-app",
+      "name": "Herdr App",
+      "category": "Agent 工程 / 桌面工作区",
+      "priorityDomains": [
+        "agent-engineering"
+      ],
+      "summary": "基于herdr-core的桌面终端与Agent工作区，支持空间、分屏、状态聚合与可修改界面。",
+      "riskNote": "窗口关闭不等于停止后台程序；重启不会保留运行中的进程，远程SSH权限需单独管理。",
+      "license": "Apache-2.0",
+      "level": "B",
+      "intakeDecision": "approved",
+      "industryFit": "high",
+      "originality": "original_research_or_official_engineering",
+      "officialRelationship": true,
+      "decisionReason": "已核对官方关系、README、实际实现目录、安装/评测入口、许可及当前维护元数据；具有可用的原创研究或官方工程实现，不以热度作为收录前提。",
+      "reviewedAt": "2026-10-30",
+      "evidenceUrls": [
+        "https://github.com/herdrdev/herdr-app"
+      ],
+      "evidencePaths": [
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-connector.json",
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-readmes.json",
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-contents.json"
+      ],
+      "editorialEvidence": "data/dev/github-editorial-review-2026-10-30.json",
+      "licenseReview": {
+        "checkedAt": "2026-10-30T03:34:16.786Z",
+        "metadataLicense": "Apache-2.0",
+        "method": "Actual official LICENSE read; API NOASSERTION is retained as original metadata evidence.",
+        "evidence": "data/dev/source-archives/audit-0900-2026-10-30/github-new-licenses.json"
+      }
+    },
+    {
+      "repo": "Factory-AI/droid-sdk-typescript",
+      "name": "Droid SDK 工程样例",
+      "category": "Agent 工程 / 官方 SDK 样例",
+      "priorityDomains": [
+        "agent-engineering"
+      ],
+      "summary": "Factory官方Droid SDK指南与可运行集成样例，含Node/浏览器示例执行器、MCP测试服务与文档片段校验工具；SDK包本体作为依赖分发。",
+      "riskNote": "依赖Droid CLI/服务和API授权；README指出Node18与0.10.0全局WebCrypto兼容边界，未在本机安装。",
+      "license": "Apache-2.0（实际LICENSE全文；API标识NOASSERTION）",
+      "level": "B",
+      "intakeDecision": "approved",
+      "industryFit": "high",
+      "originality": "official_runnable_integration_examples_and_validation_harness",
+      "officialRelationship": true,
+      "decisionReason": "实际package.json将本库标为@factory/droid-sdk-examples，依赖@factory/droid-sdk；examples与scripts提供官方原创集成和校验工程，按工程参考B级收录，不宣称SDK本体源码仓库。",
+      "reviewedAt": "2026-10-30",
+      "evidenceUrls": [
+        "https://github.com/Factory-AI/droid-sdk-typescript"
+      ],
+      "evidencePaths": [
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-connector.json",
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-readmes.json",
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-contents.json"
+      ],
+      "editorialEvidence": "data/dev/github-editorial-review-2026-10-30.json",
+      "licenseReview": {
+        "checkedAt": "2026-10-30T03:34:16.786Z",
+        "metadataLicense": "Apache-2.0（实际LICENSE全文；API标识NOASSERTION）",
+        "method": "Actual official LICENSE read; API NOASSERTION is retained as original metadata evidence.",
+        "evidence": "data/dev/source-archives/audit-0900-2026-10-30/github-new-licenses.json"
+      }
+    },
+    {
+      "repo": "inclusionAI/Zooming-without-Zooming-v2",
+      "name": "Zooming without Zooming v2",
+      "category": "多模态模型 / 视觉推理",
+      "priorityDomains": [
+        "open-models",
+        "spatial-intelligence"
+      ],
+      "summary": "EvidenceConnect多区域视觉问答合成、GRPO训练与评测实现，提供4B/9B/27B模型。",
+      "riskNote": "训练代码许可与基础模型、数据资产分开核对；基准结果为作者报告。",
+      "license": "Apache-2.0",
+      "level": "B",
+      "intakeDecision": "approved",
+      "industryFit": "high",
+      "originality": "original_research_or_official_engineering",
+      "officialRelationship": true,
+      "decisionReason": "已核对官方关系、README、实际实现目录、安装/评测入口、许可及当前维护元数据；具有可用的原创研究或官方工程实现，不以热度作为收录前提。",
+      "reviewedAt": "2026-10-30",
+      "evidenceUrls": [
+        "https://github.com/inclusionAI/Zooming-without-Zooming-v2"
+      ],
+      "evidencePaths": [
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-connector.json",
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-readmes.json",
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-contents.json"
+      ],
+      "editorialEvidence": "data/dev/github-editorial-review-2026-10-30.json",
+      "licenseReview": {
+        "checkedAt": "2026-10-30T03:34:16.786Z",
+        "metadataLicense": "Apache-2.0",
+        "method": "Actual official LICENSE read; API NOASSERTION is retained as original metadata evidence.",
+        "evidence": "data/dev/source-archives/audit-0900-2026-10-30/github-new-licenses.json"
+      }
+    },
+    {
+      "repo": "Tencent-Hunyuan/Hy-Nomas",
+      "name": "Hy-Nomas",
+      "category": "世界模型 / 交互生成",
+      "priorityDomains": [
+        "world-models",
+        "video-generation"
+      ],
+      "summary": "腾讯官方交互世界生成代码、推理、LoRA微调与Web演示，支持文本和相机控制。",
+      "riskNote": "代码与权重采用Apache2.0声明，第三方组件保留各自许可；硬件吞吐和长时一致性需独立复测。",
+      "license": "Apache-2.0及第三方组件原许可（实际LICENSE）",
+      "level": "A",
+      "intakeDecision": "approved",
+      "industryFit": "high",
+      "originality": "original_research_or_official_engineering",
+      "officialRelationship": true,
+      "decisionReason": "已核对官方关系、README、实际实现目录、安装/评测入口、许可及当前维护元数据；具有可用的原创研究或官方工程实现，不以热度作为收录前提。",
+      "reviewedAt": "2026-10-30",
+      "evidenceUrls": [
+        "https://github.com/Tencent-Hunyuan/Hy-Nomas"
+      ],
+      "evidencePaths": [
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-connector.json",
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-readmes.json",
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-contents.json"
+      ],
+      "editorialEvidence": "data/dev/github-editorial-review-2026-10-30.json",
+      "licenseReview": {
+        "checkedAt": "2026-10-30T03:34:16.786Z",
+        "metadataLicense": "Apache-2.0及第三方组件原许可（实际LICENSE）",
+        "method": "Actual official LICENSE read; API NOASSERTION is retained as original metadata evidence.",
+        "evidence": "data/dev/source-archives/audit-0900-2026-10-30/github-new-licenses.json"
+      }
+    },
+    {
+      "repo": "X-EraAI/e05",
+      "name": "E0.5",
+      "category": "世界模型 / 机器人动作",
+      "priorityDomains": [
+        "world-models",
+        "physical-ai"
+      ],
+      "summary": "官方未来三维几何预测与机器人动作联合实现，含训练推理、RoboTwin评测及已发布资源。",
+      "riskNote": "MIT覆盖自有代码，第三方代码保留许可；真机迁移受数据、本体与训练设置限制。",
+      "license": "MIT及第三方许可（实际LICENSE）",
+      "level": "A",
+      "intakeDecision": "approved",
+      "industryFit": "high",
+      "originality": "original_research_or_official_engineering",
+      "officialRelationship": true,
+      "decisionReason": "已核对官方关系、README、实际实现目录、安装/评测入口、许可及当前维护元数据；具有可用的原创研究或官方工程实现，不以热度作为收录前提。",
+      "reviewedAt": "2026-10-30",
+      "evidenceUrls": [
+        "https://github.com/X-EraAI/e05"
+      ],
+      "evidencePaths": [
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-connector.json",
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-readmes.json",
+        "data/dev/source-archives/audit-0900-2026-10-30/github-new-contents.json"
+      ],
+      "editorialEvidence": "data/dev/github-editorial-review-2026-10-30.json",
+      "licenseReview": {
+        "checkedAt": "2026-10-30T03:34:16.786Z",
+        "metadataLicense": "MIT及第三方许可（实际LICENSE）",
+        "method": "Actual official LICENSE read; API NOASSERTION is retained as original metadata evidence.",
+        "evidence": "data/dev/source-archives/audit-0900-2026-10-30/github-new-licenses.json"
+      }
+    }
+  ]
+}

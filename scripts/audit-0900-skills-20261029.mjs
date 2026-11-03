@@ -1,0 +1,13 @@
+import {readFile,writeFile} from 'node:fs/promises';
+import {evaluateSkillsPublication} from './skills-source-policy.mjs';
+const read=async p=>JSON.parse(await readFile(p,'utf8'));
+const latest=await read('data/dev/skills-radar-latest.json');
+const review=await read('data/dev/skills-review-verification-2026-10-29.json');
+const dry=await read('data/dev/source-archives/audit-0900-2026-10-29-skills-dry.json');
+const catalog=await read('data/dev/skills-catalog.json');
+const newIdentities=dry.skills.filter(x=>!latest.skills.some(y=>y.id===x.id)).map(x=>x.id);
+const policy=evaluateSkillsPublication(latest,review);
+if(!policy.ready||dry.sourceStatus.some(s=>s.status!=='success'))throw Error(JSON.stringify({policy,dry:dry.sourceStatus}));
+const audit={checkedAt:new Date().toISOString(),batchId:'wagmi-09-00:2026-10-29',currentSourceStatus:dry.sourceStatus,newShortlistIdentities:newIdentities,cumulativeCatalogCount:catalog.skills.length,liveMergedCatalogCount:dry.catalog?.skills?.length,decision:'No new shortlist identity; retain independently edited same-day shortlist and cumulative catalog. Smaller dry-run snapshot is not an asset deletion signal.',historicalPolicy:policy,historicalReviewEvidence:'data/dev/skills-review-verification-2026-10-29.json',unresolvedHistorical:review.summary.unable_to_confirm};
+await writeFile('data/dev/source-archives/audit-0900-2026-10-29-skills-policy.json',JSON.stringify(audit,null,2)+'\n');
+console.log(JSON.stringify(audit,null,2));

@@ -1,0 +1,39 @@
+import {readFile,writeFile,appendFile} from 'node:fs/promises';
+import {preparePromotion} from './promotion.mjs';
+import {publicationFingerprint} from './daily-main-publish.mjs';
+import {publicationContentHash} from './publication.mjs';
+const date='2026-11-02',batchId=`wagmi-09-00:${date}`;
+const read=async p=>JSON.parse(await readFile(p,'utf8'));
+const [main,skills,papers,memene,media,ai,github,skill,control,sent,prepared]=await Promise.all([
+ 'data/main/index.json','data/main/skills-catalog.json','data/main/papers-catalog.json',
+ 'data/dev/memene-daily-latest.json','data/dev/ai-media-latest.json','data/dev/ai-events-latest.json',
+ 'data/dev/github-radar-latest.json','data/dev/skills-radar-latest.json',
+ 'data/dev/dingtalk-send-control.json','data/dev/dingtalk-last-send.json'
+].map(read).concat(preparePromotion()));
+const log=await readFile(`data/dev/audit-0900-publication-verify-final-${date}.log`,'utf8');
+const verified=JSON.parse(log.slice(log.indexOf('{')));
+const current=publicationFingerprint(main,skills,papers);
+const preview=publicationFingerprint(prepared.snapshot,prepared.skillsCatalog,prepared.papersCatalog);
+const expectedHashes={main:publicationContentHash(main),skills:publicationContentHash(skills),papers:publicationContentHash(papers)};
+const suppressed=(control.suppressedDates??[]).some(x=>(typeof x==='string'?x:x.date)===date);
+if(prepared.errors.length||prepared.warnings.length||current!==preview)throw Error('Current publication gate is not a complete noop: '+JSON.stringify({errors:prepared.errors,warnings:prepared.warnings,current,preview}));
+if(!verified.localReady||!verified.publicReady||verified.status!=='success'||verified.generatedAt!==main.generatedAt||Object.values(main.asOf).some(d=>d!==date))throw Error('Final complete public verification does not match current main');
+for(const [key,hash]of Object.entries(expectedHashes))if(verified.public?.contentHashes?.[key]!==hash||verified.local?.contentHashes?.[key]!==hash)throw Error('Full publication hash differs: '+key);
+if(!suppressed&&(sent.date!==date||sent.response?.errcode!==0))throw Error('No real successful current-day DingTalk receipt');
+const completedAt=new Date().toISOString(),shanghai=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai',dateStyle:'short',timeStyle:'medium'}).format(new Date());
+const record={schemaVersion:'1.0.0',batchId,runDate:date,completedAt,status:'complete',
+ channels:{ai:{asOf:ai.asOf,status:ai.run.status,events:ai.aiEvents.length,sourceCoverage:ai.sourceCoverage},github:{asOf:github.asOf,status:github.run.status,coverage:github.verificationSummary.coverage},skills:{asOf:skill.asOf,status:skill.run.status,publicationNotices:prepared.notices.filter(n=>n.includes('Skill'))}},
+ discovery:{ready:prepared.discoveryReview.ready,counts:prepared.discoveryReview.counts,memeneRecordId:memene.target?.id,memeneCandidates:memene.target?.candidates?.length,mediaCandidates:media.candidates.length,checkedSources:media.sources.length},
+ publication:{generatedAt:main.generatedAt,asOf:main.asOf,localReady:verified.localReady,publicReady:verified.publicReady,publicUrl:verified.config.publicUrl,contentHashes:expectedHashes,fingerprint:current,counts:{projects:main.projects.length,aiEvents:main.aiEvents.length,skills:main.skills.length,reports:main.reports.length,weeklySummaries:main.weeklySummaries.length,githubTrends:main.githubTrends.length,skillCatalog:skills.skills.length,papers:papers.papers.length}},
+ delivery:{suppressed,date:sent.date,sentAt:sent.sentAt,response:sent.response,action:'existing-current-day-success-preserved-no-second-message',auditCommandResult:'One normal command reached a transient concurrent AI reading preflight failure before any send; the real same-day success was subsequently confirmed. No retry, supplement, force or test send.'},
+ repairs:[
+  {stage:'public-catalog-transfer',error:'Initial complete verification timed out reading the paper catalog after60000ms; independent configured-route transfer was truncated after4034186decoded bytes.',action:'RequestedBrotli and added one independent direct-route full verification fallback for transport failures only; preserved failed attempt and complete hashes.',tests:'13 publication tests passed; changed-content fallback remains rejected.'},
+  {stage:'github-forced-candidate-schema',action:'Applied existing scoreCandidate to4new weekly-forced rows missing hotScore; repaired the date-specific appender without fabricating stars or forks.'},
+  {stage:'source-dates',action:'VerifiedCreditSaison official page/RSS dateOct29; source-date refresh and catalog reconciliation preserve actual paper submissions rather than RSS announcement dates.'},
+  {stage:'skill-warning-retention',action:'Restored80real unresolved historical identities after concurrent ordinary sync; unified policy independently passed current sources and active-disjoint dated review.'},
+  {stage:'paper-chinese-reading',action:'Paper reselection now retains links only for the same exact paper URL. Re-read publisherSpatialScout body and verified80scenes/3140instances,macro/micro and price-snapshot limitations.',tests:'One focused end-to-end selection regression passed.'}
+ ],logs:{daily:`data/dev/audit-0900-daily-check-${date}.log`,verification:`data/dev/audit-0900-publication-verify-final-${date}.log`,sources:`data/dev/source-archives/audit-0900-${date}/independent-findings.json`}};
+await writeFile(`data/dev/audit-0900-${date}.json`,JSON.stringify(record,null,2)+'\n');
+const memory='C:/Users/Administrator/.codex/automations/wagmi-09-00/memory.md';
+await appendFile(memory,`\n\n## ${completedAt} — ${batchId} COMPLETE\n\n- Read AGENTS/five frameworks/runbooks and prior memory; scoped Data quality workflow. Owned local service confirmed; fixed https://wagmii.cn/local hosting preserved. No DNS/cloud/new tunnel/Sites/credential or unrelated-process changes.\n- Independently refreshed Memene${memene.target?.candidates?.length}/record${memene.target?.id} and all${media.sources.length} enabled media entrances/${media.candidates.length} candidates; current full discovery review passes, Chinese reading${prepared.discoveryReview.counts.reading.provided}/${prepared.discoveryReview.counts.reading.total}, actual gaps/notices retained. AI${ai.aiEvents.length}events with${ai.sourceCoverage.verifiedSourceCount}reviewed originals; paper original dates preserved.\n- GitHub${main.githubTrends.length}candidates,${github.verificationSummary.coverage.mandatory}mandatory plus5watch fully verified,${main.projects.length}formal inventory. Fixed4missing source-derived scores; all refresh failures0. Skill required sources and30details passed;${skills.skills.length}cumulative,80historical unknowns retain warning under unified policy.\n- Repaired large-catalog transfer verification with Brotli and bounded independent full-route fallback;13publication tests passed. Repaired paper reselection dropping Chinese links;focused end-to-end regression passed. Corrected CreditSaison source date toOct29 against full official article/RSS.\n- Final strict gate noop fingerprint${current}; main${main.generatedAt}, allchannel dates${date}. Full local/public verification passes complete main/asset/two-catalog hashes. Counts${JSON.stringify(record.publication.counts)}.\n- Real DingTalksuccess${sent.date},${sent.sentAt},response${JSON.stringify(sent.response)}. One normal audit invocation was stopped by temporary concurrent reading preflight before a send; confirmed existing success and did not retry/send a second message. No force/supplement/test.\n- Receipt:data/dev/audit-0900-${date}.json. Current run time:${completedAt} UTC (${shanghai} Asia/Shanghai).\n`);
+console.log(JSON.stringify({status:record.status,completedAt,publication:record.publication,delivery:{date:sent.date,sentAt:sent.sentAt,response:sent.response},receipt:`data/dev/audit-0900-${date}.json`}));

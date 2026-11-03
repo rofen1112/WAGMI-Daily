@@ -1,0 +1,208 @@
+{
+  "schemaVersion": "1.1.0",
+  "verifiedAt": "2026-10-29",
+  "role": "supplemental_discovery_only",
+  "windowDays": 7,
+  "verificationRule": "中文媒体与知名公众号原文可作为阅读和事实核验来源。先检查公开推送列表，保存文章原始发布日期和链接；发布前必须阅读正文、核对事实，评论和传闻须明确标注。官方英文原文用于交叉核验，不是唯一允许的来源。",
+  "sources": [
+    {
+      "id": "qbitai",
+      "name": "量子位",
+      "enabled": true,
+      "channel": "official_site_mirror",
+      "format": "rss",
+      "url": "https://www.qbitai.com/feed/",
+      "homeUrl": "https://www.qbitai.com/",
+      "allowedArticleHosts": [
+        "www.qbitai.com",
+        "qbitai.com"
+      ],
+      "verificationUrl": "https://www.qbitai.com/",
+      "accessNote": "官网公开 RSS，匿名访问可读取文章原始 URL 和 pubDate；不使用公众号登录态。",
+      "language": "zh",
+      "sourceClass": "trusted_media",
+      "readingRole": "coverage",
+      "expectedFeedTitles": [
+        "量子位"
+      ]
+    },
+    {
+      "id": "aiera",
+      "name": "新智元",
+      "enabled": true,
+      "channel": "official_site_mirror",
+      "format": "article_list",
+      "url": "https://aiera.com.cn/asi-articles.html",
+      "homeUrl": "https://aiera.com.cn/",
+      "allowedArticleHosts": [
+        "aiera.com.cn",
+        "www.aiera.com.cn"
+      ],
+      "articlePathPattern": "^/asi-post\\.html$",
+      "verificationUrl": "https://aiera.com.cn/about.html",
+      "accessNote": "品牌官网公开文章列表，读取标题、官网文章 URL 和明确的发布日期；正文可能需要官网前端加载，候选仍需官方原文核验。",
+      "language": "zh",
+      "sourceClass": "trusted_media",
+      "readingRole": "coverage"
+    },
+    {
+      "id": "jiqizhixin",
+      "name": "机器之心",
+      "enabled": true,
+      "channel": "official_site_mirror",
+      "format": "article_list",
+      "url": "https://www.jiqizhixin.com/articles",
+      "homeUrl": "https://www.jiqizhixin.com/",
+      "allowedArticleHosts": [
+        "www.jiqizhixin.com",
+        "jiqizhixin.com"
+      ],
+      "articlePathPattern": "^/articles/[^/]+$",
+      "verificationUrl": "https://www.jiqizhixin.com/data-service",
+      "accessNote": "2026-10-10 匿名文章入口返回数据服务说明，RSS 重定向数据服务页。保留独立受限状态，不购买服务、不绕过登录或验证码、不把可达页面当成采集成功。",
+      "language": "zh",
+      "sourceClass": "trusted_media",
+      "readingRole": "coverage"
+    },
+    {
+      "id": "geekpark",
+      "name": "极客公园",
+      "enabled": true,
+      "channel": "official_site_mirror",
+      "collectionMode": "publisher_rss",
+      "format": "rss",
+      "url": "https://www.geekpark.net/rss",
+      "homeUrl": "https://www.geekpark.net/",
+      "allowedArticleHosts": [
+        "www.geekpark.net",
+        "geekpark.net"
+      ],
+      "articlePathPattern": "^/news/\\d+$",
+      "expectedFeedTitles": [
+        "极客公园"
+      ],
+      "verificationUrl": "https://www.geekpark.net/rss",
+      "accessNote": "已于2026-10-29读取官网RSS及当日文章；逐次检查显式pubDate，不使用文章URL或抓取时间推断日期。",
+      "language": "zh",
+      "sourceClass": "trusted_media",
+      "readingRole": "coverage"
+    },
+    {
+      "id": "khazix",
+      "name": "数字生命卡兹克",
+      "accountId": "Rockhazix",
+      "enabled": true,
+      "channel": "wechat_public_rss",
+      "collectionMode": "public_rss_mirror",
+      "format": "rss",
+      "url": "https://wechat2rss.bestblogs.dev/feed/ff621c3e98d6ae6fceb3397e57441ffc6ea3c17f.xml",
+      "homeUrl": "https://mp.weixin.qq.com/",
+      "allowedArticleHosts": [
+        "mp.weixin.qq.com"
+      ],
+      "wechatBiz": "MzIyMzA5NjEyMA==",
+      "expectedFeedTitles": [
+        "数字生命卡兹克"
+      ],
+      "verificationUrl": "https://github.com/ginobefun/BestBlogs/blob/main/opml/bestblogs_wechat2rss_opml_all.opml",
+      "accessNote": "BestBlogs公开微信RSS，已核对feed标题、原文作者与固定biz；返回微信原始文章URL、pubDate及正文。第三方镜像可能延迟，不保证微信全部实时推送。",
+      "language": "zh",
+      "sourceClass": "trusted_media",
+      "readingRole": "coverage"
+    },
+    {
+      "id": "juya",
+      "name": "橘鸦Juya",
+      "enabled": true,
+      "channel": "creator_site",
+      "collectionMode": "creator_rss",
+      "format": "rss",
+      "url": "https://daily.juya.uk/rss.xml",
+      "homeUrl": "https://daily.juya.uk/",
+      "allowedArticleHosts": [
+        "daily.juya.uk"
+      ],
+      "articlePathPattern": "^/issues/\\d{4}-\\d{2}-\\d{2}/$",
+      "expectedFeedTitles": [
+        "橘鸦AI早报"
+      ],
+      "readingRole": "discovery",
+      "verificationUrl": "https://daily.juya.uk/",
+      "accessNote": "作者公开AI早报站及RSS，2026-10-29当期可读。其AI辅助摘要属于发现/中文导读，保留各项原始链接，不能单靠聚合摘要确立事实。",
+      "language": "zh",
+      "sourceClass": "trusted_media"
+    },
+    {
+      "id": "newin",
+      "name": "有新Newin",
+      "accountId": "NewinData",
+      "enabled": true,
+      "channel": "wechat_public_rss",
+      "collectionMode": "public_rss_mirror",
+      "format": "rss",
+      "url": "https://wechat2rss.bestblogs.dev/feed/74554dcb3da8982083426b871bc8c314a9de9729.xml",
+      "homeUrl": "https://www.iyangqi.com/member/48",
+      "allowedArticleHosts": [
+        "mp.weixin.qq.com"
+      ],
+      "wechatBiz": "Mzg3NDkyMTQ5Mw==",
+      "expectedFeedTitles": [
+        "有新Newin"
+      ],
+      "verificationUrl": "https://github.com/ginobefun/BestBlogs/blob/main/opml/bestblogs_wechat2rss_opml_all.opml",
+      "identityEvidenceUrls": [
+        "https://www.iyangqi.com/member/48",
+        "https://github.com/ginobefun/BestBlogs/blob/main/opml/bestblogs_wechat2rss_opml_all.opml"
+      ],
+      "accessNote": "作者主页明确公众号ID为NewinData；公开RSS作者/标题/biz与作者正文相符。保留原始微信文章链接和日期，镜像无今日条目时只标未观察到，不宣称无推送。",
+      "language": "zh",
+      "sourceClass": "trusted_media",
+      "readingRole": "coverage"
+    },
+    {
+      "id": "jiqizhixin-wechat",
+      "name": "机器之心（公众号）",
+      "enabled": true,
+      "channel": "wechat_public_rss",
+      "collectionMode": "public_rss_mirror",
+      "format": "rss",
+      "url": "https://wechat2rss.bestblogs.dev/feed/8d97af31b0de9e48da74558af128a4673d78c9a3.xml",
+      "homeUrl": "https://www.jiqizhixin.com/",
+      "allowedArticleHosts": [
+        "mp.weixin.qq.com"
+      ],
+      "expectedFeedTitles": [
+        "机器之心"
+      ],
+      "verificationUrl": "https://github.com/ginobefun/BestBlogs/blob/main/opml/bestblogs_wechat2rss_opml_all.opml",
+      "accessNote": "官网文章入口受限时独立检查公开公众号RSS；标题必须匹配账户，原始日期和微信原文保持不变。",
+      "language": "zh",
+      "sourceClass": "trusted_media",
+      "readingRole": "coverage",
+      "wechatBiz": "MzA3MzI4MjgzMw=="
+    },
+    {
+      "id": "aiera-wechat",
+      "name": "新智元（公众号）",
+      "enabled": true,
+      "channel": "wechat_public_rss",
+      "collectionMode": "public_rss_mirror",
+      "format": "rss",
+      "url": "https://wechat2rss.bestblogs.dev/feed/e531a18b21c34cf787b83ab444eef659d7a980de.xml",
+      "homeUrl": "https://aiera.com.cn/",
+      "allowedArticleHosts": [
+        "mp.weixin.qq.com"
+      ],
+      "expectedFeedTitles": [
+        "新智元"
+      ],
+      "verificationUrl": "https://github.com/ginobefun/BestBlogs/blob/main/opml/bestblogs_wechat2rss_opml_all.opml",
+      "accessNote": "品牌官网之外独立检查公开公众号RSS；标题必须匹配账户，原始日期和微信原文保持不变。",
+      "language": "zh",
+      "sourceClass": "trusted_media",
+      "readingRole": "coverage",
+      "wechatBiz": "MzI3MTA0MTk1MA=="
+    }
+  ],
+  "freshnessRule": "每次检索均检查全部 enabled 入口；sameDayCandidateCount 只表示公开入口已观察到的当日文章。公开镜像可能延迟，未观察到不等于公众号未发文。禁止将旧文、抓取时间或 feed 构建时间当作文章发布日期。"
+}

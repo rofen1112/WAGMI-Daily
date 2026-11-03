@@ -1,0 +1,13 @@
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import './network-fetch.mjs';
+const base='data/dev/source-archives/audit-1200-2026-11-01';
+await mkdir(base,{recursive:true});
+const read=async n=>JSON.parse(await readFile('data/dev/'+n+'.json','utf8'));
+const [m,a,v]=await Promise.all(['memene-daily-latest','ai-media-latest','ai-discovery-review-2026-11-01'].map(read));
+const urls=[...new Set([...m.target.candidates.flatMap(c=>c.sources.map(s=>s.url)),...a.candidates.filter(c=>v.media.items.find(i=>i.id===c.id)?.disposition==='needs_review').map(c=>c.url),...a.candidates.find(c=>c.sourceId==='juya'&&c.sourceDate==='2026-11-01').sections.flatMap(s=>s.referencedUrls??[]),'https://openai.com/news/rss.xml','https://www.anthropic.com/news','https://blog.google/technology/ai/rss/'])];
+const input=process.argv[2]?JSON.parse(await readFile(process.argv[2],'utf8')):urls;
+const prefix=process.argv[3]??'source';let cursor=0;const results=[];
+await Promise.all(Array.from({length:6},async()=>{while(cursor<input.length){const i=cursor++,url=input[i],checkedAt=new Date().toISOString();let actual=url;if(/https:\/\/(?:www\.)?x.com\//.test(url))actual='https://publish.twitter.com/oembed?omit_script=1&url='+encodeURIComponent(url);try{const r=await fetch(actual,{signal:AbortSignal.timeout(22000),headers:{'user-agent':'ark.insight-audit/1.0'}}),raw=await r.text();await writeFile(`${base}/${prefix}-${i}.raw`,raw);const txt=raw.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();await writeFile(`${base}/${prefix}-${i}.txt`,txt);results[i]={i:prefix+'-'+i,url,checkedAt,httpStatus:r.status,success:r.ok,path:`${base}/${prefix}-${i}.txt`,chars:txt.length};}catch(e){results[i]={i:prefix+'-'+i,url,checkedAt,success:false,error:e.message};}}}));
+await writeFile(`${base}/${prefix}-results.json`,JSON.stringify(results,null,2)+'\n');
+console.log(JSON.stringify(results));
+

@@ -1,0 +1,1878 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>2026.07.01-07.06 AI 大事件汇报</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #ffffff;
+        --paper: #ffffff;
+        --ink: #14171a;
+        --muted: #5e6673;
+        --soft: #f6f7f9;
+        --line: #e6e9ee;
+        --line-strong: #cfd5dd;
+        --accent: #1d4ed8;
+        --green: #087f5b;
+        --amber: #a16207;
+        --red: #b42318;
+        --shadow: 0 18px 60px rgba(20, 23, 26, 0.07);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+        line-height: 1.68;
+        background: var(--bg);
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 38px 24px 72px;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(14px);
+      }
+
+      .topbar-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 12px 24px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 210px;
+        font-weight: 760;
+        letter-spacing: 0;
+      }
+
+      .brand svg,
+      .icon svg {
+        display: block;
+      }
+
+      .nav {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      .nav a {
+        padding: 7px 10px;
+        color: #2d333b;
+        font-size: 13px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+      }
+
+      .nav a:hover {
+        text-decoration: none;
+        background: var(--soft);
+        border-color: var(--line);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+        gap: 28px;
+        align-items: end;
+        padding: 34px 0 26px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        padding: 5px 9px;
+        color: #334155;
+        font-size: 12px;
+        font-weight: 680;
+        background: var(--soft);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        line-height: 1.18;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        max-width: 900px;
+        font-size: clamp(34px, 6vw, 72px);
+        font-weight: 820;
+      }
+
+      h2 {
+        margin-bottom: 18px;
+        font-size: clamp(24px, 3vw, 36px);
+        font-weight: 780;
+      }
+
+      h3 {
+        font-size: 19px;
+        font-weight: 760;
+      }
+
+      .lead {
+        max-width: 830px;
+        margin: 20px 0 0;
+        color: var(--muted);
+        font-size: 17px;
+      }
+
+      .hero-card {
+        padding: 22px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+      }
+
+      .hero-card h3 {
+        margin-bottom: 14px;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        padding: 14px;
+        background: var(--soft);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .metric b {
+        display: block;
+        font-size: 25px;
+        line-height: 1;
+      }
+
+      .metric span {
+        display: block;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      section {
+        padding: 42px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .section-head {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .section-note {
+        max-width: 540px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .summary-card,
+      .event,
+      .source-card,
+      .insight-card,
+      .trend-card {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .summary-card {
+        padding: 20px;
+      }
+
+      .summary-card .num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        margin-bottom: 14px;
+        color: var(--accent);
+        font-weight: 760;
+        border: 1px solid #bfdbfe;
+        border-radius: 50%;
+      }
+
+      .summary-card p,
+      .insight-card p,
+      .trend-card p {
+        margin: 10px 0 0;
+        color: var(--muted);
+      }
+
+      .events {
+        display: grid;
+        gap: 16px;
+      }
+
+      .event {
+        display: grid;
+        grid-template-columns: 154px minmax(0, 1fr);
+        overflow: hidden;
+      }
+
+      .date {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 18px;
+        background: var(--soft);
+        border-right: 1px solid var(--line);
+      }
+
+      .date .day {
+        font-size: 22px;
+        font-weight: 780;
+      }
+
+      .date .kind {
+        width: fit-content;
+        padding: 3px 7px;
+        color: #334155;
+        font-size: 12px;
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+      }
+
+      .event-body {
+        padding: 18px 20px 20px;
+      }
+
+      .event-title-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .event-title-row h3 {
+        max-width: 760px;
+      }
+
+      .score {
+        flex: 0 0 auto;
+        padding: 4px 8px;
+        color: var(--green);
+        font-size: 12px;
+        font-weight: 700;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        border-radius: 999px;
+      }
+
+      .score.medium {
+        color: var(--amber);
+        background: #fffbeb;
+        border-color: #fde68a;
+      }
+
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin: 12px 0;
+      }
+
+      .tag {
+        padding: 3px 8px;
+        color: #475569;
+        font-size: 12px;
+        line-height: 1.4;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+      }
+
+      .event p {
+        margin: 8px 0;
+        color: #2f3640;
+      }
+
+      .event ul,
+      .source-card ul,
+      .compact-list {
+        margin: 10px 0 0;
+        padding-left: 18px;
+      }
+
+      .event li,
+      .source-card li,
+      .compact-list li {
+        margin: 6px 0;
+        color: var(--muted);
+      }
+
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .link-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 10px;
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 650;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+      }
+
+      .link-pill:hover {
+        text-decoration: none;
+        background: #eff6ff;
+      }
+
+      .icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        color: currentColor;
+      }
+
+      .insight-card,
+      .trend-card {
+        padding: 20px;
+      }
+
+      .insight-card h3,
+      .trend-card h3 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .matrix {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .matrix-block {
+        padding: 18px;
+        background: var(--soft);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .matrix-block h3 {
+        margin-bottom: 10px;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 880px;
+        background: #fff;
+      }
+
+      th,
+      td {
+        padding: 12px 13px;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--line);
+      }
+
+      th {
+        color: #334155;
+        font-size: 12px;
+        font-weight: 760;
+        background: var(--soft);
+      }
+
+      td {
+        font-size: 14px;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      .source-card {
+        padding: 18px;
+      }
+
+      .source-card .source-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .source-card small {
+        color: var(--muted);
+      }
+
+      .product-card {
+        display: grid;
+        grid-template-columns: 128px minmax(0, 1fr);
+        gap: 18px;
+        padding: 20px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .product-date {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .product-date b {
+        display: block;
+        color: var(--ink);
+        font-size: 21px;
+        line-height: 1.1;
+      }
+
+      .channel-status,
+      .source-badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        padding: 3px 8px;
+        font-size: 12px;
+        font-weight: 700;
+        border-radius: 999px;
+      }
+
+      .source-badge {
+        margin-left: 8px;
+        color: #475569;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+      }
+
+      .status-followed {
+        color: var(--green);
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+      }
+
+      .status-new {
+        color: var(--amber);
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+      }
+
+      .status-official {
+        color: var(--accent);
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+      }
+
+      .youtube-note {
+        margin: 14px 0 18px;
+        padding: 14px 16px;
+        color: #334155;
+        font-size: 14px;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .topic-stack {
+        display: grid;
+        gap: 16px;
+      }
+
+      .topic-group {
+        overflow: hidden;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .topic-group > summary {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: center;
+        padding: 18px 20px;
+        cursor: pointer;
+        list-style: none;
+        background: #fbfcfe;
+      }
+
+      .topic-group > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .topic-group > summary::after {
+        content: "+";
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        color: var(--accent);
+        font-size: 20px;
+        line-height: 1;
+        border: 1px solid #bfdbfe;
+        border-radius: 50%;
+      }
+
+      .topic-group[open] > summary {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .topic-group[open] > summary::after {
+        content: "-";
+      }
+
+      .topic-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        font-size: 20px;
+        font-weight: 780;
+        line-height: 1.2;
+      }
+
+      .topic-count {
+        flex: 0 0 auto;
+        padding: 3px 8px;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 700;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+      }
+
+      .topic-desc {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .topic-body {
+        display: grid;
+        gap: 16px;
+        padding: 18px;
+      }
+
+      .topic-body .event,
+      .topic-body .product-card,
+      .topic-body .table-wrap,
+      .topic-body .matrix,
+      .topic-body .grid {
+        margin: 0;
+      }
+
+      .quick-index {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .quick-index a {
+        display: block;
+        min-height: 112px;
+        padding: 16px;
+        color: var(--ink);
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .quick-index a:hover {
+        text-decoration: none;
+        border-color: var(--line-strong);
+        box-shadow: 0 12px 32px rgba(20, 23, 26, 0.06);
+      }
+
+      .quick-index b {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .quick-index span {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .footer {
+        padding-top: 34px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .notice {
+        padding: 16px 18px;
+        color: #334155;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      @media (max-width: 900px) {
+        .hero {
+          grid-template-columns: 1fr;
+        }
+
+        .grid.two,
+        .grid.three,
+        .matrix,
+        .quick-index {
+          grid-template-columns: 1fr;
+        }
+
+        .event {
+          grid-template-columns: 1fr;
+        }
+
+        .date {
+          border-right: none;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .section-head {
+          display: block;
+        }
+
+        .section-note {
+          margin-top: 8px;
+        }
+      }
+
+      @media (max-width: 620px) {
+        .page {
+          padding: 26px 16px 56px;
+        }
+
+        .topbar-inner {
+          display: block;
+          padding: 10px 16px;
+        }
+
+        .nav {
+          margin-top: 10px;
+        }
+
+        .event-title-row {
+          display: block;
+        }
+
+        .score {
+          display: inline-block;
+          margin-top: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 6.5h16M4 12h16M4 17.5h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <path d="M7 4v16M17 4v16" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".55" />
+          </svg>
+          AI Events Brief
+        </div>
+        <nav class="nav" aria-label="页面导航">
+          <a href="#summary">摘要</a>
+          <a href="#investment">投资/市场</a>
+          <a href="#products">AI产品</a>
+          <a href="#technical">技术进展</a>
+          <a href="#creators">作者库</a>
+          <a href="#youtube">YouTube</a>
+          <a href="#sources">来源</a>
+        </nav>
+      </div>
+    </div>
+
+    <main class="page">
+      <header class="hero">
+        <div>
+          <div class="eyebrow">
+            <span class="icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M7 3v3M17 3v3M4.5 9.5h15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                <rect x="4" y="5.5" width="16" height="15" rx="2.5" stroke="currentColor" stroke-width="1.7" />
+              </svg>
+            </span>
+            覆盖窗口：2026-07-01 至 2026-07-06
+          </div>
+          <h1>AI 大事件汇报：室内设计、AI 编程、AI-CAD、3D 空间与世界模型</h1>
+          <p class="lead">
+            本页按真实链接核验整理。重点不是泛泛罗列“AI 新闻”，而是筛选这 6 天内对设计生产力、空间智能、工程建模与 AI 编程工作流有直接指向的事件、项目、发布与行业信号。
+          </p>
+        </div>
+        <aside class="hero-card">
+          <h3>本次抓取结果</h3>
+          <div class="metric-grid">
+            <div class="metric"><b>30+</b><span>事件 / 产品 / 视频</span></div>
+            <div class="metric"><b>7</b><span>核心方向</span></div>
+            <div class="metric"><b>50+</b><span>真实来源链接</span></div>
+            <div class="metric"><b>7.06</b><span>整理日期</span></div>
+          </div>
+        </aside>
+      </header>
+
+      <section id="summary">
+        <div class="section-head">
+          <h2>一页结论</h2>
+          <p class="section-note">按产业影响和与你关注方向的相关性排序。</p>
+        </div>
+        <div class="grid three">
+          <article class="summary-card">
+            <span class="num">1</span>
+            <h3>空间智能正在从“单个 3D 资产”转向“可持续运行的世界状态”</h3>
+            <p>Tripo AI 在 7 月 2 日宣布 1.5 亿美元 A3 融资，并继续把资金投向 3D foundation models 与 world models。其 Project Eden 的核心叙事是把世界状态与视觉渲染解耦，这比普通 text-to-3D 更接近“可编辑、可多人、可被 agent 使用”的空间底座。</p>
+          </article>
+          <article class="summary-card">
+            <span class="num">2</span>
+            <h3>室内设计 AI 的商业化主线是空间规划、可视化、材料优化和智能家居融合</h3>
+            <p>ResearchAndMarkets 在 7 月 3 日发布的报告把 AI 室内设计市场 2030 年规模预测到 45.5 亿美元；但同窗口也出现 Dizign 这类设计公司强调“AI 无法替代身份、文化和情绪”的反向定位。</p>
+          </article>
+          <article class="summary-card">
+            <span class="num">3</span>
+            <h3>AI 编程从“更强模型”进入“可审计、可控成本、可自动化执行”的工程治理阶段</h3>
+            <p>GitHub Copilot 在 7 月 1-2 日连续发布：open-weight 模型进入 Copilot、视觉输入 GA、浏览器工具 GA、agent session streaming 预览、Actions 内免 PAT 运行 Copilot CLI。这些都在解决企业落地时的模型选择、上下文输入、安全、审计和成本控制。</p>
+          </article>
+          <article class="summary-card">
+            <span class="num">4</span>
+            <h3>AEC / CAD 的 AI 落地更偏“前期评估”和“算量估算”</h3>
+            <p>Trimble 的 MEP 自动识别、自动路由、自然语言查询，以及 Build 用 AI 压缩基础设施尽调周期，说明 AEC 里的 AI 先吃掉高频、规则强、人工密集的环节，而不是马上替代完整设计师或工程师。</p>
+          </article>
+          <article class="summary-card">
+            <span class="num">5</span>
+            <h3>AI-CAD 的下一个叙事是“人工通用工程师”</h3>
+            <p>DEVELOP3D 在 7 月 1 日围绕 Bezos 的 Prometheus 发问：如果 AI 进入物理产品设计、工程约束和制造流程，传统 CAD 厂商会被迫从几何工具转向工程智能平台。</p>
+          </article>
+          <article class="summary-card">
+            <span class="num">6</span>
+            <h3>本周没有看到“室内设计 AI 爆款产品发布”，但看到了行业结构性机会</h3>
+            <p>机会点集中在：户型/平面图到 3D、带真实商品 SKU 的家具替换、施工预算联动、材料/灯光/风格约束、设计资产与工程数据打通。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="read-path">
+        <div class="section-head">
+          <h2>选择阅读路径</h2>
+          <p class="section-note">下面按用户目标重排内容。每个主题块都可展开或收起，适合快速挑重点。</p>
+        </div>
+        <div class="quick-index">
+          <a href="#investment">
+            <b>投资 / 融资 / 市场</b>
+            <span>Tripo A3 融资、Build 种子轮、室内设计 AI 市场报告。</span>
+          </a>
+          <a href="#products">
+            <b>AI 产品与工具</b>
+            <span>Meshy 3D Agent、Google AI tooling、Genie、AI-CAD 产品线。</span>
+          </a>
+          <a href="#technical">
+            <b>技术 / 工程进展</b>
+            <span>Copilot、AEC 算量、世界模型、Prometheus、工程治理。</span>
+          </a>
+          <a href="#youtube">
+            <b>YouTube / 作者库</b>
+            <span>近 3 个月热门视频、官方频道、关注博主和初新观察对象。</span>
+          </a>
+        </div>
+      </section>
+
+      <section id="products">
+        <details class="topic-group" open>
+          <summary>
+            <div>
+              <div class="topic-title">AI 产品与工具 <span class="topic-count">4 条</span></div>
+              <p class="topic-desc">集中阅读近 3 个月与产品发布、官方演示、工具路线相关的内容。</p>
+            </div>
+          </summary>
+          <div class="topic-body">
+        <div class="section-head">
+          <h2>AI 产品新闻补充</h2>
+          <p class="section-note">这部分扩大到 2026-04-06 至 2026-07-06，覆盖 YouTube 热门视频窗口内出现的产品发布、官方演示和工具路线。</p>
+        </div>
+        <div class="grid">
+          <article class="product-card">
+            <div class="product-date"><b>06.04</b>AI 3D Agent</div>
+            <div>
+              <h3>Meshy 发布 Meshy 3D Agent beta：把 3D 创作从单次生成推进到 agent workflow</h3>
+              <p>Meshy 宣布开放 Meshy 3D Agent beta，定位为面向 3D 创作的 AI agent。官方演示把 prompt、参考图、模型生成、纹理、风格化和下游导出连接在一起；YouTube 上官方教程视频在 6 月内多条进入数十万观看量。</p>
+              <div class="tags">
+                <span class="tag">AI 3D</span><span class="tag">3D agent</span><span class="tag">product launch</span><span class="tag">creator workflow</span>
+              </div>
+              <div class="links">
+                <a class="link-pill" href="https://www.prnewswire.com/news-releases/meshy-launches-3d-agent-beta-the-worlds-first-ai-agent-for-3d-creation-302790052.html" target="_blank" rel="noreferrer">PR Newswire 官方发布</a>
+                <a class="link-pill" href="https://www.meshy.ai/features/3d-agent" target="_blank" rel="noreferrer">Meshy 3D Agent</a>
+                <a class="link-pill" href="https://www.youtube.com/@MeshyAI" target="_blank" rel="noreferrer">MeshyAI YouTube</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="product-card">
+            <div class="product-date"><b>05.19</b>AI Coding</div>
+            <div>
+              <h3>Google I/O 2026 开发者工具更新：Antigravity 2.0、Managed Agents、AI Studio native Android</h3>
+              <p>Google Developers Blog 在 I/O 2026 后整理了开发者 AI 工具更新，包括 Antigravity 2.0 的 IDE 代理能力、Gemini API Managed Agents、Google AI Studio 的 native Android 生成与迭代体验。这与本报告里的 GitHub Copilot 更新共同说明：AI 编程正在变成“agent + IDE + 浏览器/设备 + 审计”的完整生产系统。</p>
+              <div class="tags">
+                <span class="tag">agentic coding</span><span class="tag">Gemini API</span><span class="tag">AI Studio</span><span class="tag">mobile app generation</span>
+              </div>
+              <div class="links">
+                <a class="link-pill" href="https://blog.google/innovation-and-ai/technology/developers-tools/google-io-2026-developer-highlights/" target="_blank" rel="noreferrer">Google Developers Blog</a>
+                <a class="link-pill" href="https://blog.google/innovation-and-ai/technology/ai/google-io-2026-all-our-announcements/" target="_blank" rel="noreferrer">Google I/O 2026 汇总</a>
+                <a class="link-pill" href="https://www.youtube.com/user/ChromeDevelopers" target="_blank" rel="noreferrer">Chrome for Developers YouTube</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="product-card">
+            <div class="product-date"><b>05-07</b>World Model</div>
+            <div>
+              <h3>Google Project Genie / Genie 3 相关内容持续升温：从 Street View 到交互式世界生成</h3>
+              <p>DeepMind 的 Genie 系列是本期世界模型讨论的高频背景。近三个月 YouTube 上出现多条以 Genie、Street View 和交互式世界为主题的高热解读；虽然部分官方研究发布时间早于视频窗口，但它对“真实空间数据如何变成可交互模拟环境”的讨论，与室内空间、3D 场景和机器人世界模型高度相关。</p>
+              <div class="tags">
+                <span class="tag">world model</span><span class="tag">Street View</span><span class="tag">simulation</span><span class="tag">spatial AI</span>
+              </div>
+              <div class="links">
+                <a class="link-pill" href="https://deepmind.google/discover/blog/genie-3-a-new-frontier-for-world-models/" target="_blank" rel="noreferrer">DeepMind Genie 3</a>
+                <a class="link-pill" href="https://www.youtube.com/results?search_query=Genie+3+world+model+Street+View+AI+2026" target="_blank" rel="noreferrer">YouTube 搜索结果</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="product-card">
+            <div class="product-date"><b>06-07</b>AI-CAD</div>
+            <div>
+              <h3>Graebert / ARES CAD 继续推进 DWG 内 AI：CAD 内部自动化比“外部聊天机器人”更重要</h3>
+              <p>Graebert 在 ARES CAD 生态中持续宣传 DWG 与在线 CAD 自动化能力。对 AI-CAD 来说，关键不是只把 ChatGPT 接入 CAD，而是让 AI 能理解 DWG 对象、图层、标注、批量修改、审阅和云端协作。</p>
+              <div class="tags">
+                <span class="tag">AI-CAD</span><span class="tag">DWG</span><span class="tag">automation</span><span class="tag">CAD workflow</span>
+              </div>
+              <div class="links">
+                <a class="link-pill" href="https://www.graebert.com/cad-software/ares-commander/" target="_blank" rel="noreferrer">ARES Commander</a>
+                <a class="link-pill" href="https://www.youtube.com/%40ARESCADsoftware" target="_blank" rel="noreferrer">ARES CAD YouTube</a>
+              </div>
+            </div>
+          </article>
+        </div>
+          </div>
+        </details>
+      </section>
+
+      <section id="events">
+        <div class="section-head">
+          <h2>重点事件清单</h2>
+          <p class="section-note">每条均附可点击真实来源。可信度为对“来源权威性 + 是否原始发布 + 与主题相关性”的综合判断。</p>
+        </div>
+
+        <div class="events topic-stack">
+          <details id="investment" class="topic-group" open>
+            <summary>
+              <div>
+                <div class="topic-title">投资 / 融资 / 市场数据 <span class="topic-count">3 条</span></div>
+                <p class="topic-desc">先看资本、市场规模和商业化方向：适合判断赛道热度与资源流向。</p>
+              </div>
+            </summary>
+            <div class="topic-body">
+          <article class="event" id="tripo">
+            <div class="date">
+              <span class="day">07.02</span>
+              <span class="kind">3D / 世界模型</span>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <h3>Tripo AI 完成 1.5 亿美元 Series A3，继续押注 3D foundation models 与 world models</h3>
+                <span class="score">高相关 / 官方源</span>
+              </div>
+              <div class="tags">
+                <span class="tag">AI 3D</span><span class="tag">world model</span><span class="tag">embodied AI</span><span class="tag">interactive content</span>
+              </div>
+              <p>事件要点：Tripo AI 宣布完成 1.5 亿美元 A3 融资，投资方横跨汽车、游戏、互联网和科技产业。公司强调资金将投向核心算法、数据基础设施、全球人才与商业化，并继续推进 3D foundation models、world model 技术和 Project Eden。</p>
+              <ul>
+                <li>为什么重要：这是 3D 生成从“做模型”向“做空间底层平台”移动的强信号。</li>
+                <li>与室内 / CAD 关系：生成的 3D 内容如果具备结构、分割、状态持久和物理仿真，未来可接入室内空间、数字样板间、交互式方案评审和机器人/具身智能模拟。</li>
+                <li>风险判断：融资新闻不等于产品成熟；Project Eden 仍是 research preview，需要继续观察可编辑性、几何精度、导出格式、CAD/BIM 兼容度。</li>
+              </ul>
+              <div class="links">
+                <a class="link-pill" href="https://www.globenewswire.com/news-release/2026/07/02/3321436/0/en/tripo-ai-raises-150-million-in-series-a3-financing-backed-by-investors-across-automotive-gaming-internet-and-technology-sectors.html" target="_blank" rel="noreferrer">官方融资公告</a>
+                <a class="link-pill" href="https://www.voxelmatters.com/tripo-ai-raises-150-million-in-series-a3-round-with-backers-from-automotive-gaming-and-technology/" target="_blank" rel="noreferrer">VoxelMatters 报道</a>
+                <a class="link-pill" href="https://www.tripo3d.ai/blog" target="_blank" rel="noreferrer">Tripo 官方博客</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="event" id="interior-market">
+            <div class="date">
+              <span class="day">07.03</span>
+              <span class="kind">室内设计 AI</span>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <h3>ResearchAndMarkets 发布 AI in Interior Design Market Report 2026：2030 年规模预测 45.5 亿美元</h3>
+                <span class="score">高相关 / 市场报告</span>
+              </div>
+              <div class="tags">
+                <span class="tag">interior design</span><span class="tag">AR / VR</span><span class="tag">space planning</span><span class="tag">smart home</span>
+              </div>
+              <p>报告称 AI 室内设计市场预计从 2025 年 13.9 亿美元增长到 2030 年 45.5 亿美元，CAGR 26.8%。关键驱动包括个性化室内设计、AI 空间规划、虚拟室内可视化、材料优化、智能家居融合和远程设计服务。</p>
+              <ul>
+                <li>直接启发：室内设计 AI 的商业切口不只是“生成漂亮效果图”，而是要连接平面规划、家具/材料选择、AR/VR 展示、可购买商品和智能家居控制。</li>
+                <li>竞争格局：报告点名 Wayfair、Autodesk、Houzz、Havenly、Foyr、Homestyler、Coohom、Planner 5D、RoomGPT 等公司。</li>
+                <li>可行动方向：若做产品，应优先做可落地工作流，例如户型解析、家具替换、预算清单、SKU 链接、材料表、施工交付。</li>
+              </ul>
+              <div class="links">
+                <a class="link-pill" href="https://www.globenewswire.com/news-release/2026/07/03/3321819/0/en/Explosive-Growth-Predicted-AI-in-Interior-Design-Market-to-Surpass-4-Billion-by-2030-Amid-Rising-Smart-Home-Demand.html" target="_blank" rel="noreferrer">GlobeNewswire 摘要</a>
+                <a class="link-pill" href="https://www.researchandmarkets.com/r/z0lbuu" target="_blank" rel="noreferrer">ResearchAndMarkets 报告页</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="event" id="build">
+            <div class="date">
+              <span class="day">07.01</span>
+              <span class="kind">AEC / 基础设施</span>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <h3>Build 获 850 万美元种子轮：用 AI 把基础设施选址与尽调从数周压缩到数小时</h3>
+                <span class="score">高相关 / 媒体源</span>
+              </div>
+              <div class="tags">
+                <span class="tag">agentic real estate</span><span class="tag">site assessment</span><span class="tag">due diligence</span><span class="tag">data centers</span>
+              </div>
+              <p>Build 由建筑师 James Stirrat-Ellis 和 AI 研究者 Ben McClusky 创立，融资由 Index Ventures 领投。公司称其平台能并行处理规划、环境、电力、政治约束等 1600+ 数据源，把基础设施尽调周期缩短 95% 以上。</p>
+              <ul>
+                <li>为什么重要：AI 在 AEC 的另一个落点是“前期决策”，即把场地、政策、能源、环境、工程约束一起计算。</li>
+                <li>与世界模型关系：这类系统不是视觉 3D，但它在构建“可供 agent 决策的现实世界约束模型”。</li>
+                <li>商业模式信号：Build 不是卖软件 license，而是卖完成的 development work output，说明 AI 服务化交付正在改变 AEC 采购方式。</li>
+              </ul>
+              <div class="links">
+                <a class="link-pill" href="https://aecmag.com/ai/build-raises-8-5m-seed-for-ai-driven-infrastructure-due-diligence-platform/" target="_blank" rel="noreferrer">AEC Magazine 报道</a>
+              </div>
+            </div>
+          </article>
+
+            </div>
+          </details>
+
+          <details id="technical" class="topic-group" open>
+            <summary>
+              <div>
+                <div class="topic-title">技术 / 工程进展 <span class="topic-count">9 条</span></div>
+                <p class="topic-desc">集中阅读模型、agent、AI-CAD、AEC、世界模型和工程治理相关事件。</p>
+              </div>
+            </summary>
+            <div class="topic-body">
+          <article class="event" id="github-models">
+            <div class="date">
+              <span class="day">07.01</span>
+              <span class="kind">AI 编程</span>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <h3>GitHub Copilot 引入 Kimi K2.7 Code：首个在 Copilot model picker 中可选的 open-weight 编程模型</h3>
+                <span class="score">高相关 / 官方源</span>
+              </div>
+              <div class="tags">
+                <span class="tag">GitHub Copilot</span><span class="tag">open-weight model</span><span class="tag">coding model</span><span class="tag">model picker</span>
+              </div>
+              <p>Kimi K2.7 Code 在 GitHub Copilot 中 GA，GitHub 称它是 Copilot model picker 里的首个 open-weight 模型选择，并提供更低成本的编码工作流选项。它先向 Pro、Pro+、Max 渐进推出，企业版需管理员策略启用。</p>
+              <ul>
+                <li>为什么重要：AI 编程平台不再只绑定少数闭源大模型，模型路由和成本管理将成为工具竞争重点。</li>
+                <li>对开发者：同一个 IDE / CLI / agent 工作流内，模型差异会影响长任务、代码重构、测试生成和预算。</li>
+                <li>对团队：open-weight 模型进入企业工具链，会带来安全、合规、数据治理和模型质量评估的新任务。</li>
+              </ul>
+              <div class="links">
+                <a class="link-pill" href="https://github.blog/changelog/2026-07-01-kimi-k2-7-is-now-available-in-github-copilot/" target="_blank" rel="noreferrer">GitHub Changelog</a>
+                <a class="link-pill" href="https://docs.github.com/en/copilot/using-github-copilot/ai-models/choosing-the-right-ai-model-for-your-task" target="_blank" rel="noreferrer">Copilot 模型文档</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="event" id="github-vision-browser">
+            <div class="date">
+              <span class="day">07.01</span>
+              <span class="kind">AI 编程</span>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <h3>Copilot Vision 与 VS Code Browser Tools 同日 GA：agent 能看图、看 PDF、操作真实浏览器</h3>
+                <span class="score">高相关 / 官方源</span>
+              </div>
+              <div class="tags">
+                <span class="tag">vision</span><span class="tag">browser agent</span><span class="tag">PDF / image input</span><span class="tag">frontend QA</span>
+              </div>
+              <p>GitHub 宣布 Copilot Vision GA，用户可以把图片和 PDF 附到 chat prompt；同日 Browser Tools for GitHub Copilot in VS Code GA，agent 可以打开网页、点击、输入、悬停、拖拽、处理弹窗、读取页面内容、截图和抓 console error。</p>
+              <ul>
+                <li>为什么重要：AI 编程从“只读代码”进入“读设计稿、读截图、跑浏览器、发现 UI 错误”的工作流。</li>
+                <li>与室内 / 3D 关系：设计工具、web-based CAD、3D viewer、室内配置器都可以被 agent 以浏览器方式测试和调试。</li>
+                <li>关键限制：企业仍需关注附件留存、浏览器隔离、网络域名控制和 agent 操作授权。</li>
+              </ul>
+              <div class="links">
+                <a class="link-pill" href="https://github.blog/changelog/2026-07-01-copilot-vision-is-generally-available/" target="_blank" rel="noreferrer">Copilot Vision GA</a>
+                <a class="link-pill" href="https://github.blog/changelog/2026-07-01-browser-tools-for-github-copilot-in-vs-code-are-generally-available/" target="_blank" rel="noreferrer">Browser Tools GA</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="event" id="github-agent-governance">
+            <div class="date">
+              <span class="day">07.02</span>
+              <span class="kind">AI 编程治理</span>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <h3>GitHub Copilot agent session streaming 公测：企业可审计 prompts、responses 与 tool calls</h3>
+                <span class="score">高相关 / 官方源</span>
+              </div>
+              <div class="tags">
+                <span class="tag">agent audit</span><span class="tag">SIEM</span><span class="tag">enterprise governance</span><span class="tag">tool calls</span>
+              </div>
+              <p>GitHub Enterprise Cloud 的企业托管用户可以跨 Copilot 客户端访问 agent session 数据，包括 prompts、responses 和 tool calls，并可通过 streaming endpoint 或 REST API 接入企业审计系统。</p>
+              <ul>
+                <li>为什么重要：agent 不再是黑盒；企业开始要求 AI 编程行为可追踪、可回放、可治理。</li>
+                <li>对自动化：配合 7 月 2 日 Copilot CLI 在 GitHub Actions 中支持内置 GITHUB_TOKEN，AI agent 更容易进入 CI / 自动修复 / 自动 PR 流程。</li>
+                <li>对成本：7 月 1 日 GitHub 也发布了 Copilot CLI / SDK session credit limit，说明长任务 agent 的预算上限已成为正式需求。</li>
+              </ul>
+              <div class="links">
+                <a class="link-pill" href="https://github.blog/changelog/2026-07-02-copilot-agent-session-streaming-is-now-in-public-preview/" target="_blank" rel="noreferrer">Agent session streaming</a>
+                <a class="link-pill" href="https://github.blog/changelog/2026-07-02-copilot-cli-no-longer-needs-a-personal-access-token-in-github-actions/" target="_blank" rel="noreferrer">Copilot CLI in Actions</a>
+                <a class="link-pill" href="https://github.blog/changelog/2026-07-01-set-ai-credit-session-limits-in-copilot-cli-and-sdk/" target="_blank" rel="noreferrer">AI credit session limits</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="event" id="trimble">
+            <div class="date">
+              <span class="day">07.01</span>
+              <span class="kind">AEC / MEP</span>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <h3>Trimble 为 MEP 承包商加入 AI 算量与估算能力：符号识别、管线路由、自然语言查询</h3>
+                <span class="score">高相关 / 媒体源</span>
+              </div>
+              <div class="tags">
+                <span class="tag">AEC</span><span class="tag">MEP</span><span class="tag">takeoff</span><span class="tag">estimating</span>
+              </div>
+              <p>AEC Magazine 报道，Trimble 在 MEP 估算软件中加入多项 AI 能力，包括自动 scale / sheet naming、施工图符号识别与计数、conduit 自动路由，以及 Accubid Anywhere 内的 AI Smart Assistant。</p>
+              <ul>
+                <li>为什么重要：这是建筑工程 AI 落在“高频低创造性、强规则、强 ROI”的典型案例。</li>
+                <li>与室内设计关系：室内设计交付如果要走向真实施工，预算、材料、机电、图纸识别会成为 AI 系统必须连接的后端能力。</li>
+                <li>产品启发：效果图生成工具要升级为设计生产力工具，需要能读图纸、算数量、查历史价格、生成预算版本差异。</li>
+              </ul>
+              <div class="links">
+                <a class="link-pill" href="https://aecmag.com/ai/trimble-adds-ai-driven-takeoff-and-estimating-tools-for-mep-contractors/" target="_blank" rel="noreferrer">AEC Magazine 报道</a>
+                <a class="link-pill" href="https://news.trimble.com/New-Trimble-AI-Takeoff-Capabilities-Cut-MEP-Estimating-Time-and-Increase-Accuracy" target="_blank" rel="noreferrer">Trimble 官方新闻稿</a>
+                <a class="link-pill" href="https://www.trimble.com/en/products/trimble-accubid-anywhere" target="_blank" rel="noreferrer">Accubid Anywhere 产品页</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="event" id="aie">
+            <div class="date">
+              <span class="day">07.01-07.02</span>
+              <span class="kind">AI 工程大会</span>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <h3>AI Engineer World’s Fair 2026：Robotics & World Models、Design Engineering、Computer Use 成为独立技术议程</h3>
+                <span class="score">高相关 / 活动源</span>
+              </div>
+              <div class="tags">
+                <span class="tag">world models</span><span class="tag">robotics</span><span class="tag">design engineering</span><span class="tag">computer use</span>
+              </div>
+              <p>AI Engineer World’s Fair 2026 于 6 月 29 日至 7 月 2 日在旧金山举行，官方称有 29 个 tracks、300 位 speakers、100 家 expo partners、6000+ AI engineers / founders / VPs of AI。7 月 1-2 日议程中出现 Robotics & World Models、Design Engineering、Computer Use、Agentic Engineering 等明确方向。</p>
+              <ul>
+                <li>为什么重要：世界模型、设计工程和 computer use 已经从研究话题进入 AI 工程师主会场。</li>
+                <li>可关注议题：Building the simulation infrastructure for practical world model use、Don’t build agents, build environments、From Signal to PR: Anatomy of a Self-Improving Agent。</li>
+                <li>对产品判断：未来工具不是单点生成，而是“环境 + agent + 评价 + 执行”的闭环。</li>
+              </ul>
+              <div class="links">
+                <a class="link-pill" href="https://www.ai.engineer/worldsfair" target="_blank" rel="noreferrer">大会主页</a>
+                <a class="link-pill" href="https://www.ai.engineer/worldsfair/schedule?track=Robotics+%26+World+Models" target="_blank" rel="noreferrer">Robotics & World Models 议程</a>
+                <a class="link-pill" href="https://www.ai.engineer/worldsfair/llms.md" target="_blank" rel="noreferrer">官方 llms.md</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="event" id="dizign">
+            <div class="date">
+              <span class="day">07.01</span>
+              <span class="kind">室内设计行业</span>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <h3>Dizign 发布“AI 不能设计什么”：用人类身份、文化和情绪对抗模板化 AI 室内设计</h3>
+                <span class="score medium">中高相关 / 公司新闻稿</span>
+              </div>
+              <div class="tags">
+                <span class="tag">interior design</span><span class="tag">human-centered design</span><span class="tag">luxury residential</span><span class="tag">design-build</span>
+              </div>
+              <p>Dizign 在 28 周年新闻稿中明确把 AI 作为行业背景：在 AI 能即时生成大量模板化房间布局的时代，公司强调真正的豪宅 / 商业空间仍依赖身份、文化、情绪和设计建造一体化。</p>
+              <ul>
+                <li>为什么重要：这反映了室内设计行业对 AI 的真实反应：不是简单拒绝，而是把 AI 放在效率层，把人类设计师放在叙事、品味、情绪和复杂项目统筹层。</li>
+                <li>产品启发：室内 AI 产品不要只做“替代设计师”的叙事，更适合定位为 brief 理解、风格探索、方案沟通、材料预算和交付管控工具。</li>
+                <li>可信度注意：这是公司宣传口径，不能当作客观市场规模或技术评测。</li>
+              </ul>
+              <div class="links">
+                <a class="link-pill" href="https://www.globenewswire.com/news-release/2026/07/02/3321061/0/en/what-ai-can-t-design-dizign-marks-28-years-of-putting-human-identity-at-the-center-of-interior-design.html" target="_blank" rel="noreferrer">GlobeNewswire 新闻稿</a>
+                <a class="link-pill" href="https://www.dizign.ca/" target="_blank" rel="noreferrer">Dizign 官网</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="event" id="prometheus">
+            <div class="date">
+              <span class="day">07.01</span>
+              <span class="kind">AI-CAD / 工程设计</span>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <h3>DEVELOP3D 发文讨论 Prometheus：所谓“人工通用工程师”会怎样重塑 CAD？</h3>
+                <span class="score medium">中高相关 / 行业分析</span>
+              </div>
+              <div class="tags">
+                <span class="tag">AI-CAD</span><span class="tag">physical AI</span><span class="tag">engineering design</span><span class="tag">Prometheus</span>
+              </div>
+              <p>DEVELOP3D 在 7 月 1 日围绕 Jeff Bezos 的 Prometheus 讨论 CAD 的未来。文章引用 Bezos 此前对 Prometheus 的描述：其目标是构建“artificial general engineer”，即让工程师更容易设计物理对象的下一代工具。</p>
+              <ul>
+                <li>为什么重要：AI-CAD 的竞争正在从“辅助画图”升级到“理解约束、材料、制造、仿真和设计意图”。</li>
+                <li>与室内设计关系：如果工程约束模型成熟，室内设计 AI 也会从渲染工具转向“空间 + 预算 + 施工 + 合规 + 供应链”的智能协作平台。</li>
+                <li>风险判断：Prometheus 目前公开信息仍少，7 月 1 日文章属于行业推演，不是产品发布。</li>
+              </ul>
+              <div class="links">
+                <a class="link-pill" href="https://develop3d.com/cad/the-prometheus-question-for-cad/" target="_blank" rel="noreferrer">DEVELOP3D 文章</a>
+                <a class="link-pill" href="https://techcrunch.com/2026/06/11/jeff-bezoss-prometheus-raises-12b-to-build-an-artificial-general-engineer-for-the-physical-world/" target="_blank" rel="noreferrer">TechCrunch 背景</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="event" id="stackoverflow">
+            <div class="date">
+              <span class="day">07.02</span>
+              <span class="kind">AI 编程组织化</span>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <h3>Stack Overflow 讨论 Snowflake 的 AI 编程治理：从“混乱试用”到可复用 playbook</h3>
+                <span class="score medium">中相关 / 行业访谈</span>
+              </div>
+              <div class="tags">
+                <span class="tag">engineering org</span><span class="tag">AI coding playbook</span><span class="tag">Snowflake</span><span class="tag">developer productivity</span>
+              </div>
+              <p>Stack Overflow Blog 发布与 Snowflake 工程高管相关的访谈，主题是如何把 AI-assisted engineering 从自由试验转为组织层面的重复方法。</p>
+              <ul>
+                <li>为什么重要：AI 编程的瓶颈不只是模型能力，而是团队如何建立规范、评估、安全边界和可复用流程。</li>
+                <li>对 AI-CAD / 设计工具团队：同样需要 playbook，例如哪些任务可让 agent 自动做，哪些必须人审，如何记录设计决策和版本。</li>
+              </ul>
+              <div class="links">
+                <a class="link-pill" href="https://stackoverflow.blog/2026/07/02/ai-coding-chaos-into-a-repeatable-playbook/" target="_blank" rel="noreferrer">Stack Overflow Blog</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="event" id="meshy">
+            <div class="date">
+              <span class="day">07.01 / 07.03</span>
+              <span class="kind">AI 3D 工具内容</span>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <h3>Meshy 与 Tripo 官方内容继续教育市场：照片到 3D、AI game studio、无 CAD 定制商品</h3>
+                <span class="score medium">中相关 / 项目内容</span>
+              </div>
+              <div class="tags">
+                <span class="tag">image-to-3D</span><span class="tag">no CAD</span><span class="tag">AI game studio</span><span class="tag">creator workflow</span>
+              </div>
+              <p>Meshy 博客在 7 月 1 日出现“从照片创建定制设计并销售，无需 CAD”的内容；Tripo 博客在 7 月 3 日出现 AI Game Studio 相关内容。这不是重大产品发布，但说明 AI 3D 厂商正在把教育内容指向可商业化工作流，而不是单纯炫技。</p>
+              <ul>
+                <li>为什么重要：AI 3D 的用户教育正在围绕“真实产出”展开：电商商品、游戏资产、打印模型、创作者工作台。</li>
+                <li>与室内设计关系：类似路径可迁移到家居行业，例如从房间照片生成家具替换、从产品照片生成 3D 商品、从 moodboard 生成场景资产。</li>
+              </ul>
+              <div class="links">
+                <a class="link-pill" href="https://www.meshy.ai/blog" target="_blank" rel="noreferrer">Meshy Blog</a>
+                <a class="link-pill" href="https://www.tripo3d.ai/blog" target="_blank" rel="noreferrer">Tripo Blog</a>
+              </div>
+            </div>
+          </article>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section id="youtube">
+        <details class="topic-group">
+          <summary>
+            <div>
+              <div class="topic-title">YouTube 热门视频雷达 <span class="topic-count">16 条</span></div>
+              <p class="topic-desc">近 3 个月与室内设计 AI、AI 3D、AI-CAD、世界模型、AI 编程相关的热门视频。</p>
+            </div>
+          </summary>
+          <div class="topic-body">
+        <div class="section-head">
+          <h2>YouTube 热门视频雷达</h2>
+          <p class="section-note">视频窗口：2026-04-06 至 2026-07-06。收录依据为主题相关性、发布时间、公开搜索热度、频道影响力和是否能指向真实产品/工作流。</p>
+        </div>
+        <div class="youtube-note">
+          说明：YouTube 公开搜索结果对观看量和时间显示会随地区、登录状态和时间变化。本表只把观看量当作热度参考；未能稳定抓到观看量的官方/垂直频道内容，按“来源价值”而不是“爆款”收录。
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>方向</th>
+                <th>视频 / 链接</th>
+                <th>频道 / 作者</th>
+                <th>时间与热度</th>
+                <th>收录判断</th>
+                <th>频道状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>室内设计 AI</td>
+                <td><a href="https://www.youtube.com/watch?v=Wt6IzAS71e0" target="_blank" rel="noreferrer">Full AI Workflow for Interior Designers: From Brief to Pro Render</a></td>
+                <td>Kate Vera Creative</td>
+                <td>约 3 个月内；搜索结果显示约 1 万级观看</td>
+                <td>完整覆盖 brief、渲染和设计交付链，适合作为室内设计 AI workflow 参考。</td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+              </tr>
+              <tr>
+                <td>室内设计 AI</td>
+                <td><a href="https://www.youtube.com/watch?v=POsaBs5AusA" target="_blank" rel="noreferrer">5 AI Workflows Every Interior Designer Should Try</a></td>
+                <td>Salmaan Mohamed</td>
+                <td>约 1 个月内；搜索结果显示约 1 万级观看</td>
+                <td>偏实操方法论，适合追踪室内设计师真实采用 AI 的方式。</td>
+                <td><span class="channel-status status-new">初新观察</span></td>
+              </tr>
+              <tr>
+                <td>室内设计 AI</td>
+                <td><a href="https://www.youtube.com/watch?v=vx-8W7a606I" target="_blank" rel="noreferrer">7 Best AI Interior Design Tools 2026: AI Virtual Staging, Photo Redesign, CAD Renders & VR</a></td>
+                <td>PropTech Playbook</td>
+                <td>约 2 个月内；小众垂直频道</td>
+                <td>工具榜单覆盖 virtual staging、photo redesign、CAD render、VR，适合做产品竞品线索。</td>
+                <td><span class="channel-status status-new">初新观察</span></td>
+              </tr>
+              <tr>
+                <td>室内设计 AI</td>
+                <td><a href="https://www.youtube.com/watch?v=7Pe5w8xpkV0" target="_blank" rel="noreferrer">Pro Workflows for AI Interior Design: Gemini & Nano Banana</a></td>
+                <td>NextMindRevolution</td>
+                <td>约 1 个月内；搜索结果显示 1 千级观看</td>
+                <td>虽然热度不高，但主题高度垂直，可用于观察 Gemini / 多模态工具进入设计工作流的细节。</td>
+                <td><span class="channel-status status-new">初新观察</span></td>
+              </tr>
+              <tr>
+                <td>室内设计 AI</td>
+                <td><a href="https://www.youtube.com/results?search_query=Mia+Tsujimura+AI+interior+design+Nano+Banana+2026" target="_blank" rel="noreferrer">AI Interior Design / Nano Banana workflow 系列</a></td>
+                <td>Mia Tsujimura | The Portfolio Archive</td>
+                <td>近 3 个月内持续出现相关内容</td>
+                <td>频道长期面向室内/建筑作品集和设计工作流，适合作为设计师视角输入源。</td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+              </tr>
+              <tr>
+                <td>AI 3D 产品</td>
+                <td><a href="https://www.youtube.com/watch?v=YwnwaCpRNGE" target="_blank" rel="noreferrer">Meshy 3D Agent / 3D 打印 / Blender workflow 官方视频</a></td>
+                <td>MeshyAI</td>
+                <td>6 月多条官方视频；搜索结果显示数十万到 80 万级观看</td>
+                <td>官方产品教育内容密集，且观看量高，是 AI 3D 产品 adoption 的强信号。</td>
+                <td><span class="channel-status status-official">官方重点</span></td>
+              </tr>
+              <tr>
+                <td>AI 3D 评测</td>
+                <td><a href="https://www.youtube.com/watch?v=v72wRfONHNQ" target="_blank" rel="noreferrer">I Tested Meshy 6 in Unreal Engine 5</a></td>
+                <td>Stefan 3D AI</td>
+                <td>约 1 个月内；搜索结果显示约 3 万级观看</td>
+                <td>把 AI 3D 工具放入 Unreal Engine 工作流测试，比单纯展示生成图更有判断价值。</td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+              </tr>
+              <tr>
+                <td>AI 3D 评测</td>
+                <td><a href="https://www.youtube.com/watch?v=SCQt6B96DSs" target="_blank" rel="noreferrer">AI Just Broke 3D Modeling: The State of AI 3D in 2026</a></td>
+                <td>Top 3D AI / Stefan 3D AI 相关内容</td>
+                <td>约 1 个月内；搜索结果显示数万级观看</td>
+                <td>适合观察 AI 3D 赛道从 demo 到生产管线的行业共识。</td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+              </tr>
+              <tr>
+                <td>Tripo / AI 3D</td>
+                <td><a href="https://www.youtube.com/watch?v=5M6W3arooTk" target="_blank" rel="noreferrer">Tripo AI Review: Is This the Best Text-to-3D Model Generator?</a></td>
+                <td>Davidson-Daniel</td>
+                <td>约 3 周内；搜索结果显示约 4 万级观看</td>
+                <td>与 Tripo 融资新闻形成产品体验侧补充，但频道是否长期垂直仍需观察。</td>
+                <td><span class="channel-status status-new">初新观察</span></td>
+              </tr>
+              <tr>
+                <td>世界模型</td>
+                <td><a href="https://www.youtube.com/watch?v=bxv4IkobUPI" target="_blank" rel="noreferrer">Google Just Turned Street View Into a Video Game</a></td>
+                <td>Bilawal Sidhu</td>
+                <td>约 1 个月内；搜索结果显示约 15 万级观看</td>
+                <td>把 Street View、世界模型和空间生成讲给创作者/技术受众，适合持续关注空间 AI 叙事。</td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+              </tr>
+              <tr>
+                <td>AI 编程</td>
+                <td><a href="https://www.youtube.com/watch?v=KXIdYEdOPys" target="_blank" rel="noreferrer">Codex Full Course 2026: The NEW Best AI Coding Tool</a></td>
+                <td>Riley Brown</td>
+                <td>约 2 个月内；搜索结果显示 10 万级以上观看</td>
+                <td>AI coding 工具教育视频热度高，适合观察 OpenAI Codex / agent coding 的大众采用。</td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+              </tr>
+              <tr>
+                <td>AI 编程</td>
+                <td><a href="https://www.youtube.com/watch?v=RywmhLTFeFk" target="_blank" rel="noreferrer">How to Use Claude Code for Beginners in 2026</a></td>
+                <td>AI Master</td>
+                <td>约 1 个月内；搜索结果显示约 6 万级观看</td>
+                <td>Claude Code 教程代表开发者对 terminal/agent coding 的快速迁移。</td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+              </tr>
+              <tr>
+                <td>AI 编程</td>
+                <td><a href="https://www.youtube.com/watch?v=BMMcmmnjrM8" target="_blank" rel="noreferrer">How to Build Mobile Apps with Claude Code: Full Course</a></td>
+                <td>Nick Saraev</td>
+                <td>约 1 个月内；搜索结果显示 10 万级以上观看</td>
+                <td>移动 app 生成是 AI 编程从脚本/网页向完整产品构建扩展的信号。</td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+              </tr>
+              <tr>
+                <td>AI 开发产品</td>
+                <td><a href="https://www.youtube.com/watch?v=oBZNKSyytOo" target="_blank" rel="noreferrer">Top 3 AI tooling updates from Google I/O 2026</a></td>
+                <td>Chrome for Developers / Google for Developers</td>
+                <td>约 1 个月内；官方频道高曝光</td>
+                <td>官方浓缩 Antigravity、Gemini API、AI Studio 等开发者产品更新。</td>
+                <td><span class="channel-status status-official">官方重点</span></td>
+              </tr>
+              <tr>
+                <td>AI-CAD</td>
+                <td><a href="https://www.youtube.com/watch?v=CWJ7coAGGsY" target="_blank" rel="noreferrer">AI for CAD in DWG & Online Automation</a></td>
+                <td>ARES CAD Software by Graebert</td>
+                <td>近 3 个月内；官方垂直频道</td>
+                <td>虽不一定是爆款，但对 CAD 内部 AI 自动化很有跟踪价值。</td>
+                <td><span class="channel-status status-official">官方重点</span></td>
+              </tr>
+              <tr>
+                <td>AI-CAD</td>
+                <td><a href="https://www.youtube.com/results?search_query=ChatGPT+for+CAD+Generative+AI+builds+3D+models+from+a+prompt+2026" target="_blank" rel="noreferrer">ChatGPT for CAD: Generative AI That Builds 3D Models from a Prompt</a></td>
+                <td>Vistrux / Agentic AI for CAD 相关频道</td>
+                <td>近 3 个月内；小众垂直内容</td>
+                <td>重点不是观看量，而是观察 prompt-to-CAD 是否能进入参数化/可编辑建模。</td>
+                <td><span class="channel-status status-new">初新观察</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+          </div>
+        </details>
+      </section>
+
+      <section id="creators">
+        <details class="topic-group">
+          <summary>
+            <div>
+              <div class="topic-title">作者 / 博主收录库 <span class="topic-count">15 个</span></div>
+              <p class="topic-desc">官方重点、关注博主、初新观察对象集中管理，方便下次持续抓取。</p>
+            </div>
+          </summary>
+          <div class="topic-body">
+        <div class="section-head">
+          <h2>作者 / 博主收录库</h2>
+          <p class="section-note">从本次开始建立持续关注对象。下次抓取时优先检查“官方重点”和“关注博主”的新上传，再从初新观察池筛选升级或移除。</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>频道 / 作者</th>
+                <th>状态</th>
+                <th>关注方向</th>
+                <th>为什么收录</th>
+                <th>下一次抓取动作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><a href="https://www.youtube.com/@MeshyAI" target="_blank" rel="noreferrer">MeshyAI</a></td>
+                <td><span class="channel-status status-official">官方重点</span></td>
+                <td>AI 3D / 3D Agent</td>
+                <td>产品迭代快，官方视频热度高，是 AI 3D 产品新闻的一手来源。</td>
+                <td>持续检查新功能、教程观看量、导出格式和生态合作。</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.youtube.com/@GoogleDeepMind" target="_blank" rel="noreferrer">Google DeepMind</a></td>
+                <td><span class="channel-status status-official">官方重点</span></td>
+                <td>世界模型 / 机器人 / 空间智能</td>
+                <td>Genie、机器人和基础模型研究的一手来源。</td>
+                <td>重点跟踪 world model、simulation、robotics、spatial reasoning。</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.youtube.com/user/ChromeDevelopers" target="_blank" rel="noreferrer">Chrome for Developers / Google for Developers</a></td>
+                <td><span class="channel-status status-official">官方重点</span></td>
+                <td>AI coding / agentic web</td>
+                <td>Google 开发者产品更新密集，适合补齐 GitHub 之外的 AI 编程产品线。</td>
+                <td>追踪 Antigravity、Gemini API、AI Studio、browser automation。</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.youtube.com/%40ARESCADsoftware" target="_blank" rel="noreferrer">ARES CAD Software by Graebert</a></td>
+                <td><span class="channel-status status-official">官方重点</span></td>
+                <td>AI-CAD / DWG</td>
+                <td>CAD 垂直官方频道，适合跟踪 DWG 内部 AI 自动化。</td>
+                <td>检查是否出现 AI command、batch automation、DWG assistant 新能力。</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.youtube.com/results?search_query=Stefan+3D+AI+Meshy+Tripo" target="_blank" rel="noreferrer">Stefan 3D AI</a></td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+                <td>AI 3D 评测 / Unreal / Blender</td>
+                <td>更接近真实 3D 工作流评测，不只展示官方 demo。</td>
+                <td>观察工具实测、失败案例、资产质量和引擎集成。</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.youtube.com/@BilawalSidhu" target="_blank" rel="noreferrer">Bilawal Sidhu</a></td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+                <td>空间 AI / 世界模型 / 创作者技术</td>
+                <td>擅长把空间计算、AI 视觉和创作者工具讲成可理解的趋势。</td>
+                <td>跟踪 Genie、Gaussian Splatting、real-world capture、XR。</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.youtube.com/@RileyBrownAI" target="_blank" rel="noreferrer">Riley Brown</a></td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+                <td>AI 编程 / Codex / app building</td>
+                <td>AI coding 教程传播强，能反映开发者市场采用节奏。</td>
+                <td>跟踪 Codex、Claude Code、Cursor、mobile app build workflow。</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.youtube.com/@NickSaraev" target="_blank" rel="noreferrer">Nick Saraev</a></td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+                <td>AI 编程 / 自动化 / full course</td>
+                <td>长教程能显示工具是否足以完成真实 app 构建。</td>
+                <td>检查新教程是否覆盖部署、测试、数据库、移动端。</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.youtube.com/results?search_query=Kate+Vera+Creative+AI+interior+design" target="_blank" rel="noreferrer">Kate Vera Creative</a></td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+                <td>室内设计 AI / 设计师 workflow</td>
+                <td>内容直接围绕室内设计 AI workflow，适合补充设计师实际使用视角。</td>
+                <td>跟踪 brief-to-render、client presentation、material board、AI render。</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.youtube.com/results?search_query=Mia+Tsujimura+The+Portfolio+Archive+AI+interior+design" target="_blank" rel="noreferrer">Mia Tsujimura | The Portfolio Archive</a></td>
+                <td><span class="channel-status status-followed">关注博主</span></td>
+                <td>室内 / 建筑设计工作流</td>
+                <td>设计教育和作品集视角稳定，适合观察 AI 对设计表达和交付物的影响。</td>
+                <td>关注 AI workflow、portfolio、render、presentation 模板。</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.youtube.com/results?search_query=PropTech+Playbook+AI+Interior+Design+Tools+2026" target="_blank" rel="noreferrer">PropTech Playbook</a></td>
+                <td><span class="channel-status status-new">初新观察</span></td>
+                <td>PropTech / 室内工具榜单</td>
+                <td>频道小众，但主题覆盖虚拟 staging、CAD render、VR，和产品竞品相关。</td>
+                <td>下次检查是否持续发布 AI 室内工具，而非一次性榜单。</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.youtube.com/results?search_query=NextMindRevolution+AI+Interior+Design+Gemini+Nano+Banana" target="_blank" rel="noreferrer">NextMindRevolution</a></td>
+                <td><span class="channel-status status-new">初新观察</span></td>
+                <td>Gemini / 室内设计 workflow</td>
+                <td>热度较低但主题垂直，适合作为新工具早期信号。</td>
+                <td>若连续两次有高相关上传，升级为关注博主。</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.youtube.com/results?search_query=Davidson-Daniel+Tripo+AI+Review" target="_blank" rel="noreferrer">Davidson-Daniel</a></td>
+                <td><span class="channel-status status-new">初新观察</span></td>
+                <td>Tripo / AI 3D 工具评测</td>
+                <td>单条 Tripo 评测热度不错，但需确认是否长期覆盖 AI 3D。</td>
+                <td>检查后续是否有 Meshy、Tripo、Luma、Blender AI 连续评测。</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.youtube.com/results?search_query=Vistrux+Agentic+AI+for+CAD" target="_blank" rel="noreferrer">Vistrux / Agentic AI for CAD</a></td>
+                <td><span class="channel-status status-new">初新观察</span></td>
+                <td>AI-CAD / prompt-to-3D</td>
+                <td>高度垂直但热度和稳定性待验证；适合作为 AI-CAD 早期项目线索。</td>
+                <td>重点看是否支持参数化、DWG/STEP 导出、约束编辑。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+          </div>
+        </details>
+      </section>
+
+      <section id="interior">
+        <div class="section-head">
+          <h2>室内设计 AI：本周判断</h2>
+          <p class="section-note">本窗口内没有看到比 Tripo / Copilot 级别更大的“室内设计 AI 产品发布”，但市场信号清楚。</p>
+        </div>
+        <div class="matrix">
+          <div class="matrix-block">
+            <h3>机会点</h3>
+            <ul class="compact-list">
+              <li>从平面图 / 房间照片生成可编辑 3D 空间，而不是只出渲染图。</li>
+              <li>AI 设计建议连接真实家具 SKU、价格、库存、物流和替代品。</li>
+              <li>材料、灯光、预算、施工工艺与风格偏好一起进入约束系统。</li>
+              <li>AR / VR 可视化与智能家居控制作为体验层，而非独立噱头。</li>
+              <li>面向设计师的 agent：brief 拆解、客户访谈摘要、方案比较、清单输出、施工说明。</li>
+            </ul>
+          </div>
+          <div class="matrix-block">
+            <h3>风险点</h3>
+            <ul class="compact-list">
+              <li>只做 text-to-image 效果图会很快同质化，且难进入真实交付。</li>
+              <li>AI 生成结果如果不能保留尺寸、材质、预算和采购约束，商业价值有限。</li>
+              <li>室内设计存在强主观审美和身份叙事，产品叙事不宜“替代设计师”。</li>
+              <li>CAD/BIM/施工图数据链断裂会阻止 AI 从概念图进入工程执行。</li>
+              <li>企业客户会要求版权、数据隐私、品牌一致性和人工审批。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="spatial">
+        <div class="section-head">
+          <h2>3D 空间 / 世界模型趋势</h2>
+          <p class="section-note">这部分是对 Tripo、AI Engineer World’s Fair、Prometheus 与 AEC AI 事件的综合归纳。</p>
+        </div>
+        <div class="grid three">
+          <article class="trend-card">
+            <h3>
+              <span class="icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 3 4.5 7.2v9.1L12 21l7.5-4.7V7.2L12 3Z" stroke="currentColor" stroke-width="1.6" />
+                  <path d="M4.8 7.5 12 12l7.2-4.5M12 12v8.5" stroke="currentColor" stroke-width="1.6" />
+                </svg>
+              </span>
+              从 mesh 到 state
+            </h3>
+            <p>过去 AI 3D 更像生成一个静态模型；Project Eden 这类方向强调“世界状态”本身，视觉只是从状态渲染出来。空间工具会越来越关注对象身份、事件逻辑、编辑历史和多用户一致性。</p>
+          </article>
+          <article class="trend-card">
+            <h3>
+              <span class="icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 19c3.5-7.5 10.5-7.5 14 0M7 9.5a5 5 0 0 1 10 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M12 4v5.5M8.5 9.5h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+              </span>
+              设计工具要变成环境
+            </h3>
+            <p>“Don’t build agents, build environments”这类议题说明，agent 的能力取决于可操作环境。室内设计 AI 应该构建可查询、可编辑、可验证的空间环境，而不是只把 LLM 接到图片生成器。</p>
+          </article>
+          <article class="trend-card">
+            <h3>
+              <span class="icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 6h14M5 12h14M5 18h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M17 17.2 19 19l3-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              工程约束成为护城河
+            </h3>
+            <p>Trimble、Build、Prometheus 相关信号都指向同一件事：谁能把真实工程约束、预算、施工、材料、法规和历史项目数据接入 AI，谁就比纯生成工具更有壁垒。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="coding">
+        <div class="section-head">
+          <h2>AI 编程：7 月 1-2 日 GitHub 更新矩阵</h2>
+          <p class="section-note">这些不是孤立功能，而是一套把 coding agent 放进企业生产系统的拼图。</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>更新</th>
+                <th>解决的问题</th>
+                <th>对实际开发的影响</th>
+                <th>链接</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>07.01</td>
+                <td>Kimi K2.7 Code GA</td>
+                <td>模型选择与成本</td>
+                <td>open-weight coding model 进入 Copilot model picker，团队可按任务和预算选择模型。</td>
+                <td><a href="https://github.blog/changelog/2026-07-01-kimi-k2-7-is-now-available-in-github-copilot/" target="_blank" rel="noreferrer">GitHub</a></td>
+              </tr>
+              <tr>
+                <td>07.01</td>
+                <td>Copilot Vision GA</td>
+                <td>多模态上下文</td>
+                <td>图片、GIF、WebP、PDF 可进入 Chat；适合读设计稿、截图、错误页面、文档。</td>
+                <td><a href="https://github.blog/changelog/2026-07-01-copilot-vision-is-generally-available/" target="_blank" rel="noreferrer">GitHub</a></td>
+              </tr>
+              <tr>
+                <td>07.01</td>
+                <td>Browser Tools for VS Code GA</td>
+                <td>真实浏览器操作</td>
+                <td>agent 可导航网页、点击、输入、截图、读 console，前端调试和 E2E 任务更自动化。</td>
+                <td><a href="https://github.blog/changelog/2026-07-01-browser-tools-for-github-copilot-in-vs-code-are-generally-available/" target="_blank" rel="noreferrer">GitHub</a></td>
+              </tr>
+              <tr>
+                <td>07.01</td>
+                <td>AI credit session limits</td>
+                <td>自动化成本失控</td>
+                <td>CLI / SDK 可设置 session 预算上限，适合无人值守的 agent 自动化任务。</td>
+                <td><a href="https://github.blog/changelog/2026-07-01-set-ai-credit-session-limits-in-copilot-cli-and-sdk/" target="_blank" rel="noreferrer">GitHub</a></td>
+              </tr>
+              <tr>
+                <td>07.02</td>
+                <td>Agent session streaming public preview</td>
+                <td>审计与合规</td>
+                <td>企业可采集 prompts、responses、tool calls，并送入 SIEM / audit log 系统。</td>
+                <td><a href="https://github.blog/changelog/2026-07-02-copilot-agent-session-streaming-is-now-in-public-preview/" target="_blank" rel="noreferrer">GitHub</a></td>
+              </tr>
+              <tr>
+                <td>07.02</td>
+                <td>Copilot CLI in Actions with GITHUB_TOKEN</td>
+                <td>自动化安全</td>
+                <td>GitHub Actions 中运行 Copilot CLI 不再需要长期 PAT，减少密钥管理风险。</td>
+                <td><a href="https://github.blog/changelog/2026-07-02-copilot-cli-no-longer-needs-a-personal-access-token-in-github-actions/" target="_blank" rel="noreferrer">GitHub</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="opportunities">
+        <div class="section-head">
+          <h2>对室内设计 / AI-CAD 产品的落地建议</h2>
+          <p class="section-note">按“现在可做”和“中期值得押注”拆分。</p>
+        </div>
+        <div class="grid two">
+          <article class="insight-card">
+            <h3>
+              <span class="icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 20V6.5L12 3l8 3.5V20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M8 20v-7h8v7M8 9h.01M12 8h.01M16 9h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+              </span>
+              现在可做：AI 室内方案工作台
+            </h3>
+            <p>输入：房间照片、户型图、客户 brief、预算、风格参考。输出：方案说明、风格板、家具清单、材料建议、预算区间、施工注意事项。重点是结构化输出和可编辑，而不是单图生成。</p>
+          </article>
+          <article class="insight-card">
+            <h3>
+              <span class="icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 5h16v14H4z" stroke="currentColor" stroke-width="1.6" />
+                  <path d="M8 9h8M8 13h5M17 17l3 3M18.5 15.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+              </span>
+              现在可做：图纸 / 估算 AI
+            </h3>
+            <p>参考 Trimble 路径，从识别图纸符号、计算数量、自动命名图纸、查询历史价格做起。这个方向比“全自动设计”更容易证明 ROI，也更接近设计公司和施工团队的日常痛点。</p>
+          </article>
+          <article class="insight-card">
+            <h3>
+              <span class="icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 3v18M3 12h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M6 6c3 2 9 2 12 0M6 18c3-2 9-2 12 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+              </span>
+              中期押注：可持久编辑的 3D 房间状态
+            </h3>
+            <p>学习 Project Eden 的思路：房间不只是图片，而是有对象、尺寸、材质、关系、事件和版本的状态空间。这样才能支持多人协作、AI 修改、成本计算和未来 VR / AR / robot simulation。</p>
+          </article>
+          <article class="insight-card">
+            <h3>
+              <span class="icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12h14M12 5v14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="1.6" />
+                </svg>
+              </span>
+              中期押注：AI-CAD 约束层
+            </h3>
+            <p>不要只做 prompt-to-render。真正有壁垒的是把尺寸、承重、机电、消防、预算、材料、供应链和施工工艺作为约束，让 AI 生成的方案可解释、可修改、可交付。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="sources">
+        <div class="section-head">
+          <h2>来源与核验链接</h2>
+          <p class="section-note">以下为本页使用的主要来源。新闻稿类来源已在正文中标注其性质。</p>
+        </div>
+        <div class="grid two">
+          <article class="source-card">
+            <div class="source-title">
+              <h3>3D / 世界模型</h3>
+              <small>Tripo / AI Engineer</small>
+            </div>
+            <ul>
+              <li><a href="https://www.globenewswire.com/news-release/2026/07/02/3321436/0/en/tripo-ai-raises-150-million-in-series-a3-financing-backed-by-investors-across-automotive-gaming-internet-and-technology-sectors.html" target="_blank" rel="noreferrer">Tripo AI Raises $150 Million in Series A3 Financing</a></li>
+              <li><a href="https://www.voxelmatters.com/tripo-ai-raises-150-million-in-series-a3-round-with-backers-from-automotive-gaming-and-technology/" target="_blank" rel="noreferrer">VoxelMatters: Tripo AI raises $150 million</a></li>
+              <li><a href="https://www.tripo3d.ai/blog" target="_blank" rel="noreferrer">Tripo Blog</a></li>
+              <li><a href="https://www.ai.engineer/worldsfair" target="_blank" rel="noreferrer">AI Engineer World’s Fair 2026</a></li>
+              <li><a href="https://www.ai.engineer/worldsfair/schedule?track=Robotics+%26+World+Models" target="_blank" rel="noreferrer">Robotics & World Models schedule</a></li>
+            </ul>
+          </article>
+          <article class="source-card">
+            <div class="source-title">
+              <h3>室内设计 AI</h3>
+              <small>Market / Industry</small>
+            </div>
+            <ul>
+              <li><a href="https://www.globenewswire.com/news-release/2026/07/03/3321819/0/en/Explosive-Growth-Predicted-AI-in-Interior-Design-Market-to-Surpass-4-Billion-by-2030-Amid-Rising-Smart-Home-Demand.html" target="_blank" rel="noreferrer">AI in Interior Design Market Report 2026</a></li>
+              <li><a href="https://www.researchandmarkets.com/r/z0lbuu" target="_blank" rel="noreferrer">ResearchAndMarkets report page</a></li>
+              <li><a href="https://www.globenewswire.com/news-release/2026/07/02/3321061/0/en/what-ai-can-t-design-dizign-marks-28-years-of-putting-human-identity-at-the-center-of-interior-design.html" target="_blank" rel="noreferrer">Dizign: What AI Can’t Design</a></li>
+              <li><a href="https://planner5d.com/use/ai-interior-design" target="_blank" rel="noreferrer">Planner 5D AI Interior Design Tool</a></li>
+              <li><a href="https://www.reimaginehome.ai/blogs/ai-interior-design-2026-guide" target="_blank" rel="noreferrer">REimagineHome AI Interior Design Guide</a></li>
+            </ul>
+          </article>
+          <article class="source-card">
+            <div class="source-title">
+              <h3>AI-CAD / AEC</h3>
+              <small>工程与施工</small>
+            </div>
+            <ul>
+              <li><a href="https://aecmag.com/ai/trimble-adds-ai-driven-takeoff-and-estimating-tools-for-mep-contractors/" target="_blank" rel="noreferrer">Trimble adds AI-driven takeoff and estimating tools</a></li>
+              <li><a href="https://news.trimble.com/New-Trimble-AI-Takeoff-Capabilities-Cut-MEP-Estimating-Time-and-Increase-Accuracy" target="_blank" rel="noreferrer">Trimble official release: New AI Takeoff Capabilities</a></li>
+              <li><a href="https://www.trimble.com/en/products/trimble-accubid-anywhere" target="_blank" rel="noreferrer">Trimble Accubid Anywhere product page</a></li>
+              <li><a href="https://aecmag.com/ai/build-raises-8-5m-seed-for-ai-driven-infrastructure-due-diligence-platform/" target="_blank" rel="noreferrer">Build raises $8.5m seed for AI-driven infrastructure due diligence</a></li>
+              <li><a href="https://develop3d.com/cad/the-prometheus-question-for-cad/" target="_blank" rel="noreferrer">DEVELOP3D: The Prometheus question for CAD</a></li>
+              <li><a href="https://aecmag.com/ai/neural-cad-ai-foundational-models/" target="_blank" rel="noreferrer">AEC Magazine: Neural CAD AI foundational models</a></li>
+            </ul>
+          </article>
+          <article class="source-card">
+            <div class="source-title">
+              <h3>AI 编程</h3>
+              <small>GitHub / Stack Overflow</small>
+            </div>
+            <ul>
+              <li><a href="https://github.blog/changelog/2026-07-01-kimi-k2-7-is-now-available-in-github-copilot/" target="_blank" rel="noreferrer">Kimi K2.7 Code in GitHub Copilot</a></li>
+              <li><a href="https://github.blog/changelog/2026-07-01-copilot-vision-is-generally-available/" target="_blank" rel="noreferrer">Copilot Vision GA</a></li>
+              <li><a href="https://github.blog/changelog/2026-07-01-browser-tools-for-github-copilot-in-vs-code-are-generally-available/" target="_blank" rel="noreferrer">Browser tools for Copilot in VS Code GA</a></li>
+              <li><a href="https://github.blog/changelog/2026-07-02-copilot-agent-session-streaming-is-now-in-public-preview/" target="_blank" rel="noreferrer">Copilot agent session streaming public preview</a></li>
+              <li><a href="https://github.blog/changelog/2026-07-02-copilot-cli-no-longer-needs-a-personal-access-token-in-github-actions/" target="_blank" rel="noreferrer">Copilot CLI with GITHUB_TOKEN in Actions</a></li>
+              <li><a href="https://stackoverflow.blog/2026/07/02/ai-coding-chaos-into-a-repeatable-playbook/" target="_blank" rel="noreferrer">Stack Overflow: AI coding playbook</a></li>
+            </ul>
+          </article>
+          <article class="source-card">
+            <div class="source-title">
+              <h3>AI 产品新闻</h3>
+              <small>近 3 个月补充</small>
+            </div>
+            <ul>
+              <li><a href="https://www.prnewswire.com/news-releases/meshy-launches-3d-agent-beta-the-worlds-first-ai-agent-for-3d-creation-302790052.html" target="_blank" rel="noreferrer">Meshy launches Meshy 3D Agent beta</a></li>
+              <li><a href="https://www.meshy.ai/features/3d-agent" target="_blank" rel="noreferrer">Meshy 3D Agent product page</a></li>
+              <li><a href="https://blog.google/innovation-and-ai/technology/developers-tools/google-io-2026-developer-highlights/" target="_blank" rel="noreferrer">Google Developers: I/O 2026 developer highlights</a></li>
+              <li><a href="https://blog.google/innovation-and-ai/technology/ai/google-io-2026-all-our-announcements/" target="_blank" rel="noreferrer">Google I/O 2026 announcements</a></li>
+              <li><a href="https://deepmind.google/discover/blog/genie-3-a-new-frontier-for-world-models/" target="_blank" rel="noreferrer">Google DeepMind Genie 3</a></li>
+              <li><a href="https://www.graebert.com/cad-software/ares-commander/" target="_blank" rel="noreferrer">ARES Commander by Graebert</a></li>
+            </ul>
+          </article>
+          <article class="source-card">
+            <div class="source-title">
+              <h3>YouTube / 作者跟踪</h3>
+              <small>视频雷达</small>
+            </div>
+            <ul>
+              <li><a href="https://www.youtube.com/@MeshyAI" target="_blank" rel="noreferrer">MeshyAI official channel</a></li>
+              <li><a href="https://www.youtube.com/@GoogleDeepMind" target="_blank" rel="noreferrer">Google DeepMind channel</a></li>
+              <li><a href="https://www.youtube.com/user/ChromeDevelopers" target="_blank" rel="noreferrer">Chrome for Developers channel</a></li>
+              <li><a href="https://www.youtube.com/%40ARESCADsoftware" target="_blank" rel="noreferrer">ARES CAD Software by Graebert channel</a></li>
+              <li><a href="https://www.youtube.com/results?search_query=Stefan+3D+AI+Meshy+Tripo" target="_blank" rel="noreferrer">Stefan 3D AI search</a></li>
+              <li><a href="https://www.youtube.com/@BilawalSidhu" target="_blank" rel="noreferrer">Bilawal Sidhu channel</a></li>
+              <li><a href="https://www.youtube.com/@RileyBrownAI" target="_blank" rel="noreferrer">Riley Brown channel</a></li>
+              <li><a href="https://www.youtube.com/@NickSaraev" target="_blank" rel="noreferrer">Nick Saraev channel</a></li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <div class="notice">
+          <strong>核验说明：</strong>本报告按 2026 年 7 月 6 日抓取到的公开网页整理，优先使用官方博客、公司新闻稿、GitHub 官方 changelog、活动官网和垂直行业媒体。市场报告、公司新闻稿和行业评论已分别标注性质；它们可证明“发布/报道真实存在”，但不等同于第三方技术评测。
+        </div>
+      </section>
+
+      <footer class="footer">
+        <p>页面文件：ai-events-report-2026-07-01-07-06.html</p>
+        <p>设计原则：白色主视觉、低装饰、线性图标、内容优先。</p>
+      </footer>
+    </main>
+  </body>
+</html>

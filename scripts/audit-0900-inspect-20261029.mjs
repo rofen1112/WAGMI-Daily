@@ -1,0 +1,12 @@
+import {readFile} from 'node:fs/promises';
+const read=async p=>JSON.parse(await readFile(p,'utf8'));
+const base='data/dev/source-archives/audit-0900-2026-10-29/';
+const s=await readFile(base+'octoverse.raw','utf8');
+console.log('octoverse links',[...s.matchAll(/href="([^"]+)"/g)].map(x=>x[1]).filter(x=>x.includes('github')||x.includes('octoverse')));
+const d=await read('data/dev/source-archives/audit-0900-2026-10-29-skills-dry.json');
+console.log('SKILL',JSON.stringify({counts:d.counts,sourceStatus:d.sourceStatus,keys:Object.keys(d)}));
+const a=await read('data/dev/ai-editorial-repairs-2026-10-29.json');
+console.log('MANIFEST KEYS',Object.keys(a));
+console.log('pending',JSON.stringify(a.pending??a.pendingCandidates??a.pendingEvents));
+const g=await read('data/dev/github-trend-candidates.json');
+console.log('GITHUB',g.generatedAt,g.counts);
