@@ -1,0 +1,15 @@
+# Optional Responses reasoning control — evidence and verification
+
+Checked 2026-11-03 using public documentation only. No Key was read and no inference request was sent during this investigation.
+
+The [Volcengine Ark official deep-thinking guide](https://console.volcengine.com/ark/region:cn-beijing/docs/responses-api-deep-thinking) (updated 2026-11-02, readable page lines 521–522 and 817–824) lists the exact model `deepseek-v4-1-flash-260910`: thinking supports enabled/disabled, default reasoning effort is high, and effort `none` disables thinking. `minimal` maps to low for this model, so it is not the recommended off switch. The guide also contains constraints when combining thinking and reasoning; this implementation avoids the combination entirely.
+
+The [DeepSeek official Responses reference](https://api-docs.deepseek.com/api/create-response/) (readable page lines 211–225) documents `reasoning.effort` values `none`, `low`, `high`, `max`; `none` disables reasoning. It defines `max_output_tokens` as the combined cap for visible output and reasoning tokens. The model names on that endpoint differ from this gateway's exact alias, so this is protocol corroboration rather than proof about the gateway.
+
+The [gateway's own public docs](https://model.seedance-api.net/docs?menu=apiDeepSeek41Flash) could not be fetched in this investigation (web tool access failure; direct public GET had TLS authentication failure). Existing project evidence documents this gateway accepting Responses text and image requests, but does not establish that the gateway forwards reasoning controls. Therefore the new option is an explicit experiment, absent by default. No request is sent to official DeepSeek or Ark endpoints; the configured gateway endpoint remains fixed.
+
+## One bounded live verification, executed by root
+
+Use the same authorized residential image and exact generation messages as the failed 12,000-token run. Keep endpoint, model, image, prompt, scale, output cap 12,000 and timeout 180 seconds unchanged. Change only `AI_LAB_REASONING_EFFORT=none`. Invoke `SeedanceProvider.complete(messages)` directly exactly once, rather than running the job worker, so the existing validation-repair path cannot generate a second paid call. Do not retry or fall back to another parameter.
+
+Record elapsed time, HTTP/result status, sanitized error code/incomplete reason, provided input/output/total tokens and `output_tokens_details.reasoning_tokens`. Preserve the raw response privately only if the root's existing test harness already does so. HTTP 200 alone is insufficient: seek `status=completed`, actual `reasoning_tokens=0`, parseable JSON and the unchanged compiler/validator result. If usage omits reasoning tokens, report the effect as unverified rather than treating omission as zero. A parameter rejection or another incomplete result is the result of this one test; stop and inspect it. A successful scene still needs image-fidelity review because disabling reasoning can change reconstruction quality.

@@ -80,3 +80,7 @@ changed candidate content and undocumented reading gaps must be repaired in
 the same task. The dated audit and public report must reflect the actual
 review. Continue through publication, public verification and the existing
 once-per-day delivery contract; no extra user reminder is required.
+
+## AI laboratory development boundary
+
+The user and main-project handoff authorize AI laboratory development on codex/ai-lab only. The daily publication/delivery sections above describe the main site's separate workflow; do not run daily collection, promotion, publication, DingTalk, service installation, DNS/tunnel or production commands from this worktree. Use only lab mode, frontend 5186, backend 8786 and dist/ai-lab. Private database/uploads/jobs/config stay in this checkout. Main review owns production integration.
