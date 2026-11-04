@@ -311,12 +311,12 @@ const material=new THREE.MeshStandardMaterial();material.envMap={};material.user
 let envK=1;const $=()=>time;
 const localStorage={setItem(){throw Error('view preset cannot save layout')}};
 """+light+r"""
-applyLight();const studioIntensity=hemi.intensity;assert.equal(scene.background.getHex(),0xe7ebec);assert.equal(sun.shadow.radius,4);assert.equal(material.envMapIntensity,.85);
-opt.lighting='daylight';applyLight();assert.equal(scene.background.getHex(),0xe7ebec);assert.equal(ground.material,groundShadowMaterial);assert.ok(hemi.intensity<studioIntensity);assert.equal(material.envMapIntensity,1);assert.equal(sun.shadow.radius,2);
-opt.night=true;applyLight();assert.equal(scene.background.getHex(),0xe7ebec);assert.equal(renderer.toneMappingExposure,1.25);
-opt.night=false;opt.lighting='studio';applyLight();assert.equal(scene.background.getHex(),0xe7ebec);assert.equal(hemi.intensity,studioIntensity);assert.equal(time.textContent,'10:00');
+applyLight();const studioIntensity=hemi.intensity;assert.equal(scene.background.getHex(),0xffffff);assert.equal(sun.shadow.radius,4);assert.equal(material.envMapIntensity,.85);
+opt.lighting='daylight';applyLight();assert.equal(scene.background.getHex(),0xffffff);assert.equal(ground.material,groundShadowMaterial);assert.ok(hemi.intensity<studioIntensity);assert.equal(material.envMapIntensity,1);assert.equal(sun.shadow.radius,2);
+opt.night=true;applyLight();assert.equal(scene.background.getHex(),0xffffff);assert.equal(renderer.toneMappingExposure,1.25);
+opt.night=false;opt.lighting='studio';applyLight();assert.equal(scene.background.getHex(),0xffffff);assert.equal(hemi.intensity,studioIntensity);assert.equal(time.textContent,'10:00');
 reviewBackdrop=true;opt.lighting='daylight';applyLight();assert.equal(scene.background.getHex(),0xf7f4ee);assert.equal(ground.material,groundReviewMaterial);assert.equal(groundReviewMaterial.color.getHex(),0xf2eee7);
-reviewBackdrop=false;applyLight();assert.equal(scene.background.getHex(),0xe7ebec);assert.equal(ground.material,groundShadowMaterial);
+reviewBackdrop=false;applyLight();assert.equal(scene.background.getHex(),0xffffff);assert.equal(ground.material,groundShadowMaterial);
 """
         result=subprocess.run(['node','--input-type=module'],input=script,text=True,encoding='utf-8',capture_output=True)
         self.assertEqual(result.returncode,0,result.stderr)
