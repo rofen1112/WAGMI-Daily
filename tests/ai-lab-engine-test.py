@@ -154,9 +154,10 @@ class EngineTests(unittest.TestCase):
 
     def test_capture_landscape_frame_is_tight_and_independent_of_iframe(self):
         html=render_viewer_html(compiled(),None,'project-a',1)
-        functions='\n'.join(re.search(r'function '+name+r'\([^)]*\)\{[\s\S]*?\n}',html)[0] for name in ('captureRenderedBounds','captureFrameForBounds'))
+        functions='\n'.join(re.search(r'function '+name+r'\([^)]*\)\{[\s\S]*?\n}',html)[0] for name in ('captureRenderedBounds','captureFrameForBounds','interactiveGeometryFrame'))
         three=(ROOT/'ai-lab/vendor/three/build/three.module.js').resolve().as_uri()
         script="import assert from 'node:assert/strict'; import * as THREE from "+json.dumps(three)+";\n"+functions+r"""
+const FOV=45;
 const architecture=new THREE.Group();
 const material=new THREE.MeshBasicMaterial();
 const room=new THREE.Mesh(new THREE.BoxGeometry(4,.02,3),material);room.position.set(22,0,-30);architecture.add(room);
@@ -182,6 +183,24 @@ for(const iframe of [[415,1280],[659,1280],[1600,900]]){
  }
  assert.ok(largest>.85,'actual structure should fill the image rather than retain image whitespace');
 }
+
+// Interactive framing uses actual mesh vertices and the UI's safe viewport,
+// including a circular office footprint whose world AABB has empty corners.
+const office=new THREE.Group(),floor=new THREE.Mesh(new THREE.CircleGeometry(18,96),material);floor.rotation.x=-Math.PI/2;office.add(floor);
+const core=new THREE.Mesh(new THREE.BoxGeometry(4,1.2,8),material);core.position.y=.6;office.add(core);
+for(const [width,height] of [[1013,774],[415,900],[1600,900]])for(const direction of [[.68,1.18,.78],[0,1,.0001]]){
+ const frame=interactiveGeometryFrame([office],width,height,direction),camera=new THREE.PerspectiveCamera(FOV,width/height,.01,1000);
+ camera.position.fromArray(frame.position);camera.lookAt(new THREE.Vector3(...frame.target));camera.updateMatrixWorld(true);
+ let left=Infinity,right=-Infinity,top=Infinity,bottom=-Infinity;
+ office.traverseVisible(object=>{const position=object.geometry?.getAttribute('position');if(!position)return;for(let i=0;i<position.count;i++){
+  const point=new THREE.Vector3().fromBufferAttribute(position,i).applyMatrix4(object.matrixWorld).project(camera);
+  const x=(point.x+1)*width/2,y=(1-point.y)*height/2;left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+ }});
+ const safe=frame.safeRect;
+ assert.ok(left>=safe.left-.001&&right<=safe.right+.001&&top>=safe.top-.001&&bottom<=safe.bottom+.001,'interactive model must stay within floating-tool safe area');
+ const occupancy=Math.max((right-left)/(safe.right-safe.left),(bottom-top)/(safe.bottom-safe.top));
+ assert.ok(occupancy>.96,'one projected axis must fill the safe viewport instead of retaining AABB whitespace');
+}
 """
         result=subprocess.run(['node','--input-type=module'],input=script,text=True,encoding='utf-8',capture_output=True)
         self.assertEqual(result.returncode,0,result.stderr)
@@ -192,7 +211,7 @@ for(const iframe of [[415,1280],[659,1280],[1600,900]]){
         three=(ROOT/'ai-lab/vendor/three/build/three.module.js').resolve().as_uri()
         script="import assert from 'node:assert/strict'; import * as THREE from "+json.dumps(three)+";\n"+r"""
 let active=false,grow=.3,furnGrow=.4,anim=null,fly=null,switching=false,failImage=false;
-const H=2.8,opt={cut:2.8,furn:false,labels:true,night:true,hour:17,mode:'walk'};
+const H=2.8,opt={cut:2.8,furn:false,labels:true,night:true,hour:17,mode:'walk',lighting:'studio'};
 const camera=new THREE.PerspectiveCamera(45,415/1280,.05,300);camera.position.set(5,8,9);camera.lookAt(0,0,0);
 const orbit={enabled:true,target:new THREE.Vector3(0,0,0)};
 let archFloor=new THREE.Group(),archUp=new THREE.Group(),lampG=new THREE.Group(),colliders=['original'],polyColliders=['original'];
@@ -209,7 +228,7 @@ const renderer={
  setPixelRatio(value){pixelRatio=value;this.domElement.width=size.x*value;this.domElement.height=size.y*value},
  setSize(width,height,updateStyle){assert.equal(updateStyle,false);size.set(width,height);viewport.set(0,0,width,height);this.domElement.width=width*pixelRatio;this.domElement.height=height*pixelRatio},
  setViewport(value){viewport.copy(value)},
- render(){records.push({size:size.toArray(),pixelRatio,aspect:camera.aspect,position:camera.position.toArray(),target:orbit.target.toArray(),cut:opt.cut,night:opt.night,visible:furnG.visible})}
+ render(){records.push({size:size.toArray(),pixelRatio,aspect:camera.aspect,position:camera.position.toArray(),target:orbit.target.toArray(),cut:opt.cut,night:opt.night,lighting:opt.lighting,visible:furnG.visible})}
 };
 function init(){} function sync(force){assert.equal(force,false);assert.equal(active,true)}
 function applyGrow(){archUp.scale.y=Math.max(grow,.001);furnG.scale.y=Math.max(furnGrow,.001);lampG.visible=grow>.99}
@@ -232,15 +251,56 @@ for(const iframeSize of [[415,1280],[1600,900]]){
  const oldCamera=camera.clone(),oldTarget=orbit.target.clone(),oldViewport=viewport.clone(),oldOptions={...opt},oldFloor=archFloor,oldUp=archUp,oldLamp=lampG,oldColliders=colliders,oldPoly=polyColliders;oldCamera.uuid=camera.uuid;
  const beforeCount=records.length;
  assert.equal(captureSceneDataUrl(),'data:image/jpeg;base64,actual-renderer-canvas');
- const captured=records[beforeCount];assert.deepEqual(captured.size,[1280,960]);assert.equal(captured.pixelRatio,1);assert.equal(captured.aspect,4/3);assert.equal(captured.cut,1.2);assert.equal(captured.night,false);assert.equal(captured.visible,true);
+ const captured=records[beforeCount];assert.deepEqual(captured.size,[1280,960]);assert.equal(captured.pixelRatio,1);assert.equal(captured.aspect,4/3);assert.equal(captured.cut,1.2);assert.equal(captured.night,false);assert.equal(captured.lighting,'daylight');assert.equal(captured.visible,true);
  if(expectedCamera)assert.deepEqual(captured.position,expectedCamera);else expectedCamera=captured.position;
  assert.deepEqual(size.toArray(),iframeSize);assert.equal(pixelRatio,2);assert.deepEqual(viewport.toArray(),oldViewport.toArray());
  assert.deepEqual(camera.toJSON(),oldCamera.toJSON());assert.deepEqual(camera.quaternion.toArray(),oldCamera.quaternion.toArray());assert.deepEqual(camera.projectionMatrix.toArray(),oldCamera.projectionMatrix.toArray());assert.deepEqual(orbit.target.toArray(),oldTarget.toArray());assert.equal(orbit.enabled,true);
  assert.equal(archFloor,oldFloor);assert.equal(archUp,oldUp);assert.equal(lampG,oldLamp);assert.equal(colliders,oldColliders);assert.equal(polyColliders,oldPoly);assert.equal(doors[0],originalDoor);assert.equal(doors[0].open,false);assert.equal(doors[0].cur,.2);
  assert.deepEqual(opt,oldOptions);assert.equal(active,false);assert.equal(grow,.3);assert.equal(furnGrow,.4);assert.equal(furnG.visible,false);assert.equal(selHelper.visible,true);assert.equal(lighting,true);
 }
-active=true;const oldCamera=camera.clone();oldCamera.uuid=camera.uuid;failImage=true;assert.throws(()=>captureSceneDataUrl(),/image failed/);assert.deepEqual(camera.toJSON(),oldCamera.toJSON());assert.equal(active,true);assert.equal(opt.cut,2.8);assert.equal(doors[0],originalDoor);assert.equal(scene.children.length,4);assert.equal(disposed,9);
+active=true;const oldCamera=camera.clone();oldCamera.uuid=camera.uuid;failImage=true;assert.throws(()=>captureSceneDataUrl(),/image failed/);assert.deepEqual(camera.toJSON(),oldCamera.toJSON());assert.equal(active,true);assert.equal(opt.cut,2.8);assert.equal(opt.lighting,'studio');assert.equal(doors[0],originalDoor);assert.equal(scene.children.length,4);assert.equal(disposed,9);
 anim={};assert.throws(()=>captureSceneDataUrl(),/capture_busy/);
+"""
+        result=subprocess.run(['node','--input-type=module'],input=script,text=True,encoding='utf-8',capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_editor_drawers_are_transient_overlays_and_do_not_touch_saved_layout(self):
+        html=render_viewer_html(compiled(),None,'project-a',1)
+        self.assertIn('layers:{dims:true, labels:true',html)  # Keep 2D room labels.
+        self.assertRegex(html,r'const opt = \{[^\n]*labels:false')
+        self.assertIn('class="btn chip" data-t="labels" aria-pressed="false"',html)
+        functions='\n'.join(re.search(r'function '+name+r'\([^)]*\)\{[\s\S]*?\n}',html)[0] for name in ('drawer','syncPaneBtns'))
+        script=r"""
+const assert=require('node:assert/strict');
+function element(){const classes=new Set();return {inert:false,attrs:{},classList:{contains:key=>classes.has(key),toggle(key,on){if(on===undefined)on=!classes.has(key);on?classes.add(key):classes.delete(key)},remove:key=>classes.delete(key)},setAttribute(key,value){this.attrs[key]=value}}}
+const dom=Object.fromEntries(['aside.lib','aside.right','#tgLib','#tgPanel','#stage'].map(key=>[key,element()]));
+const $=key=>dom[key],tr=zh=>zh;
+const localStorage={getItem(){throw Error('must not read saved layout for a transient drawer')},setItem(){throw Error('must not overwrite saved layout')}};
+"""+functions+r"""
+drawer(null);assert.equal(dom['aside.lib'].inert,true);assert.equal(dom['aside.right'].inert,true);
+drawer('lib');assert.equal(dom['aside.lib'].inert,false);assert.equal(dom['#tgLib'].attrs['aria-expanded'],'true');
+drawer('panel');assert.equal(dom['aside.lib'].inert,true);assert.equal(dom['aside.right'].inert,false);
+drawer('panel',false);assert.equal(dom['aside.right'].inert,true);assert.equal(dom['#tgPanel'].attrs['aria-expanded'],'false');
+"""
+        result=subprocess.run(['node'],input=script,text=True,encoding='utf-8',capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_studio_and_daylight_presets_change_real_lighting_only(self):
+        html=render_viewer_html(compiled(),None,'project-a',1)
+        light=re.search(r'function applyLight\([^)]*\)\{[\s\S]*?\n}',html)[0]
+        three=(ROOT/'ai-lab/vendor/three/build/three.module.js').resolve().as_uri()
+        script="import assert from 'node:assert/strict'; import * as THREE from "+json.dumps(three)+";\n"+r"""
+const opt={lighting:'studio',night:false,hour:10},sun=new THREE.DirectionalLight(),hemi=new THREE.HemisphereLight();
+const scene=new THREE.Scene(),ground=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshStandardMaterial());
+const lampG=new THREE.Group(),renderer={toneMappingExposure:0},matCache=new Map(),time={textContent:''};
+const material=new THREE.MeshStandardMaterial();material.envMap={};material.userData.env=1;matCache.set('metal',material);
+let envK=1;const $=()=>time;
+const localStorage={setItem(){throw Error('view preset cannot save layout')}};
+"""+light+r"""
+applyLight();const studioIntensity=hemi.intensity;assert.equal(scene.background.getHex(),0xe7ebec);assert.equal(sun.shadow.radius,4);assert.equal(material.envMapIntensity,.85);
+opt.lighting='daylight';applyLight();assert.equal(scene.background.getHex(),0xf7f4ee);assert.ok(hemi.intensity<studioIntensity);assert.equal(material.envMapIntensity,1);assert.equal(sun.shadow.radius,2);
+opt.night=true;applyLight();assert.equal(scene.background.getHex(),0x1c2130);assert.equal(renderer.toneMappingExposure,1.25);
+opt.night=false;opt.lighting='studio';applyLight();assert.equal(scene.background.getHex(),0xe7ebec);assert.equal(hemi.intensity,studioIntensity);assert.equal(time.textContent,'10:00');
 """
         result=subprocess.run(['node','--input-type=module'],input=script,text=True,encoding='utf-8',capture_output=True)
         self.assertEqual(result.returncode,0,result.stderr)

@@ -21,18 +21,26 @@ const browser = process.env.AI_LAB_TEST_BROWSER || [
   '/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome',
 ].find(existsSync);
 
-function load(relative, imports = {}) {
-  const source = readFileSync(resolve(sourceRoot, relative), 'utf8');
+function load(relative, imports = {}, globals = {}) {
+  // Match Vite's dev macro when rendering the real page in this CJS fixture.
+  const source = readFileSync(resolve(sourceRoot, relative), 'utf8').replaceAll('import.meta.env.DEV', 'true');
   const code = ts.transpileModule(source, { fileName: relative, compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const exports = {};
-  vm.runInNewContext(code, { exports, URL, URLSearchParams, require(id) { return imports[id] || require(id); } });
+  vm.runInNewContext(code, { exports, URL, URLSearchParams, ...globals, require(id) { return imports[id] || require(id); } });
   return exports;
 }
 
-function fixtureHtml() {
+function fixtureHtml(width) {
   const api = load('src/features/ai-lab/api.ts');
   const { default: Calibrator } = load('src/features/ai-lab/ScaleCalibrator.tsx', { './api': api });
-  const { default: Workflow } = load('src/features/ai-lab/WorkflowSummary.tsx');
+  const workflowModule = load('src/features/ai-lab/WorkflowSummary.tsx');
+  const { default: Workflow } = workflowModule;
+  const icons = load('src/features/ai-lab/StudioIcon.tsx');
+  const { default: Page } = load('src/features/ai-lab/AiLabPage.tsx', {
+    './api': api, './ScaleCalibrator': { default: Calibrator }, './WorkflowSummary': workflowModule,
+    './StudioIcon': icons, './ai-lab.css': {},
+  }, { window: { location: { hash: '#/ai-lab?tool=floorplan3d', origin: 'http://127.0.0.1:5186' }, matchMedia() { return { matches: width <= 980 }; } } });
+  const page = renderToStaticMarkup(React.createElement(Page));
   const image = `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="600"><rect width="1000" height="600" fill="white"/><path d="M50 50H950V550H50ZM500 50V550M50 300H500" fill="none" stroke="#333" stroke-width="8"/></svg>').toString('base64')}`;
   const asset = { id: 'layout-only', name: '布局测试平面图', width: 1000, height: 600, url: image };
   const calibration = renderToStaticMarkup(React.createElement(Calibrator, { asset, imageUrl: image, points: [[50, 50], [950, 50]], lengthMm: '9000', disabled: false, onPoints() {}, onLength() {} }));
@@ -41,20 +49,87 @@ function fixtureHtml() {
   const workflow = renderToStaticMarkup(React.createElement(Workflow, { job }));
   const baseCss = readFileSync(resolve(moduleRoot, 'src/styles.css'), 'utf8');
   const labCss = readFileSync(resolve(sourceRoot, 'src/features/ai-lab/ai-lab.css'), 'utf8');
+  // This is the real Page SSR inside App's actual lab-only shell branch. Only
+  // stress content is inserted: the real calibrator and real long workflow.
+  // React event/hooks are deliberately not hydrated; those have separate tests.
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${baseCss}\n${labCss}</style></head><body>
-  <header class="app-header"><div class="header-inner"><span class="brand">ark.insight</span></div></header><main class="app-main"><section class="ai-lab">
-  <div class="lab-heading"><div><div class="lab-eyebrow">AI 实验室</div><h1>从一张平面图，开始构建空间</h1><p>识别户型，生成 2D / 3D 方案，再用对话持续调整。</p></div></div>
-  <div class="lab-workspace"><aside class="lab-sidebar">我的项目</aside><div class="lab-editor"><div class="lab-editor-toolbar"><div class="lab-tabs"><button>原始平面图</button></div></div><div class="lab-canvas">${calibration}</div><div class="lab-canvas-footer">候选方案 · 尚未保存</div><div class="lab-editor-help">校准依据来自提供的已知长度，未经现场核验。</div></div>
-  <aside class="lab-controls"><div class="lab-control-heading"><h2>平面图转 3D</h2></div><label class="lab-field-label">比例依据</label><select class="lab-input"><option>已知长度校准</option></select><section class="lab-job">${workflow}</section></aside></div></section></main>
-  <pre id="layout-result"></pre><script>setTimeout(() => {
-    const rect = element => { const value = element.getBoundingClientRect(); return { top: value.top, bottom: value.bottom, left: value.left, right: value.right, width: value.width, height: value.height }; };
-    const canvas = document.querySelector('.lab-canvas'), controls = document.querySelector('.lab-controls'), image = document.querySelector('.lab-calibration-image img'), known = document.querySelector('#lab-known-length');
-    const before = rect(image); controls.scrollTop = controls.scrollHeight;
-    const unchanged = rect(image);
-    const desktop = window.innerWidth > 900;
-    if (desktop) canvas.scrollTop += known.getBoundingClientRect().top - canvas.getBoundingClientRect().top - 18;
-    document.querySelector('#layout-result').textContent = JSON.stringify({ viewport: { width: innerWidth, height: innerHeight }, image: before, imageAfterReportScroll: unchanged, workspace: rect(document.querySelector('.lab-workspace')), editor: rect(document.querySelector('.lab-editor')), canvas: rect(canvas), knownLength: rect(known), controls: { ...rect(controls), clientHeight: controls.clientHeight, scrollHeight: controls.scrollHeight, overflow: getComputedStyle(controls).overflowY }, pageScrollTop: document.scrollingElement.scrollTop, pageScrollWidth: document.scrollingElement.scrollWidth });
-  }, 100);</script></body></html>`;
+  <div class="app-shell lab-shell"><main class="app-main lab-main" style="width:100%;max-width:none;margin:0;padding:0">${page}</main></div>
+  <template id="calibration-fixture">${calibration}</template><template id="workflow-fixture"><section class="lab-job has-error" aria-label="任务状态"><details class="lab-task-details" open><summary>查看原因与任务详情</summary>${workflow}</details></section></template>
+  <pre id="layout-result" hidden></pre><script>(${layoutProbe.toString()})().then(result => { document.querySelector('#layout-result').textContent = JSON.stringify(result); }).catch(error => { document.querySelector('#layout-result').textContent = JSON.stringify({error:String(error)}); });</script></body></html>`;
+}
+
+async function layoutProbe() {
+  const required = selector => { const element = document.querySelector(selector); if (!element) throw new Error('Missing real Page element: ' + selector); return element; };
+  const rect = element => { const value = element.getBoundingClientRect(); return { top: value.top, bottom: value.bottom, left: value.left, right: value.right, width: value.width, height: value.height }; };
+  const frame = () => new Promise(resolveFrame => requestAnimationFrame(() => requestAnimationFrame(resolveFrame)));
+  const root = required('.ai-lab'), workspace = required('.lab-workspace'), canvas = required('.lab-canvas');
+  const controls = required('.lab-controls'), sidebar = required('.lab-sidebar'), report = required('.lab-controls-scroll');
+  canvas.replaceChildren(required('#calibration-fixture').content.cloneNode(true));
+  await Promise.all([...canvas.querySelectorAll('img')].map(image => image.decode()));
+  const image = required('.lab-calibration-image img'), known = required('#lab-known-length');
+  const visible = element => {
+    const style = getComputedStyle(element), value = rect(element);
+    return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0 && element.getClientRects().length > 0 && value.width > 0 && value.height > 0 && value.right > 0 && value.left < innerWidth && value.bottom > 0 && value.top < innerHeight;
+  };
+  const button = selector => {
+    const element = required(selector), value = rect(element);
+    const hit = visible(element) ? document.elementFromPoint(value.left + value.width / 2, value.top + value.height / 2) : null;
+    return { ...value, visible: visible(element), reachable: Boolean(hit && element.contains(hit)) };
+  };
+  const snapshot = () => ({
+    main: rect(required('.lab-main')), app: rect(root), appbar: rect(required('.lab-appbar')), toolbar: rect(required('.lab-editor-toolbar')),
+    workspace: rect(workspace), editor: rect(required('.lab-editor')), canvas: rect(canvas), image: rect(image), knownLength: rect(known),
+    sidebar: { ...rect(sidebar), visible: visible(sidebar) }, controls: { ...rect(controls), visible: visible(controls) },
+    report: { ...rect(report), clientHeight: report.clientHeight, scrollHeight: report.scrollHeight, scrollTop: report.scrollTop, overflow: getComputedStyle(report).overflowY },
+    projectClose: button('[aria-label="收起项目侧栏"]'), controlsClose: button('[aria-label="收起创作侧栏"]'),
+    projectToggle: button('[aria-label="切换项目侧栏"]'), controlsToggle: button('[aria-label="切换创作侧栏"]'),
+    page: { scrollTop: document.scrollingElement.scrollTop, scrollWidth: document.scrollingElement.scrollWidth, scrollHeight: document.scrollingElement.scrollHeight },
+  });
+  await frame();
+  const initial = snapshot();
+  report.append(required('#workflow-fixture').content.cloneNode(true));
+  report.querySelectorAll('details').forEach(detail => { detail.open = true; });
+  await frame();
+  const longReport = snapshot();
+  let focused, reportScrolled, projectsOpen, controlsOpen, mobileClosed;
+  if (innerWidth > 980) {
+    report.scrollTop = report.scrollHeight;
+    await frame(); reportScrolled = snapshot();
+    root.classList.add('is-left-collapsed', 'is-right-collapsed', 'is-focused');
+    sidebar.setAttribute('aria-hidden', 'true'); controls.setAttribute('aria-hidden', 'true');
+    await frame(); focused = snapshot();
+    root.classList.remove('is-left-collapsed', 'is-right-collapsed', 'is-focused');
+    sidebar.setAttribute('aria-hidden', 'false'); controls.setAttribute('aria-hidden', 'false');
+  } else {
+    // Measure CSS states only; actual hook toggles/ESC/scrim clicks are covered
+    // by the frontend interaction tests and root's live browser acceptance.
+    let scrim = workspace.querySelector('.lab-drawer-scrim');
+    if (!scrim) { scrim = document.createElement('button'); scrim.className = 'lab-drawer-scrim'; scrim.type = 'button'; scrim.setAttribute('aria-label', '关闭侧栏'); workspace.prepend(scrim); }
+    const setDrawer = active => {
+      root.classList.toggle('mobile-projects-open', active === 'projects');
+      root.classList.toggle('mobile-controls-open', active === 'controls');
+      sidebar.setAttribute('aria-hidden', String(active !== 'projects'));
+      controls.setAttribute('aria-hidden', String(active !== 'controls'));
+      scrim.hidden = !active;
+    };
+    setDrawer('projects'); await frame(); projectsOpen = snapshot();
+    setDrawer('controls'); await frame(); controlsOpen = snapshot();
+    report.scrollTop = report.scrollHeight;
+    await frame(); reportScrolled = snapshot();
+    setDrawer(null); await frame(); mobileClosed = snapshot();
+  }
+  await frame();
+  const scrollParents = [];
+  for (let element = known.parentElement; element && element !== document.body; element = element.parentElement) {
+    if (['auto', 'scroll'].includes(getComputedStyle(element).overflowY)) scrollParents.push(element);
+  }
+  for (const element of scrollParents) {
+    const value = rect(element), field = rect(known);
+    if (field.bottom > value.bottom - 12) element.scrollTop += field.bottom - value.bottom + 12;
+    if (rect(known).top < value.top + 8) element.scrollTop -= value.top + 8 - rect(known).top;
+  }
+  await frame();
+  return { viewport: { width: innerWidth, height: innerHeight }, realPage: { appbar: Boolean(document.querySelector('.lab-appbar')), oldHeroCount: document.querySelectorAll('.lab-heading, .app-header').length, realCalibrator: Boolean(document.querySelector('#lab-known-length')), realWorkflow: Boolean(document.querySelector('.lab-workflow-detail')) }, initial, longReport, reportScrolled, focused, projectsOpen, controlsOpen, mobileClosed, calibrationReached: { ...snapshot(), localScrollParents: scrollParents.map(element => element.className) } };
 }
 
 async function measureInBrowser(html, profile, width, height) {
@@ -91,6 +166,10 @@ async function measureInBrowser(html, profile, width, height) {
     });
     const { targetId } = await call('Target.createTarget', { url: 'about:blank' });
     const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: true });
+    await call('Network.enable', {}, sessionId);
+    await call('Network.setBlockedURLs', { urls: ['http://*', 'https://*'] }, sessionId);
+    // Assert settled layout, not an intermediate drawer animation frame.
+    await call('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] }, sessionId);
     await call('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false, screenWidth: width, screenHeight: height }, sessionId);
     await call('Page.navigate', { url: pathToFileURL(html).href }, sessionId);
     let measured;
@@ -110,30 +189,55 @@ async function measureInBrowser(html, profile, width, height) {
   }
 }
 
-test('long real workflow SSR keeps desktop calibration visible and mobile content naturally stacked', { skip: !browser ? 'No Chromium browser is installed for actual layout measurement.' : false }, async (context) => {
+test('real Page SSR uses edge-to-edge desktop docks and exclusive mobile drawers with local long-content scrolling', { skip: !browser ? 'No Chromium browser is installed for actual layout measurement.' : false }, async (context) => {
   const tempBase = resolve(tmpdir());
   const directory = mkdtempSync(resolve(tempBase, 'ai-lab-layout-'));
   try {
-    const html = resolve(directory, 'fixture.html');
-    writeFileSync(html, fixtureHtml());
-    for (const [width, height] of [[1352, 880], [390, 844]]) {
+    for (const [width, height] of [[1440, 900], [1920, 1080], [390, 844]]) {
+      const html = resolve(directory, `fixture-${width}.html`);
+      writeFileSync(html, fixtureHtml(width));
       const measured = await measureInBrowser(html, resolve(directory, `profile-${width}`), width, height);
+      assert.equal(measured.error, undefined, JSON.stringify(measured));
       assert.equal(measured.viewport.width, width);
       assert.equal(measured.viewport.height, height);
-      context.diagnostic(JSON.stringify({ requestedWidth: width, viewport: measured.viewport, imageTop: measured.image.top, workspaceHeight: measured.workspace.height, reportClientHeight: measured.controls.clientHeight, reportScrollHeight: measured.controls.scrollHeight }));
-      assert.ok(measured.image.top >= measured.canvas.top, JSON.stringify(measured));
-      assert.ok(measured.image.top < measured.viewport.height - 100, 'Calibration image must start inside the first viewport.');
-      assert.equal(measured.image.top, measured.imageAfterReportScroll.top, 'Scrolling the long report must not move calibration.');
-      assert.ok(measured.pageScrollWidth <= measured.viewport.width + 1, 'No horizontal page overflow.');
-      if (width > 900) {
-        assert.ok(measured.workspace.height <= 900, 'Long review must not enlarge the desktop workspace.');
-        assert.ok(measured.controls.scrollHeight > measured.controls.clientHeight * 2, 'The long real report must scroll inside its panel.');
-        assert.equal(measured.controls.overflow, 'auto');
-        assert.ok(measured.knownLength.top >= measured.canvas.top && measured.knownLength.bottom <= measured.canvas.bottom + 1, 'Known-length form must be reachable by scrolling only the calibration panel.');
-        assert.equal(measured.pageScrollTop, 0);
+      const { initial, longReport, reportScrolled, calibrationReached } = measured;
+      context.diagnostic(JSON.stringify({ viewport: measured.viewport, canvasWidth: initial.canvas.width, canvasHeight: initial.canvas.height, reportClientHeight: reportScrolled.report.clientHeight, reportScrollHeight: reportScrolled.report.scrollHeight, localCalibrationScroll: calibrationReached.localScrollParents }));
+      assert.ok(measured.realPage.appbar && measured.realPage.realCalibrator && measured.realPage.realWorkflow, 'Fixture must use actual Page, calibration and workflow component markup.');
+      assert.equal(measured.realPage.oldHeroCount, 0, 'The full viewport Page must not include the old global header/hero.');
+      for (const snapshot of [initial, longReport, reportScrolled, calibrationReached, measured.focused, measured.projectsOpen, measured.controlsOpen, measured.mobileClosed].filter(Boolean)) {
+        assert.ok(snapshot.page.scrollWidth <= width + 1, 'No tested dock/drawer state may produce horizontal page overflow.');
+        assert.equal(snapshot.page.scrollTop, 0, 'Only local panels may scroll, never the page.');
+        assert.ok(Math.abs(snapshot.app.left) <= 1 && Math.abs(snapshot.app.right - width) <= 1, 'The studio must reach both viewport edges.');
+        assert.ok(snapshot.app.bottom <= height + 1 && snapshot.workspace.bottom <= height + 1, 'Long content must stay in the viewport shell.');
+      }
+      assert.ok(initial.image.top >= initial.canvas.top && initial.image.top < height - 100, 'Calibration image must begin inside the first visible canvas.');
+      assert.ok(Math.abs(initial.canvas.height - longReport.canvas.height) <= 1 && Math.abs(initial.canvas.width - longReport.canvas.width) <= 1, 'Adding a very long real report must not squeeze or enlarge the canvas.');
+      assert.equal(longReport.image.top, reportScrolled.image.top, 'Scrolling the report must not move calibration.');
+      assert.ok(reportScrolled.report.scrollHeight > reportScrolled.report.clientHeight * 2 && reportScrolled.report.scrollTop > 0, 'Long workflow content must actually scroll inside its panel.');
+      assert.equal(reportScrolled.report.overflow, 'auto');
+      assert.ok(calibrationReached.localScrollParents.some(name => name.includes('lab-canvas') || name.includes('lab-calibrator')), 'Known-length form must have a local calibration scroll container.');
+      assert.ok(calibrationReached.knownLength.top >= calibrationReached.canvas.top - 1 && calibrationReached.knownLength.bottom <= calibrationReached.canvas.bottom + 1, 'Known-length input must be reachable without scrolling the page.');
+      if (width > 980) {
+        assert.ok(initial.sidebar.visible && initial.controls.visible, 'Both desktop docks must be visible.');
+        assert.ok(Math.abs(initial.sidebar.left) <= 1 && Math.abs(initial.controls.right - width) <= 1, 'Desktop side docks must attach to left/right viewport edges.');
+        assert.ok(Math.abs(initial.editor.left - initial.sidebar.right) <= 2 && Math.abs(initial.editor.right - initial.controls.left) <= 2, 'Canvas editor must fill the whole space between the docks.');
+        assert.ok(initial.canvas.width >= width - 550, 'Desktop canvas must release the space previously lost to centered max-width cards.');
+        assert.ok(initial.canvas.height >= height * .65, 'Toolbar and task text must leave a substantial vertical canvas.');
+        assert.ok(!measured.focused.sidebar.visible && !measured.focused.controls.visible, 'Focus CSS state must collapse both docks.');
+        assert.ok(measured.focused.canvas.width >= width - 2, 'Focused canvas must fill the viewport width.');
       } else {
-        assert.ok(measured.controls.top >= measured.editor.bottom - 1, 'Mobile report must follow the editor in normal document flow.');
-        assert.equal(measured.controls.overflow, 'visible');
+        assert.ok(!initial.sidebar.visible && !initial.controls.visible, 'Mobile starts with both drawers closed.');
+        assert.ok(measured.projectsOpen.sidebar.visible && !measured.projectsOpen.controls.visible, 'Projects drawer must not expose the controls drawer.');
+        assert.ok(measured.controlsOpen.controls.visible && !measured.controlsOpen.sidebar.visible, 'Controls drawer must not expose the projects drawer.');
+        assert.ok(!measured.mobileClosed.sidebar.visible && !measured.mobileClosed.controls.visible, 'Closing drawer CSS state must return to an unobstructed canvas.');
+        assert.ok(initial.canvas.width >= width - 2 && measured.mobileClosed.canvas.width >= width - 2, 'Closed mobile drawers must not reserve desktop column widths.');
+        for (const [snapshot, dock, close] of [[measured.projectsOpen, 'sidebar', 'projectClose'], [measured.controlsOpen, 'controls', 'controlsClose']]) {
+          assert.ok(snapshot[dock].top >= snapshot.appbar.bottom - 1, 'Active drawer must begin below the app toolbar.');
+          assert.ok(snapshot[close].visible && snapshot[close].reachable, 'The active drawer close button must remain visible and hit-testable.');
+          assert.ok(snapshot.projectToggle.reachable && snapshot.controlsToggle.reachable, 'Drawer overlays must not block the app toolbar toggles.');
+          assert.ok(snapshot[dock].left >= -1 && snapshot[dock].right <= width + 1 && snapshot[dock].width < width - 8, 'Mobile drawer must fit on screen with room for a dismiss backdrop.');
+          assert.deepEqual(snapshot.canvas, initial.canvas, 'Absolute drawers must not reflow or shrink the mobile canvas.');
+        }
       }
     }
   } finally {

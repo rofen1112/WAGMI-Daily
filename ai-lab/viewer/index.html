@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#fffdf9">
+<meta name="theme-color" content="#e7ebec">
 <title>户型装修设计</title>
 <style>
 :root{
@@ -214,6 +214,26 @@ main.drawer-panel #fab{opacity:0;visibility:hidden}
   .lib-grid{grid-template-columns:1fr 1fr 1fr}
   .brand span,footer .only2d{display:none!important}
 }
+
+/* AI Lab canvas-first demo. All panels float; none reserve a second set of columns. */
+:root{--bg:#e7ebec;--paper:#e7ebec;--panel:#f8f9f9;--line:#dce1e2;--ink:#293136;--muted:#77838a;--accent:#ec765b;--accent-soft:#fce6df;--teal:#46696c}
+html,body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--paper);font-optical-sizing:auto}
+.app{display:block;position:relative;height:100vh;height:100dvh;padding:0;overflow:hidden}
+.app>main{position:absolute;inset:0;display:block;background:#e7ebec;background-image:radial-gradient(#adb7bd55 .7px,transparent .7px);background-size:20px 20px}
+.editor-topbar{position:absolute;inset:0 0 auto;z-index:15;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;gap:12px;padding:16px 18px;background:linear-gradient(#e7ebecf5,#e7ebecb0 70%,#e7ebec00);border:0;pointer-events:none}
+.editor-topbar>*{pointer-events:auto}.editor-topbar .brand .editor-eyebrow{display:flex!important}.editor-topbar .brand #subtitle{display:block!important}.brand{min-width:0;margin:0;gap:3px;max-width:260px;padding:2px 0}.brand b{font-size:14px;font-weight:650;letter-spacing:-.025em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.brand #subtitle{font-size:10px;line-height:1.45;color:#6f7c83;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.editor-eyebrow{font-size:10px!important;font-weight:650;letter-spacing:.08em;color:#65747d!important;display:flex;align-items:center;gap:7px}.editor-eyebrow i{font-style:normal;font-size:8px;font-weight:500;letter-spacing:0;color:#7b8b84;border:1px solid #c9d8cf;border-radius:4px;padding:1px 4px;background:#f4f8f4}
+.grp{gap:3px;border:0;background:transparent;padding:0}.btn{min-height:36px;min-width:36px;padding:8px 11px;border-radius:9px;font-size:12px;font-weight:550;line-height:1.2;cursor:pointer;transition:background .16s,color .16s,box-shadow .16s,transform .12s}.btn:hover{background:#dfe5e7}.btn:active{transform:scale(.96)}.btn:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid #db6349;outline-offset:3px}.btn.on,.btn.chip.on{background:#fbe3db;color:#ac4933;box-shadow:inset 0 0 0 1px #f5c5b7}.btn.primary{background:var(--accent);color:#fff}.btn.primary:hover{background:#dd684e}.btn.danger{color:#b45042}.icon-button{padding:6px;font-size:20px;display:inline-grid;place-items:center}.tool-symbol{font-size:19px;line-height:1}.btn:disabled{opacity:.4;cursor:default;transform:none}
+.seg{padding:4px;gap:2px;border:1px solid #ffffffd0;border-radius:13px;background:#f8fafbd9;box-shadow:0 4px 16px #29353a0b;backdrop-filter:blur(20px) saturate(1.25)}.seg .btn{width:68px;min-height:36px;padding:8px 4px;font-size:12px;z-index:1;box-shadow:none}.seg .pill{left:4px;top:4px;bottom:4px;width:68px;border-radius:9px;background:#283137;box-shadow:0 3px 8px #1b2a3126;transition:transform .25s cubic-bezier(.2,.75,.25,1)}body.m3d .seg .pill{transform:translateX(70px)}.seg .btn[data-view="2d"],body.m3d .seg .btn[data-view="3d"]{color:#fff}body.m3d .seg .btn[data-view="2d"]{color:#66757e}
+.editor-top-actions{justify-self:end;display:flex;align-items:center;gap:4px;padding:4px;border:1px solid #ffffffc0;border-radius:12px;background:#f8fafbd9;backdrop-filter:blur(18px)}.editor-settings{position:relative}.editor-settings>summary{display:flex;align-items:center;gap:5px;list-style:none}.editor-settings>summary::-webkit-details-marker{display:none}.editor-settings>summary>span:first-child{font-size:18px}.editor-settings-content{position:absolute;right:0;top:calc(100% + 12px);width:284px;max-width:calc(100vw - 36px);padding:16px;display:flex;flex-direction:column;gap:10px;background:#f9fafbf5;border:1px solid #fff;border-radius:17px;box-shadow:0 14px 44px #23323b22;backdrop-filter:blur(24px);max-height:calc(100dvh - 100px);overflow:auto}.settings-heading{font-size:14px;font-weight:650;letter-spacing:-.02em;margin-bottom:2px}.settings-caption{font-size:10px;font-weight:600;color:#89949a;margin:6px 0}.editor-settings-content .grp{display:flex;flex-wrap:wrap;gap:5px}.editor-settings-content .btn{border:1px solid #dde3e6;background:#fff;font-size:11px;min-height:33px}.editor-settings-content .btn.on{background:#fbe3db;border-color:#f0c3b6}.range{padding:12px 0 3px;font-size:11px}.range input{width:100%!important;min-width:70px;accent-color:var(--accent)}#sourceOverlayControls{margin-top:12px;align-items:center}#sourceOverlayControls input[type=range]{width:70px;accent-color:var(--accent)}.menu summary{border:0;background:transparent;padding:6px}.menu-pop{top:calc(100% + 13px);border-radius:15px;padding:7px;background:#fafbfcf5;backdrop-filter:blur(22px);box-shadow:0 14px 38px #23323b22;min-width:182px}.menu-pop .btn{padding:11px 12px;text-align:left;font-size:12px}
+.editor-pane-launchers{position:absolute;top:89px;left:18px;right:18px;display:flex;justify-content:space-between;z-index:9;pointer-events:none}.pane-launcher{display:flex;align-items:center;gap:7px;min-height:38px;padding:8px 12px;background:#f9fbfcd9;border:1px solid #ffffffd0;box-shadow:0 4px 15px #25343e0b;backdrop-filter:blur(16px);pointer-events:auto}
+.app>aside{position:absolute;top:138px;bottom:100px;width:min(292px,calc(100% - 36px));grid-row:auto;grid-column:auto;z-index:12;background:#f8fafbf5;border:1px solid #fff!important;border-radius:19px;box-shadow:0 18px 45px #1b2c3b20;backdrop-filter:blur(28px) saturate(1.15);overflow:auto!important;opacity:0;visibility:hidden;pointer-events:none;transition:transform .24s cubic-bezier(.22,.8,.24,1),opacity .18s,visibility 0s .24s}.app>aside.lib{left:18px;transform:translateX(-15px) scale(.98);transform-origin:top left}.app>aside.right{right:18px;transform:translateX(15px) scale(.98);transform-origin:top right}.app>aside.open{transform:none;opacity:1;visibility:visible;pointer-events:auto;transition:transform .24s cubic-bezier(.22,.8,.24,1),opacity .18s}.dock-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 15px 12px;position:sticky;top:0;background:#f8fafbf2;z-index:5;border-bottom:1px solid #e5e9eb}.dock-panel-header span{font-size:8px;font-weight:650;letter-spacing:.12em;color:#95a0a7}.dock-panel-header h2{font-size:16px;line-height:1.2;letter-spacing:-.025em;font-weight:650;margin:4px 0 0}.dock-panel-header .btn{font-size:24px;color:#7a878e}.lib h4{font-size:11px;font-weight:650;letter-spacing:0;padding:15px 15px 8px;background:#f8fafbf2;top:73px}.lib-grid{grid-template-columns:1fr 1fr 1fr;gap:7px;padding:0 12px 9px}.item{border:1px solid #e1e6e8;border-radius:11px;padding:11px 3px 8px;background:#ffffffb5;gap:4px;transition:background .15s,border-color .15s,transform .15s}.item svg{width:48px;height:39px}.item b{font-size:10px;font-weight:550}.item small{font-size:9px;color:#9aa4aa}.item:hover{border-color:#edb29f;background:#fff}.hint{font-size:11px;line-height:1.75;color:#8c969d;padding:9px 15px 18px}#panel{min-width:0!important}#panel section{padding:16px 16px;border-bottom-color:#e4e9ec}#panel h3{font-size:13px;letter-spacing:-.015em;margin-bottom:11px}.form{gap:10px}.form label{font-size:11px;color:#78868e;gap:5px}.form input,.form select{font-size:13px;min-height:36px;border-color:#dbe2e6;border-radius:8px;padding:7px 8px}.form input[type=color]{height:36px}.stats{gap:7px}.stats div{background:#edf1f3;border-radius:11px;padding:11px}.stats small{font-size:10px;color:#7b8992}.big{font-size:21px;letter-spacing:-.035em;font-weight:650}.mat{border-radius:10px;border-color:#e0e6e9;padding:9px;background:#fff}.mat span{font-size:11px}.mat small{font-size:9px}.actions .btn{font-size:11px;border-color:#e0e6e9}.total{font-size:13px}.total b{color:#d86950}td{font-size:11px;padding:7px 2px}#roomList{padding:11px 12px;gap:6px}#roomList button{padding:10px;border-radius:10px;font-size:11px}#roomList small{font-size:10px;margin-top:4px}
+.editor-bottom-dock{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:9;display:flex;align-items:center;gap:7px;padding:7px;border:1px solid #ffffffef;border-radius:17px;background:#f7fafbee;box-shadow:0 10px 30px #25384514;backdrop-filter:blur(22px) saturate(1.15);max-width:calc(100% - 28px)}.editor-bottom-dock .grp{flex-shrink:0}.tool-button{display:flex;align-items:center;gap:5px;font-size:11px;min-height:39px;padding:9px 11px}.tool-button span{font-size:18px}.dock-separator{width:1px;height:23px;background:#d9e0e4;flex-shrink:0}.history-actions .btn{font-size:22px;min-width:36px}.editor-navigation{position:absolute;right:18px;bottom:94px;z-index:9;display:flex;flex-direction:column;gap:3px;padding:5px;background:#f8fafbe8;border:1px solid #fff;border-radius:13px;box-shadow:0 5px 20px #23333d0e;backdrop-filter:blur(18px)}.editor-navigation .grp{display:flex;flex-direction:column;gap:3px}.nav-button{min-width:37px;min-height:36px;font-size:10px;padding:6px 7px}.editor-navigation .only2d .nav-button{font-size:20px}.editor-presentation{position:absolute;top:141px;left:18px;z-index:9;display:flex;gap:2px;padding:4px;background:#f8fafbd9;border:1px solid #fff;border-radius:11px;backdrop-filter:blur(18px)}.editor-presentation .btn{min-height:30px;padding:6px 9px;font-size:10px}.editor-presentation .btn.on{color:#596c78;background:#e0e7eb;box-shadow:none}#cutControls .btn,#modes3d .btn{font-size:11px;min-height:38px;padding:8px 10px}
+.scalebar{left:20px;bottom:94px;min-width:72px;padding:7px 10px;border:1px solid #ffffffd0;border-radius:10px;background:#f8fafbc9;color:#7b8a92;font-size:10px}.scalebar .bar{height:5px;border-color:#7c8d97;margin-top:4px}.app>footer{position:absolute;left:20px;right:20px;bottom:5px;height:16px;border:0;background:none;padding:0;font-size:9px;color:#8d999f;pointer-events:none;gap:12px}.app>footer .coord-status,.app>footer #hover,.app>footer #tip{display:none!important}.app>footer .scale-status{display:inline!important}footer b{color:#7a8b94;font-weight:550}body.m3d footer .scale-status{display:none!important}.modehint{top:137px;font-size:11px;border-radius:8px;z-index:8;background:#33414b}#hint3d{top:auto;bottom:86px;max-width:calc(100% - 130px);overflow:hidden;text-overflow:ellipsis;background:none;color:#7d8b94;font-size:10px;padding:3px 0;border-radius:0}#fab{bottom:86px;border-radius:13px;background:#fafcfbf0;border:1px solid #fff;box-shadow:0 7px 24px #253a451a}#fab .btn{font-size:11px;min-height:36px}#fab .name{font-size:11px}#toast{bottom:154px;font-size:12px;background:#34424a;border-radius:11px;box-shadow:0 5px 22px #20343f20}.rlabel{font-size:11px;font-weight:550;color:#596c78;background:#fbfdfddc;border-color:#ffffffd0;box-shadow:0 3px 9px #2237460a;backdrop-filter:blur(8px);border-radius:8px;padding:4px 9px}.rlabel small{font-size:9px;color:#91a0a8}.only2d,.only3d{animation:none}.narrow-only{display:inline-block!important}#walkOverlay>div{border:1px solid #fff;background:#f6f9faf2;border-radius:20px;box-shadow:0 18px 60px #1e33452a;padding:25px;backdrop-filter:blur(24px)}#walkOverlay h3{font-size:18px;letter-spacing:-.03em}#walkOverlay p{font-size:12px;line-height:1.8}#walkExit{bottom:100px;right:78px}
+@media(max-width:640px){.editor-topbar{padding:12px;gap:7px}.brand{max-width:160px}.editor-topbar .brand #subtitle{display:none!important}.brand b{font-size:12px;max-width:145px}.editor-eyebrow{font-size:8px!important;letter-spacing:.03em}.editor-eyebrow i{display:none}.seg .btn,.seg .pill{width:60px}.seg .btn{font-size:11px}body.m3d .seg .pill{transform:translateX(62px)}.editor-top-actions{gap:0;padding:3px}.editor-top-actions .btn{min-height:34px;min-width:32px}.settings-label,#fullscreen{display:none}.editor-pane-launchers{top:76px;left:12px;right:12px}.pane-launcher{font-size:10px;min-height:34px;padding:7px 10px;gap:5px}.app>aside{top:121px;bottom:92px}.app>aside.lib{left:12px}.app>aside.right{right:12px}.editor-presentation{top:120px;left:12px}.editor-navigation{right:12px;bottom:91px}.editor-bottom-dock{bottom:23px;padding:5px;gap:4px;border-radius:15px}.tool-button{padding:8px;font-size:10px;min-height:36px}.history-actions .btn{min-width:30px;font-size:19px}.editor-bottom-dock .btn.chip{padding:7px;font-size:10px}.scalebar{left:14px;bottom:90px}.app>footer{left:14px;right:14px;font-size:8px}#hint3d{bottom:82px;max-width:calc(100% - 100px);font-size:9px}.editor-settings-content{right:-36px}}
+@media(max-width:420px){.brand b{display:none}.brand{max-width:85px;padding-top:10px}.seg .btn,.seg .pill{width:52px}.seg .btn{font-size:10px}body.m3d .seg .pill{transform:translateX(54px)}.editor-topbar{grid-template-columns:minmax(0,1fr) auto auto}.editor-bottom-dock{gap:3px}.tool-button{gap:3px;padding:8px 7px}.tool-button span{font-size:15px}#cutControls .btn,#modes3d .btn{font-size:10px;padding:7px;min-width:30px}.history-actions .btn{min-width:28px}.pane-launcher .tool-symbol{font-size:16px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.app>aside.lib,.app>aside.right{transform:none}}
+@media(prefers-reduced-transparency:reduce),(prefers-contrast:more){.editor-bottom-dock,.editor-top-actions,.seg,.pane-launcher,.editor-navigation,.editor-presentation,.editor-settings-content,.app>aside{background:#f8fafb;backdrop-filter:none;border-color:#cbd4d9}}
+
 </style>
 <script type="importmap">
 {"imports":{
@@ -224,82 +244,30 @@ main.drawer-panel #fab{opacity:0;visibility:hidden}
 </head>
 <body>
 <div class="app">
-  <header>
-    <div class="grp" id="paneBtns">
-      <button class="btn chip" id="tgLib" data-en="◧ Library">◧ 家具库</button>
-      <button class="btn chip" id="tgPanel" data-en="Properties ◨">属性 ◨</button>
+  <header class="editor-topbar">
+    <div class="brand"><span class="editor-eyebrow">空间工作台 <i>可编辑</i></span><b>空间方案</b><span id="subtitle">比例与结构需核对</span></div>
+    <div class="grp seg" id="viewSeg" role="group" aria-label="切换平面和立体视图">
+      <span class="pill" aria-hidden="true"></span><button class="btn" aria-pressed="true" data-view="2d" data-en="2D Plan">2D 平面</button><button class="btn" aria-pressed="false" data-view="3d" data-en="3D Space">3D 空间</button>
     </div>
-    <div class="brand"><b data-en="3BR 2LR 2BA · Interior Design">三室两厅两卫 · 装修设计</b><span id="subtitle">原始户型 1:60 · 尺寸单位 mm</span></div>
-    <div class="grp seg" id="viewSeg" title="切换 2D / 3D (T)" data-en-title="Switch 2D / 3D (T)">
-      <span class="pill"></span>
-      <button class="btn" data-view="2d" data-en="2D Plan">2D 平面</button>
-      <button class="btn" data-view="3d" data-en="3D Scene">3D 场景</button>
+    <div class="editor-top-actions">
+      <details class="editor-settings" id="displayMenu"><summary class="btn" title="图层、比例与显示设置"><span aria-hidden="true">☷</span><span class="settings-label">显示</span></summary>
+        <div class="editor-settings-content">
+          <div class="settings-heading">显示设置</div>
+          <div class="only2d"><div class="settings-caption">平面图层</div><div class="grp" id="layers">
+            <button class="btn chip on" data-layer="dims" data-en="Dimensions">尺寸</button><button class="btn chip on" data-layer="labels" data-en="Room labels">房间</button><button class="btn chip on" data-layer="furn" data-en="Furniture">家具</button><button class="btn chip" data-layer="grid" data-en="Grid">网格</button><button class="btn chip" data-layer="bearing" data-en="Bearing walls">承重墙</button><button class="btn chip on" data-layer="wallSnap" data-en="Wall snap">贴墙吸附</button>
+          </div><div class="settings-caption">视图比例 · 仅影响显示</div><div class="grp"><button class="btn" id="s60">1:60</button><button class="btn" id="s100">1:100</button></div>
+          <div class="grp" id="sourceOverlayControls" hidden><label class="btn"><input type="checkbox" id="sourceOverlayToggle"> 原图叠加</label><input type="range" id="sourceOverlayOpacity" min="0" max="0.85" step="0.05" value="0.35" aria-label="原图叠加透明度"></div></div>
+          <div class="only3d"><div class="settings-caption">场景图层</div><div class="grp" id="toggles3d"><button class="btn chip on" data-t="furn">家具</button><button class="btn chip" data-t="labels" aria-pressed="false">房间名</button><button class="btn chip" data-t="night">夜景</button></div><label class="range"><span>日照</span><input type="range" id="sun" min="7" max="18" step=".25" value="10"><span id="sunT">10:00</span></label></div>
+          <div class="settings-caption">界面语言</div><div class="grp" id="langSel" role="group" aria-label="界面语言"><button class="btn chip" data-lang="zh">简体</button><button class="btn chip" data-lang="zht">繁體</button><button class="btn chip" data-lang="en">EN</button></div>
+        </div>
+      </details>
+      <button class="btn icon-button" id="fullscreen" title="全屏 (Shift+F)" aria-label="全屏">⛶</button>
+      <details class="menu"><summary class="btn icon-button" aria-label="文件和更多操作" title="文件和更多操作">···</summary><div class="menu-pop"><button class="btn" id="exportPng">导出当前图片</button><button class="btn" id="exportJson">导出编辑状态 JSON</button><button class="btn" id="importJson">导入编辑状态</button><button class="btn danger" id="clearAll">清空家具布置</button><button class="btn danger" id="reset">恢复初始方案</button></div></details>
+      <input type="file" id="fileIn" accept=".json,application/json" hidden>
     </div>
-    <div class="grp only2d" id="tools">
-      <button class="btn on" data-tool="select" title="选择 / 移动 (V)" data-en-title="Select / Move (V)" data-en="Select">选择</button>
-      <button class="btn" data-tool="measure" title="测量 (M)" data-en-title="Measure (M)" data-en="Measure">测量</button>
-      <button class="btn" data-tool="demolish" title="拆改非承重墙 (X)" data-en-title="Demolish non-bearing walls (X)" data-en="Demolish">拆改墙体</button>
-    </div>
-    <div class="grp only2d">
-      <button class="btn" id="zoomOut" title="缩小" data-en-title="Zoom out">−</button>
-      <button class="btn" id="zoomIn" title="放大" data-en-title="Zoom in">＋</button>
-      <button class="btn" id="fit" title="适应窗口 (F)" data-en-title="Fit to window (F)" data-en="Fit">适应</button>
-      <button class="btn" id="s60" title="按 1:60 显示（仅视图缩放，不是图纸校尺）" data-en-title="Show at 1:60 (view zoom, not image calibration)">1:60</button>
-      <button class="btn" id="s100" title="按 1:100 显示" data-en-title="Show at 1:100">1:100</button>
-    </div>
-    <div class="grp only2d" id="sourceOverlayControls" hidden>
-      <label class="btn" style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="sourceOverlayToggle"><span data-en="Source overlay">原图叠加</span></label>
-      <input type="range" id="sourceOverlayOpacity" min="0" max="0.85" step="0.05" value="0.35" style="width:65px" aria-label="原图叠加透明度" title="原图叠加透明度">
-    </div>
-    <div class="grp only3d" id="modes3d">
-      <button class="btn on" data-mode="orbit" data-en="Orbit">鸟瞰</button>
-      <button class="btn" data-mode="walk" data-en="Walk">漫游</button>
-    </div>
-    <div class="grp only3d">
-      <button class="btn" id="vIso" data-en="Iso">斜视</button>
-      <button class="btn" id="vTop" data-en="Top">俯视</button>
-    </div>
-    <div class="grp">
-      <button class="btn" id="undo" title="撤销 (Ctrl+Z)" data-en-title="Undo (Ctrl+Z)" data-en="Undo">撤销</button>
-      <button class="btn" id="redo" title="重做 (Ctrl+Shift+Z)" data-en-title="Redo (Ctrl+Shift+Z)" data-en="Redo">重做</button>
-      <button class="btn danger" id="clearAll" title="清空所有家具家电（可撤销）" data-en-title="Remove all furniture and appliances (undoable)" data-en="Clear">清空布置</button>
-    </div>
-    <div class="grp only2d" id="layers">
-      <button class="btn chip on" data-layer="dims" data-en="Dims">尺寸</button>
-      <button class="btn chip on" data-layer="labels" data-en="Rooms">房间</button>
-      <button class="btn chip on" data-layer="furn" data-en="Furniture">家具</button>
-      <button class="btn chip" data-layer="grid" data-en="Grid">网格</button>
-      <button class="btn chip" data-layer="bearing" data-en="Bearing walls">承重墙</button>
-      <button class="btn chip on" data-layer="wallSnap" title="拖动家具时贴墙吸附" data-en-title="Snap furniture to walls while dragging" data-en="Wall snap">贴墙吸附</button>
-    </div>
-    <div class="grp only3d">
-      <button class="btn chip on" data-cut="2.8" data-en="Full walls">全高墙</button>
-      <button class="btn chip" data-cut="1.2" data-en="Cut walls">剖切墙</button>
-    </div>
-    <div class="grp only3d" id="toggles3d">
-      <button class="btn chip on" data-t="furn" data-en="Furniture">家具</button>
-      <button class="btn chip on" data-t="labels" data-en="Labels">房间名</button>
-      <button class="btn chip" data-t="night" data-en="Night">夜景</button>
-    </div>
-    <div class="grp only3d"><label class="range"><span data-en="Sun">日照</span> <input type="range" id="sun" min="7" max="18" step=".25" value="10" style="width:84px"><span id="sunT">10:00</span></label></div>
-    <div class="spacer"></div>
-    <div class="grp" id="langSel" role="group" aria-label="Language / 语言">
-      <button class="btn chip" data-lang="zh" title="简体中文">简</button>
-      <button class="btn chip" data-lang="zht" title="繁體中文">繁</button>
-      <button class="btn chip" data-lang="en" title="English">EN</button>
-    </div>
-    <button class="btn" id="fullscreen" title="全屏 (Shift+F)" style="border:1px solid var(--line);background:#fff">⛶ 全屏</button>
-    <details class="menu"><summary class="btn" data-en="File ▾">文件 ▾</summary>
-      <div class="menu-pop">
-        <button class="btn" id="exportPng" data-en="Export image">导出图片</button>
-        <button class="btn" id="exportJson" data-en="Export plan JSON">导出方案 JSON</button>
-        <button class="btn" id="importJson" data-en="Import plan">导入方案</button>
-        <button class="btn danger" id="reset" data-en="Reset to default">重置为默认方案</button>
-      </div></details>
-    <input type="file" id="fileIn" accept=".json,application/json" hidden>
   </header>
 
-  <aside class="lib">
+  <aside class="lib" aria-label="家具库"><div class="dock-panel-header"><div><span>OBJECT LIBRARY</span><h2>家具与家电</h2></div><button class="btn icon-button" data-close-pane="lib" aria-label="关闭家具库">×</button></div>
     <div id="lib3d" class="only3d">
       <h4 data-en="Rooms · click to fly there">房间 · 点击飞到该房间</h4>
       <div id="roomList"></div>
@@ -335,13 +303,22 @@ main.drawer-panel #fab{opacity:0;visibility:hidden}
     <div class="scalebar" id="scalebar"><span id="sbText">1 m</span><div class="bar" id="sbBar"></div></div>
     <div class="modehint" id="modehint"></div>
     <div id="fab"></div>
+    <div id="paneBtns" class="editor-pane-launchers"><button class="btn pane-launcher" id="tgLib" title="打开家具库"><span class="tool-symbol" aria-hidden="true">▦</span>家具库</button><button class="btn pane-launcher" id="tgPanel" title="打开属性面板"><span class="tool-symbol" aria-hidden="true">☷</span>属性</button></div>
+    <div class="editor-presentation only3d" id="lightPresets" role="group" aria-label="场景灯光"><button class="btn on" data-light="studio">工作室</button><button class="btn" data-light="daylight">日光</button></div>
+    <div class="editor-bottom-dock">
+      <div class="grp only2d" id="tools"><button class="btn tool-button on" data-tool="select" title="选择 / 移动 (V)"><span aria-hidden="true">↖</span>选择</button><button class="btn tool-button" data-tool="measure" title="测量 (M)"><span aria-hidden="true">↔</span>测量</button><button class="btn tool-button" data-tool="demolish" title="拆改非承重墙 (X)"><span aria-hidden="true">▥</span>拆墙</button></div>
+      <div class="grp only3d" id="modes3d"><button class="btn tool-button on" data-mode="orbit">鸟瞰</button><button class="btn tool-button" data-mode="walk">漫游</button></div>
+      <div class="grp only3d" id="cutControls"><button class="btn chip" data-cut="2.8">全高</button><button class="btn chip on" data-cut="1.2">剖切</button></div>
+      <span class="dock-separator"></span><div class="grp history-actions"><button class="btn icon-button" id="undo" title="撤销 (Ctrl+Z)" aria-label="撤销">↶</button><button class="btn icon-button" id="redo" title="重做 (Ctrl+Shift+Z)" aria-label="重做">↷</button></div>
+    </div>
+    <nav class="editor-navigation" aria-label="画布视角工具"><div class="grp only3d"><button class="btn nav-button" id="vIso" title="全屋斜视">斜视</button><button class="btn nav-button" id="vTop" title="全屋俯视">俯视</button></div><button class="btn nav-button" id="fit" title="适应画布 (F)">适应</button><div class="grp only2d"><button class="btn nav-button" id="zoomIn" title="放大" aria-label="放大">＋</button><button class="btn nav-button" id="zoomOut" title="缩小" aria-label="缩小">−</button></div></nav>
   </main>
 
-  <aside class="right"><div id="panel"></div></aside>
+  <aside class="right" aria-label="属性面板"><div class="dock-panel-header"><div><span>INSPECTOR</span><h2>属性与统计</h2></div><button class="btn icon-button" data-close-pane="panel" aria-label="关闭属性面板">×</button></div><div id="panel"></div></aside>
 
   <footer>
-    <span class="only2d">X <b id="cx">—</b></span><span class="only2d">Y <b id="cy">—</b></span>
-    <span class="only2d"><span data-en="Scale">当前比例</span> <b id="ratio">—</b></span>
+    <span class="coord-status only2d">X <b id="cx">—</b></span><span class="coord-status only2d">Y <b id="cy">—</b></span>
+    <span class="scale-status only2d"><span data-en="View scale">视图</span> <b id="ratio">—</b></span>
     <span id="hover" class="only2d"></span>
     <span class="spacer"></span>
     <span id="tip"></span>
@@ -937,34 +914,28 @@ function clearLayout(){
   toast(tr('已清空布置，可点「撤销」恢复', 'Layout cleared — Undo to restore'));
 }
 
-/* 侧栏开合：which = 'lib' | 'panel' | null，open 不传则切换。
- * 宽屏：侧栏在布局中收起 / 展开（记住选择）；窄屏：侧栏是浮层抽屉，一次只开一个，which = null 表示全部关闭 */
-const PANES = LAB_SCOPE + ':panes';
-const panes = (() => { try { return JSON.parse(localStorage.getItem(PANES)) || {}; } catch(e) { return {}; } })();
+/* 内嵌编辑器始终用浮层，初次进入收起；此界面选择不写入用户布置缓存。 */
 function drawer(which, open){
-  const app = $('.app'), els = {lib:$('aside.lib'), panel:$('aside.right')}, n = narrow();
-  if (n){
-    Object.entries(els).forEach(([k, el]) => el.classList.toggle('open', k === which && (open ?? !el.classList.contains('open'))));
-  } else {
-    Object.values(els).forEach(el => el.classList.remove('open'));
-    if (which){
-      const k = which === 'lib' ? 'hideLib' : 'hidePanel';
-      panes[k] = open === undefined ? !panes[k] : !open;
-      try { localStorage.setItem(PANES, JSON.stringify(panes)); } catch(e) {}
-    }
-  }
-  app.classList.toggle('hide-lib', !!panes.hideLib); app.classList.toggle('hide-panel', !!panes.hidePanel);
+  const els = {lib:$('aside.lib'), panel:$('aside.right')};
+  const show = which && (open ?? !els[which].classList.contains('open'));
+  Object.entries(els).forEach(([key,el]) => {
+    const visible = key === which && !!show;
+    el.classList.toggle('open',visible); el.inert = !visible; el.setAttribute('aria-hidden',String(!visible));
+  });
   syncPaneBtns();
 }
 function syncPaneBtns(){
-  const els = {lib:$('aside.lib'), panel:$('aside.right')}, n = narrow();
-  const vis = k => n ? els[k].classList.contains('open') : !panes[k === 'lib' ? 'hideLib' : 'hidePanel'];
-  $('#tgLib').classList.toggle('on', vis('lib')); $('#tgPanel').classList.toggle('on', vis('panel'));
-  $('#tgLib').title = vis('lib') ? tr('收起家具库 ( [ )', 'Hide library ( [ )') : tr('展开家具库 ( [ )', 'Show library ( [ )');
-  $('#tgPanel').title = vis('panel') ? tr('收起属性面板 ( ] )', 'Hide properties ( ] )') : tr('展开属性面板 ( ] )', 'Show properties ( ] )');
-  $('#stage').classList.toggle('drawer-panel', n && vis('panel'));   // 属性抽屉盖住画面时让出底部工具条
+  const els = {lib:$('aside.lib'), panel:$('aside.right')};
+  for (const [key,id] of [['lib','tgLib'],['panel','tgPanel']]){
+    const visible = els[key].classList.contains('open'), button = $('#'+id);
+    button.classList.toggle('on',visible); button.setAttribute('aria-expanded',String(visible));
+    button.title = key === 'lib'
+      ? (visible ? tr('收起家具库 ( [ )','Hide library ( [ )') : tr('展开家具库 ( [ )','Show library ( [ )'))
+      : (visible ? tr('收起属性面板 ( ] )','Hide properties ( ] )') : tr('展开属性面板 ( ] )','Show properties ( ] )'));
+  }
+  $('#stage').classList.remove('drawer-panel');
 }
-function closeDrawers(){ if (narrow()) drawer(null); }
+function closeDrawers(){ drawer(null); }
 
 function roomPanel(r){
   const st = state.rooms[r.id], a = area(r.poly), [x0,y0,x1,y1] = bbox(r.poly), inside = state.furniture.filter(f => f.cx>x0&&f.cx<x1&&f.cy>y0&&f.cy<y1);
@@ -1273,14 +1244,14 @@ document.addEventListener('keydown', e => {
   if (k === '[' || k === ']'){ drawer(k === '[' ? 'lib' : 'panel'); return; }
   if (k === 'f' && e.shiftKey){ toggleFullscreen(); return; }
   if (k === 't') setView(is3D() ? '2d' : '3d');
-  else if (is3D() && ['v','m','x','f','+','=','-'].includes(k)) return;
+  else if (k === 'f') fitCanvas();
+  else if (is3D() && ['v','m','x','+','=','-'].includes(k)) return;
   else if (k === 'v') setTool('select');
   else if (k === 'm') setTool('measure');
   else if (k === 'x') setTool('demolish');
-  else if (k === 'f') fitView();
   else if (k === 'r') rotateSel(e.shiftKey ? -90 : 90);
   else if (k === 'delete' || k === 'backspace'){ e.preventDefault(); deleteSel(); }
-  else if (k === 'escape'){ if (ui.mA){ ui.mA = null; renderMeasure(); } else { if (ui.tool !== 'select') setTool('select'); select(null); } }
+  else if (k === 'escape'){ closeDrawers(); document.querySelectorAll('details[open]').forEach(el=>el.open=false); if (ui.mA){ ui.mA = null; renderMeasure(); } else { if (ui.tool !== 'select') setTool('select'); select(null); } }
   else if (k.startsWith('arrow') && ui.sel?.kind === 'furn'){
     e.preventDefault(); const st = e.shiftKey ? 100 : 10;
     mutate(() => { const f = getF(ui.sel.id); if (k==='arrowleft') f.cx -= st; if (k==='arrowright') f.cx += st; if (k==='arrowup') f.cy -= st; if (k==='arrowdown') f.cy += st; });
@@ -1460,9 +1431,9 @@ const TIPS = () => COARSE
      '3d':tr('3D 场景与平面方案实时同步 · 右侧面板修改会立即生效 · T 返回 2D', '3D stays in sync with the plan · panel edits apply instantly · T for 2D')};
 async function setView(m){
   if (m === viewMode || switching) return;
-  if (!window.View3D) return toast(tr('3D 引擎仍在加载或加载失败（需要联网加载 three.js）', '3D engine is still loading or failed to load (three.js needs a network connection)'));
+  if (!window.View3D) return toast(tr('3D 引擎仍在加载，请稍后重试', '3D engine is still loading; please try again shortly'));
   switching = true; document.body.classList.add('busy');
-  viewMode = m;
+  viewMode = m; document.querySelectorAll('#viewSeg [data-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===m)));
   if (m === '3d'){ if (ui.tool !== 'select') setTool('select'); ui.mA = null; document.body.classList.add('m3d'); await window.View3D.enter(); }
   else { document.body.classList.remove('m3d'); await window.View3D.exit(); applyView(); }
   $('#tip').textContent = TIPS()[m];
@@ -1479,7 +1450,8 @@ document.querySelectorAll('#layers .btn').forEach(b => b.onclick = () => {
 });
 $('#zoomIn').onclick = () => zoomCenter(1.25);
 $('#zoomOut').onclick = () => zoomCenter(.8);
-$('#fit').onclick = fitView;
+function fitCanvas(){ is3D() ? window.View3D?.fit() : fitView(); }
+$('#fit').onclick = fitCanvas;
 $('#s60').onclick = () => { setRatio(60); toast(tr('已按 1:60 显示（仅视图缩放）', 'Showing at 1:60 (view zoom only)')); };
 $('#s100').onclick = () => setRatio(100);
 $('#undo').onclick = undo; $('#redo').onclick = redo;
@@ -1498,7 +1470,7 @@ function toggleFullscreen(){
 }
 function syncFullscreen(){
   const on = !!fsEl(), b = $('#fullscreen');
-  b.textContent = '⛶ ' + (on ? tr('退出全屏', 'Exit fullscreen') : tr('全屏', 'Fullscreen'));
+  b.textContent = '⛶'; b.setAttribute('aria-label',on ? tr('退出全屏','Exit fullscreen') : tr('全屏','Fullscreen'));
   b.title = (on ? tr('退出全屏', 'Exit fullscreen') : tr('全屏', 'Fullscreen')) + ' (Shift+F)';
 }
 $('#fullscreen').onclick = toggleFullscreen;
@@ -1507,10 +1479,11 @@ $('#fullscreen').onclick = toggleFullscreen;
 if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) $('#fullscreen').hidden = true;
 $('#tgLib').onclick = () => drawer('lib');
 $('#tgPanel').onclick = () => drawer('panel');
-// 触屏上点菜单以外的地方收起「文件」菜单
-document.addEventListener('pointerdown', e => { const m = $('details.menu'); if (m.open && !m.contains(e.target)) m.open = false; });
+document.querySelectorAll('[data-close-pane]').forEach(button => button.onclick = () => drawer(button.dataset.closePane,false));
+// 浮层菜单点击外部收起；相邻控件不覆盖画布操作。
+document.addEventListener('pointerdown',e => { document.querySelectorAll('header details[open]').forEach(menu => { if (!menu.contains(e.target)) menu.open=false; }); });
 matchMedia('(max-width:1100px)').addEventListener('change', () => drawer(null));
-drawer(null);                                  // 恢复上次的面板收起状态
+drawer(null);                                  // Demo 首次进入给画布完整空间
 $('#exportPng').onclick = exportPNG;
 $('#exportJson').onclick = () => download(tr('户型装修方案', 'floor-plan-design') + '.json', new Blob([JSON.stringify(state, null, 2)], {type:'application/json'}));
 $('#importJson').onclick = () => $('#fileIn').click();
@@ -1587,7 +1560,8 @@ const [OX, OY] = FLOORPLAN_CASE.center;
 const H = (FLOORPLAN_CASE.metadata.ceilingHeightMm || 2800)/1000, FOV = 45;       // 户型中心放在世界原点，层高 2.8 m
 const wx = x => (x - OX) / 1000, wz = y => (y - OY) / 1000, M = v => v / 1000;
 const SW = () => stage.clientWidth, SH = () => stage.clientHeight;
-const opt = {cut:2.8, furn:true, labels:true, night:false, hour:10, mode:'orbit'};
+const opt = {cut:Math.min(H,1.2), furn:true, labels:false, night:false, hour:10, mode:'orbit', lighting:'studio'};
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let inited = false, active = false, raf = 0, anim = null, fly = null;
 let renderer, labelRenderer, scene, camera, orbit, walkCtl, hemi, sun, ground, glassMat, wallMat, capMat, frameMat, labResizeObserver;
@@ -2495,16 +2469,23 @@ function applyGrow(){
 /* ======================= 日照 / 夜景 ======================= */
 function applyLight(){
   const t = (opt.hour - 6) / 12, az = Math.PI * (.15 + t*.7), el = Math.sin(Math.PI*t) * 1.05 + .15, warm = 1 - Math.sin(Math.PI*t);
-  sun.position.set(Math.cos(az)*18, Math.sin(el)*20 + 3, -Math.sin(az)*10 + 8); sun.target.position.set(0, 0, 0);
-  sun.color.setHSL(.09, .5 + warm*.4, .92 - warm*.12);
-  sun.intensity = opt.night ? .05 : 1.4 + Math.sin(Math.PI*t)*1.6;
-  hemi.intensity = opt.night ? .12 : 1.1;
-  scene.background = new THREE.Color(opt.night ? 0x1c2130 : 0xf7f4ee);
-  ground.material.color.set(opt.night ? 0x2a2e38 : 0xf2eee7);
+  const studio = opt.lighting === 'studio' && !opt.night;
+  if (studio){
+    sun.position.set(-8,16,12); sun.color.set(0xfff4e8); sun.intensity = 2.15;
+    hemi.color.set(0xeaf1f7); hemi.groundColor.set(0xc3ccd5); hemi.intensity = 1.65;
+  } else {
+    sun.position.set(Math.cos(az)*18, Math.sin(el)*20 + 3, -Math.sin(az)*10 + 8);
+    sun.color.setHSL(.09,.5+warm*.4,.92-warm*.12); sun.intensity = opt.night ? .05 : 1.4+Math.sin(Math.PI*t)*1.6;
+    hemi.color.set(0xfff8ee); hemi.groundColor.set(0xb9a88f); hemi.intensity = opt.night ? .12 : 1.1;
+  }
+  sun.target.position.set(0,0,0);
+  scene.background = new THREE.Color(opt.night ? 0x1c2130 : studio ? 0xe7ebec : 0xf7f4ee);
+  ground.material.color.set(opt.night ? 0x2a2e38 : studio ? 0xe7ebec : 0xf2eee7);
+  sun.shadow.radius = studio ? 4 : 2;
   lampG.children.forEach(o => { if (o.isPointLight) o.intensity = opt.night ? 6 : 0; else o.material.emissiveIntensity = opt.night ? 2 : .3; });
-  renderer.toneMappingExposure = opt.night ? 1.25 : 1.05;
-  envK = opt.night ? .15 : 1; matCache.forEach(m => { if (m.envMap) m.envMapIntensity = m.userData.env*envK; });
-  const h = Math.floor(opt.hour), m = Math.round((opt.hour - h)*60);
+  renderer.toneMappingExposure = opt.night ? 1.25 : studio ? 1.02 : 1.05;
+  envK = opt.night ? .15 : studio ? .85 : 1; matCache.forEach(m => { if (m.envMap) m.envMapIntensity = m.userData.env*envK; });
+  const h = Math.floor(opt.hour), m = Math.round((opt.hour-h)*60);
   $('#sunT').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 }
 
@@ -2522,9 +2503,54 @@ function isoFrom(P){
   const d = THREE.MathUtils.clamp(P.p.y, 5, 30), dir = new THREE.Vector3(.3, .82, .49).normalize();
   return pose(P.t.clone(), P.t.clone().addScaledVector(dir, d));
 }
-const caseDistance = () => FLOORPLAN_CASE.camera.extent/2/Math.tan(FOV/2*Math.PI/180)*Math.max(1,SH()/SW())*1.15;
-const isoWhole = () => pose(new THREE.Vector3(0, 0, 0), FLOORPLAN_CASE?.camera ? new THREE.Vector3(.3,.82,.49).normalize().multiplyScalar(caseDistance()) : new THREE.Vector3(5.5, 15.5, 10));
-const topWhole = () => pose(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, FLOORPLAN_CASE?.camera ? caseDistance() : 19, 1e-4));
+// 交互取景拟合可见网格顶点的投影，不把整组世界 AABB 的空角也纳入画面。
+// 相机沿固定方向平移、后退；安全区保留顶部 100px / 底部 80px 浮动工具空间。
+function interactiveGeometryFrame(groups,width,height,directionInput=[.68,1.18,.78]){
+  width=Math.max(1,width); height=Math.max(1,height);
+  const bounds=captureRenderedBounds(groups),center=bounds.getCenter(new THREE.Vector3());
+  const direction=new THREE.Vector3(...directionInput).normalize();
+  const right=new THREE.Vector3(direction.z,0,-direction.x).normalize(),up=new THREE.Vector3().crossVectors(direction,right);
+  const points=[],point=new THREE.Vector3(); let maxDepth=-Infinity;
+  groups.forEach(group => {
+    group.updateWorldMatrix(true,true);
+    group.traverseVisible(object => {
+      const position=object.geometry?.getAttribute('position'); if (!position) return;
+      for (let i=0;i<position.count;i++){
+        point.fromBufferAttribute(position,i).applyMatrix4(object.matrixWorld).sub(center);
+        const depth=point.dot(direction); maxDepth=Math.max(maxDepth,depth);
+        points.push(point.dot(right),point.dot(up),depth);
+      }
+    });
+  });
+  if (!points.length) throw new Error('capture_empty_scene');
+  const safeRect={left:Math.min(24,width*.08),right:width-Math.min(76,width*.16),top:Math.min(100,height*.25),bottom:height-Math.min(80,height*.2)};
+  const tangent=Math.tan(FOV*Math.PI/360),kx=tangent*width/height;
+  const left=(safeRect.left/width*2-1)*kx,rightEdge=(safeRect.right/width*2-1)*kx;
+  const bottom=(1-safeRect.bottom/height*2)*tangent,top=(1-safeRect.top/height*2)*tangent;
+  function offsets(distance){
+    let x0=-Infinity,x1=Infinity,y0=-Infinity,y1=Infinity;
+    for (let i=0;i<points.length;i+=3){
+      const depth=distance-points[i+2];
+      x0=Math.max(x0,points[i]-rightEdge*depth); x1=Math.min(x1,points[i]-left*depth);
+      y0=Math.max(y0,points[i+1]-top*depth); y1=Math.min(y1,points[i+1]-bottom*depth);
+    }
+    return {x0,x1,y0,y1,fits:x0<=x1&&y0<=y1};
+  }
+  let lo=maxDepth+.05,hi=lo+Math.max(1,bounds.getSize(new THREE.Vector3()).length());
+  while (!offsets(hi).fits) hi=maxDepth+(hi-maxDepth)*2;
+  for (let i=0;i<24;i++){ const mid=(lo+hi)/2; if (offsets(mid).fits) hi=mid; else lo=mid; }
+  const distance=Math.max(1.5,hi+Math.max(.02,(hi-maxDepth)*.01)),fit=offsets(distance);
+  const target=center.clone().addScaledVector(right,(fit.x0+fit.x1)/2).addScaledVector(up,(fit.y0+fit.y1)/2);
+  return {target:target.toArray(),position:target.clone().addScaledVector(direction,distance).toArray(),safeRect};
+}
+function presentationPose(direction = [.68,1.18,.78]){
+  const frame=interactiveGeometryFrame([archFloor,archUp,...(opt.furn ? [furnG] : [])],SW(),SH(),direction);
+  const target=new THREE.Vector3().fromArray(frame.target),position=new THREE.Vector3().fromArray(frame.position);
+  orbit.maxDistance=Math.max(orbit.maxDistance,position.distanceTo(target)*2);
+  return pose(target,position);
+}
+const isoWhole = () => presentationPose();
+const topWhole = () => presentationPose([0,1,.0001]);
 const curPose = () => pose(orbit.target.clone(), camera.position.clone());
 // 以目标点为中心做球坐标插值：镜头沿弧线倾斜环绕，而不是直线穿越
 function camTween(A, B, e){
@@ -2537,7 +2563,7 @@ function camTween(A, B, e){
 function setPose(P){ camera.position.copy(P.p); orbit.target.copy(P.t); camera.lookAt(P.t); }
 function animate(dur, fn){ return new Promise(res => { anim = {t0:performance.now(), dur, fn, res}; }); }
 const wait = ms => new Promise(r => setTimeout(r, ms));
-function flyTo(B, dur = 900){ fly = {t0:performance.now(), dur, A:curPose(), B}; }
+function flyTo(B,dur = 550){ if (reducedMotion()){ fly=null; setPose(B); return; } fly = {t0:performance.now(),dur,A:curPose(),B}; }
 function flyToRoom(id){
   const r = ROOMS.find(r => r.id === id), xs = r.poly.map(p => p[0]), ys = r.poly.map(p => p[1]);
   const t = new THREE.Vector3(wx((Math.min(...xs)+Math.max(...xs))/2), .6, wz((Math.min(...ys)+Math.max(...ys))/2));
@@ -2553,13 +2579,14 @@ async function enter(){
   renderer.setSize(SW(), SH()); labelRenderer.setSize(SW(), SH()); camera.aspect = SW()/SH(); camera.updateProjectionMatrix();
   sync(true);
   opt.mode = 'orbit'; orbit.enabled = false; showLabels(false);
-  const A = planPose(), B = FLOORPLAN_CASE?.camera ? isoWhole() : isoFrom(A);
+  const A = planPose(), B = isoWhole();
+  if (reducedMotion()){ grow=furnGrow=1; applyGrow(); setPose(B); stage.classList.add('is3d'); orbit.enabled=true; showLabels(opt.labels); startLoop(); return; }
   grow = 0; furnGrow = 0; applyGrow(); setPose(A);
   stage.classList.add('animating');
   startLoop(); renderer.render(scene, camera);
   stage.classList.add('is3d');                       // 交叉淡入：此刻 3D 画面与 2D 平面完全重合
-  await wait(420);
-  await animate(1700, t => {
+  await wait(150);
+  await animate(650, t => {
     camTween(A, B, ease(clamp01(t/.85)));
     grow = ease(clamp01((t - .1)/.55));
     furnGrow = ease(clamp01((t - .45)/.5));
@@ -2573,14 +2600,15 @@ async function exit(){
     const dir = new THREE.Vector3(); camera.getWorldDirection(dir); orbit.target.copy(camera.position).addScaledVector(dir, 3).setY(0); opt.mode = 'orbit'; syncModeBtns(); }
   fly = null; orbit.enabled = false; showLabels(false); stage.classList.add('animating');
   const A = curPose(), B = planPose();
-  await animate(1300, t => {
+  if (reducedMotion()){ stage.classList.remove('is3d','animating'); active=false; cancelAnimationFrame(raf); raf=0; grow=furnGrow=1; applyGrow(); return; }
+  await animate(450, t => {
     camTween(A, B, ease(clamp01((t - .1)/.9)));
     furnGrow = 1 - ease(clamp01(t/.45));
     grow = 1 - ease(clamp01((t - .2)/.6));
     applyGrow();
   });
   stage.classList.remove('is3d');                    // 此刻 3D 已压平为正俯视，与 2D 重合后淡出
-  await wait(450);
+  await wait(180);
   active = false; cancelAnimationFrame(raf); raf = 0;
   stage.classList.remove('animating');
   grow = furnGrow = 1; applyGrow();
@@ -2753,12 +2781,17 @@ function bindUI(){
   $('#vTop').onclick = () => { if (opt.mode === 'walk') setMode('orbit'); flyTo(topWhole()); };
   document.querySelectorAll('[data-cut]').forEach(b => b.onclick = () => { if (opt.mode === 'walk') return; opt.cut = +b.dataset.cut; syncCutBtns(); sync(); });
   document.querySelectorAll('#toggles3d .btn').forEach(b => b.onclick = () => {
-    const k = b.dataset.t; opt[k] = !opt[k]; b.classList.toggle('on', opt[k]);
+    const k = b.dataset.t; opt[k] = !opt[k]; b.classList.toggle('on', opt[k]); b.setAttribute('aria-pressed',String(opt[k]));
     if (k === 'furn'){ furnG.visible = opt.furn; if (!opt.furn && ui.sel?.kind === 'furn') window.select(null); }
     if (k === 'labels') showLabels(opt.labels && opt.mode === 'orbit' && !anim);
     if (k === 'night') applyLight();
   });
-  $('#sun').oninput = e => { opt.hour = +e.target.value; applyLight(); };
+  document.querySelectorAll('#lightPresets [data-light]').forEach(button => button.onclick = () => {
+    opt.lighting=button.dataset.light; opt.night=false;
+    document.querySelectorAll('#lightPresets [data-light]').forEach(item => { const on=item.dataset.light===opt.lighting; item.classList.toggle('on',on); item.setAttribute('aria-pressed',String(on)); });
+    $('#toggles3d [data-t=night]').classList.remove('on'); applyLight();
+  });
+  $('#sun').oninput = e => { opt.hour = +e.target.value; opt.lighting='daylight'; document.querySelectorAll('#lightPresets [data-light]').forEach(button => button.classList.toggle('on',button.dataset.light==='daylight')); applyLight(); };
 }
 
 /* ======================= 主循环 ======================= */
@@ -2794,14 +2827,14 @@ function captureRenderedBounds(groups){
   if (bounds.isEmpty()) throw new Error('capture_empty_scene');
   return bounds;
 }
-function captureFrameForBounds(bounds){
+function captureFrameForBounds(bounds,aspect=1280/960,directionInput=[.68,1.18,.78],padding=1.12){
   const min = bounds.min, max = bounds.max, target = [(min.x+max.x)/2,(min.y+max.y)/2,(min.z+max.z)/2];
   const normalize = vector => { const length = Math.hypot(...vector); return vector.map(value=>value/length); };
   const dot = (a,b) => a.reduce((sum,value,index)=>sum+value*b[index],0);
-  const direction = normalize([.68,1.18,.78]);
+  const direction = normalize(directionInput);
   const right = normalize([direction[2],0,-direction[0]]);
   const up = [direction[1]*right[2],direction[2]*right[0]-direction[0]*right[2],-direction[1]*right[0]];
-  const aspect = 1280/960, fov = 45, tangent = Math.tan(fov*Math.PI/360), padding = 1.12;
+  const fov = 45, tangent = Math.tan(fov*Math.PI/360);
   let distance = .5, maxDepth = 0;
   for (const x of [min.x,max.x]) for (const y of [min.y,max.y]) for (const z of [min.z,max.z]){
     const point = [x-target[0],y-target[1],z-target[2]], depth = dot(point,direction);
@@ -2841,7 +2874,7 @@ function captureSceneDataUrl(){
     previous.archFloor.visible = false; previous.archUp.visible = false; previous.lampG.visible = false;
     archFloor = new THREE.Group(); archUp = new THREE.Group(); lampG = new THREE.Group();
     temporary = [archFloor,archUp,lampG]; scene.add(...temporary);
-    opt.cut = Math.min(H,1.2); opt.mode = 'orbit'; opt.night = false; opt.hour = 10;
+    opt.cut = Math.min(H,1.2); opt.mode = 'orbit'; opt.night = false; opt.hour = 10; opt.lighting = 'daylight';
     grow = 1; furnGrow = 1; furnG.visible = true;
     if (selHelper) selHelper.visible = false;
     buildArch(); applyGrow();
@@ -2890,7 +2923,7 @@ function disposeLabViewer(){
 window.addEventListener('pagehide', disposeLabViewer, {once:true});
 window.addEventListener('unload', disposeLabViewer, {once:true});
 
-window.View3D = {enter, exit, relang, sync:() => sync(), shot, capture:captureSceneDataUrl, groundAt, flyToRoom:id => active && !anim && flyToRoom(id), walking:() => active && opt.mode === 'walk'};
+window.View3D = {enter, exit, relang, fit:() => { if (active && !anim){ if (opt.mode === 'walk') setMode('orbit'); flyTo(isoWhole()); } }, sync:() => sync(), shot, capture:captureSceneDataUrl, groundAt, flyToRoom:id => active && !anim && flyToRoom(id), walking:() => active && opt.mode === 'walk'};
 window.parent.postMessage({type:'ai-lab:ready'},window.location.origin);
 </script>
 </body>

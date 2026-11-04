@@ -11,7 +11,7 @@ const ts = require('typescript');
 
 async function load(relative, context = {}) {
   const text = await readFile(resolve(root, relative), 'utf8');
-  const code = ts.transpileModule(text, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX }, fileName: relative }).outputText;
+  const code = ts.transpileModule(text.replaceAll('import.meta.env.DEV', 'true'), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX }, fileName: relative }).outputText;
   const exports = {};
   vm.runInNewContext(code, { exports, URL, URLSearchParams, AbortController, console, setTimeout, clearTimeout, ...context });
   return exports;
@@ -20,11 +20,19 @@ async function load(relative, context = {}) {
 async function loadLabPage(context) {
   const calibration = await load('src/features/ai-lab/ScaleCalibrator.tsx', context);
   const workflow = await load('src/features/ai-lab/WorkflowSummary.tsx', context);
+  const icons = await load('src/features/ai-lab/StudioIcon.tsx', context);
   return load('src/features/ai-lab/AiLabPage.tsx', { ...context, require(id) {
     if (id === './ScaleCalibrator') return calibration;
     if (id === './WorkflowSummary') return workflow;
+    if (id === './StudioIcon') return icons;
     return context.require(id);
   } });
+}
+
+function renderedText(node) {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(renderedText).join('');
+  return node && typeof node === 'object' ? renderedText(node.props?.children) : '';
 }
 
 function browser(hash = '') {
@@ -284,6 +292,8 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
   const navigateHash = async (hash) => { window.location.hash = hash; for (const callback of listeners.get('hashchange') || []) callback(); await flush(); };
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p2&context=handoff');
   assert.ok(find(tree, (node) => node.type === 'iframe' && node.props.src.includes('/projects/p2/viewer')));
+  assert.equal(find(tree, (node) => node.props?.role === 'tabpanel' && node.props['aria-label'] === '对话调整').props.hidden, false);
+  find(tree, (node) => node.type === 'button' && node.props.role === 'tab' && renderedText(node) === '生成空间').props.onClick(); await flush();
   assert.equal(find(tree, (node) => node.type === 'select' && node.props.id === 'lab-scale-mode').props.value, 'auto');
   find(tree, (node) => node.type === 'select' && node.props.id === 'lab-scale-mode').props.onChange({ target: { value: 'manual' } }); await flush();
   assert.equal(find(tree, (node) => node.type === 'input' && node.props.id === 'lab-scale').props.value, '');
@@ -316,7 +326,7 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p3');
   assert.ok(find(tree, (node) => node.type === 'h2' && node.props.children === '生成未通过检查'));
   const footer = find(tree, (node) => node.props?.className === 'lab-canvas-footer');
-  assert.equal(footer.props.children[0].props.children, '生成失败');
+  assert.match(renderedText(footer), /生成失败/);
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p4');
   assert.ok(find(tree, (node) => node.type === 'img' && node.props.src === recoveryAsset.url));
   assert.equal(find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.value, '自动比例原始要求');
@@ -376,6 +386,29 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
   assert.ok(find(tree, (node) => node.type === 'p' && node.props.children === '链接中的项目不存在，请从项目列表重新选择。'));
   assert.equal(find(tree, (node) => node.type === 'iframe').key, switchedFrame);
   assert.equal(requests.includes('/projects/missing/scene'), false);
+  const requestsBeforeDockChanges = requests.length;
+  const dockFrame = find(tree, (node) => node.type === 'iframe').key;
+  find(tree, (node) => node.type === 'button' && node.props['aria-label'] === '专注画布').props.onClick(); await flush();
+  assert.match(tree.props.className, /is-left-collapsed/); assert.match(tree.props.className, /is-right-collapsed/);
+  assert.equal(find(tree, (node) => node.type === 'iframe').key, dockFrame);
+  find(tree, (node) => node.type === 'button' && node.props['aria-label'] === '专注画布').props.onClick(); await flush();
+  assert.doesNotMatch(tree.props.className, /is-left-collapsed|is-right-collapsed/);
+  find(tree, (node) => node.type === 'button' && node.props.role === 'tab' && renderedText(node) === '生成空间').props.onClick(); await flush();
+  find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.onChange({ target: { value: '切换面板也保留的要求' } }); await flush();
+  find(tree, (node) => node.type === 'button' && node.props.role === 'tab' && renderedText(node) === '对话调整').props.onClick(); await flush();
+  assert.equal(find(tree, (node) => node.props?.role === 'tabpanel' && node.props['aria-label'] === '生成空间').props.hidden, true);
+  find(tree, (node) => node.type === 'button' && node.props.role === 'tab' && renderedText(node) === '生成空间').props.onClick(); await flush();
+  assert.equal(find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.value, '切换面板也保留的要求');
+  window.matchMedia = () => ({ matches: true });
+  find(tree, (node) => node.type === 'button' && node.props['aria-label'] === '切换项目侧栏').props.onClick(); await flush();
+  assert.match(tree.props.className, /mobile-projects-open/); assert.doesNotMatch(tree.props.className, /mobile-controls-open/);
+  find(tree, (node) => node.type === 'button' && node.props['aria-label'] === '切换创作侧栏').props.onClick(); await flush();
+  assert.match(tree.props.className, /mobile-controls-open/); assert.doesNotMatch(tree.props.className, /mobile-projects-open/);
+  for (const callback of listeners.get('keydown') || []) callback({ key: 'Escape' }); await flush();
+  assert.doesNotMatch(tree.props.className, /mobile-controls-open|mobile-projects-open/);
+  assert.equal(find(tree, (node) => node.type === 'iframe').key, dockFrame);
+  assert.equal(requests.length, requestsBeforeDockChanges, 'Dock and tab changes must not issue requests.');
+  assert.equal(find(tree, (node) => node.type === 'a' && node.props['aria-label'] === '返回 ark.insight').props.href, 'http://127.0.0.1:8080/');
 });
 
 test('project labels reflect terminal and active jobs while retaining saved versions', async () => {

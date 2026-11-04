@@ -147,8 +147,8 @@ export default function App() {
         },
       }}
     >
-      <div className="app-shell">
-        <header className="app-header">
+      <div className={`app-shell${isLabRoute ? ' lab-shell' : ''}`}>
+        {!isLabRoute && <header className="app-header">
           <div className="header-inner">
             <a className="brand" href={routeHref('today')}>
               <span className="brand-mark" aria-hidden="true"><img src="/brand/ark-ghost.png" alt="" /></span>
@@ -171,9 +171,9 @@ export default function App() {
               <Button className="mobile-menu-button" onClick={() => setMenuOpen(true)}>菜单</Button>
             </div>
           </div>
-        </header>
+        </header>}
 
-        <main className="app-main">
+        <main className={`app-main${isLabRoute ? ' lab-main' : ''}`} style={isLabRoute ? { width: '100%', maxWidth: 'none', margin: 0, padding: 0 } : undefined}>
           {isLabRoute ? <Suspense fallback={<div className="loading-state"><Spin size="large" /><span>正在打开实验室</span></div>}>{page}</Suspense> : error ? (
             <Result
               status="warning"

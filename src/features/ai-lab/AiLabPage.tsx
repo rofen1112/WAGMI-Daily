@@ -2,11 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { API, LabApiError, calibratedScale, draftStatusCopy, errorMessage, generationInputSnapshot, generationScalePayload, isActiveJob, jobError, jobUsageLabel, jobValidationIssues, post, projectPath, projectStatusLabel, readImage, readViewerCaptures, readViewerState, request, safeDraftViewerUrl, sceneSourceLabel, type LabAsset, type LabBaseline, type LabDraft, type LabHealth, type LabJob, type LabProject, type LabScaleProvenance, type LabScene, type PixelPoint, type ScaleMode } from './api';
 import ScaleCalibrator from './ScaleCalibrator';
 import WorkflowSummary, { workflowStageLabels } from './WorkflowSummary';
+import StudioIcon from './StudioIcon';
 import './ai-lab.css';
 
 const statusLabels: Record<string, string> = { queued: '等待处理', running: '正在处理', awaiting_review_images: '等待预览复核', succeeded: '已完成', failed: '未能完成', cancelled: '已取消', canceled: '已取消', needs_input: '需要补充信息' };
 const stageLabels: Record<string, string> = { queued: '排队中', generating: '生成空间', repairing: '修正结构', compiling: '构建方案', completed: '方案已就绪', succeeded: '方案已就绪', calling_model: '模型处理中', ...workflowStageLabels };
 const defaultPrompt = '请识别户型的墙体、门窗与房间结构，保留原图布局。';
+const studioBackHref = import.meta.env.DEV ? 'http://127.0.0.1:8080/' : '/#/today';
 
 function PlanIcon() {
   return <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M9 11h46v42H9zM9 31h24V11M33 31v22M33 37h22" stroke="currentColor" strokeWidth="1.5"/><path d="M19 31h7m15 6h7" stroke="var(--color-surface)" strokeWidth="3"/><path d="M19 31v-7a7 7 0 0 1 7 7M41 37v7a7 7 0 0 0 7-7" stroke="currentColor" strokeWidth="1"/></svg>;
@@ -77,6 +79,12 @@ export default function AiLabPage() {
   const [notice, setNotice] = useState('');
   const [viewerReady, setViewerReady] = useState(false);
   const [projectMenu, setProjectMenu] = useState(false);
+  const [controlsMenu, setControlsMenu] = useState(false);
+  const [leftDockOpen, setLeftDockOpen] = useState(true);
+  const [rightDockOpen, setRightDockOpen] = useState(true);
+  const [controlTab, setControlTab] = useState<'generate' | 'chat'>('generate');
+  const [projectQuery, setProjectQuery] = useState('');
+  const dockRestore = useRef({ left: true, right: true });
   const frameRef = useRef<HTMLIFrameElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const selectionToken = useRef(0);
@@ -129,13 +137,15 @@ export default function AiLabPage() {
     setSelectedId(project.id); setScene(null); setJob(project.latestJob || null); setAsset(input.sourceAsset || null); setImagePreview('');
     setDraft(null); setDraftLoading(false); setDraftError(''); setCaptureError(''); setCaptureStatus('idle'); setPreviewKind('candidate');
     setScale(input.mmPerPixel !== undefined ? String(input.mmPerPixel) : ''); setScaleMode(input.scaleMode || 'auto'); setPrompt(input.prompt ?? defaultPrompt);
+    setControlTab('generate');
     setCalibrationPoints(input.calibration ? [input.calibration.p1, input.calibration.p2] : []); setKnownLength(input.calibration ? String(input.calibration.lengthMm) : '');
     setDraftRetry((value) => value + 1);
-    setTitle(project.title); setNotice(''); setError(''); setViewerReady(false); setOpening(true); setProjectMenu(false); setTab('space');
+    setTitle(project.title); setNotice(''); setError(''); setViewerReady(false); setOpening(true); setProjectMenu(false); setControlsMenu(false); setTab('space');
     try {
       const result = await fetchScene(project.id);
       if (token !== selectionToken.current) return;
       setScene(result);
+      if (result && !isActiveJob(project.latestJob) && (!project.latestJob?.draft || project.latestJob.status === 'succeeded')) setControlTab('chat');
       const metadata = result?.scene?.metadata;
       const mmPerPixel = metadata && typeof metadata === 'object' && !Array.isArray(metadata) ? (metadata as Record<string, unknown>).mmPerPixel : undefined;
       const provenance = metadata && typeof metadata === 'object' && !Array.isArray(metadata) ? (metadata as Record<string, unknown>).scaleProvenance as LabScaleProvenance | undefined : undefined;
@@ -262,8 +272,9 @@ export default function AiLabPage() {
     initialProjectRestored.current = true;
     selectedIdRef.current = null;
     syncProjectLocation(null);
-    setSelectedId(null); setScene(null); setAsset(null); setImagePreview(''); setJob(null); setTitle(''); setError(''); setNotice(''); setChat(''); setViewerReady(false); setTab('space'); setProjectMenu(false);
+    setSelectedId(null); setScene(null); setAsset(null); setImagePreview(''); setJob(null); setTitle(''); setError(''); setNotice(''); setChat(''); setViewerReady(false); setTab('space'); setProjectMenu(false); setControlsMenu(false);
     setScale(''); setScaleMode('auto'); setCalibrationPoints([]); setKnownLength(''); setDraft(null); setDraftLoading(false); setDraftError(''); setCaptureError(''); setCaptureStatus('idle');
+    setControlTab('generate');
   }, []);
 
   useEffect(() => {
@@ -417,62 +428,115 @@ export default function AiLabPage() {
   const showImage = tab === 'image' && (imagePreview || asset?.url);
   const furnitureSource = scene?.state?.furniture ?? scene?.scene?.furniture;
   const furniture = Array.isArray(furnitureSource) ? furnitureSource.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && typeof item.id === 'string')) : [];
+  const visibleProjects = projects.filter((project) => !projectQuery.trim() || (project.title || '').toLocaleLowerCase().includes(projectQuery.trim().toLocaleLowerCase()));
+  const focusMode = !leftDockOpen && !rightDockOpen;
+  const isNarrow = () => typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 980px)').matches;
+  const toggleProjects = () => {
+    if (isNarrow()) { setProjectMenu((value) => !value); setControlsMenu(false); }
+    else setLeftDockOpen((value) => !value);
+  };
+  const toggleControls = () => {
+    if (isNarrow()) { setControlsMenu((value) => !value); setProjectMenu(false); }
+    else setRightDockOpen((value) => !value);
+  };
+  const toggleFocus = () => {
+    setProjectMenu(false); setControlsMenu(false);
+    if (focusMode) { setLeftDockOpen(dockRestore.current.left); setRightDockOpen(dockRestore.current.right); }
+    else { dockRestore.current = { left: leftDockOpen, right: rightDockOpen }; setLeftDockOpen(false); setRightDockOpen(false); }
+  };
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setProjectMenu(false); setControlsMenu(false);
+      if (!leftDockOpen && !rightDockOpen) { setLeftDockOpen(dockRestore.current.left); setRightDockOpen(dockRestore.current.right); }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [leftDockOpen, rightDockOpen]);
 
-  return <section className="ai-lab" aria-label="AI 实验室">
-    <div className="lab-heading">
-      <div><div className="lab-eyebrow">AI 实验室 <span>实验功能</span></div><h1>从一张平面图，开始构建空间</h1><p>识别户型，生成 2D / 3D 方案，再用对话持续调整。</p></div>
-      <button type="button" className="lab-button lab-project-toggle" onClick={() => setProjectMenu((value) => !value)} aria-expanded={projectMenu}>我的项目 <span>{projects.length}</span></button>
-    </div>
+  return <section className={'ai-lab' + (!leftDockOpen ? ' is-left-collapsed' : '') + (!rightDockOpen ? ' is-right-collapsed' : '') + (projectMenu ? ' mobile-projects-open' : '') + (controlsMenu ? ' mobile-controls-open' : '') + (focusMode ? ' is-focused' : '')} aria-label="AI 实验室">
+    <header className="lab-appbar">
+      <div className="lab-brand-area">
+        <a href={studioBackHref} className="lab-back-link" aria-label="返回 ark.insight" title="返回 ark.insight"><StudioIcon name="back" size={17}/></a>
+        <div className="lab-studio-brand"><span className="lab-studio-mark"><StudioIcon name="plan" size={23}/></span><span><strong>SPACE LAB</strong><small>Floorplan Studio</small></span></div>
+      </div>
+      <div className="lab-project-identity"><h1 title={selected?.title || title || '新建空间'}>{selected?.title || title || '新建空间'}</h1>{scene && <span className="lab-version">v{scene.version}</span>}{displayingDraft && <span className="lab-draft-pill">未保存候选</span>}</div>
+      <div className="lab-appbar-actions">
+        <button className="lab-icon-button lab-panel-toggle" type="button" title={leftDockOpen ? '收起项目侧栏' : '显示项目侧栏'} aria-label="切换项目侧栏" aria-expanded={isNarrow() ? projectMenu : leftDockOpen} onClick={toggleProjects}><StudioIcon name="left"/></button>
+        <button className="lab-icon-button lab-focus-button" type="button" title={focusMode ? '退出专注画布' : '专注画布'} aria-label="专注画布" aria-pressed={focusMode} onClick={toggleFocus}><StudioIcon name="focus"/></button>
+        <span className="lab-appbar-divider"/>
+        <button className="lab-button lab-export-button" type="button" disabled={!scene || displayingDraft || working} onClick={() => void exportScene()}>{busy === 'export' ? '导出中…' : '导出 JSON'}</button>
+        <button className="lab-button lab-primary lab-save-button" type="button" disabled={!scene || displayingDraft || !viewerReady || working} onClick={() => void save()}>{busy === 'save' ? '保存中…' : '保存方案'}</button>
+        <button className="lab-icon-button lab-panel-toggle" type="button" title={rightDockOpen ? '收起创作侧栏' : '显示创作侧栏'} aria-label="切换创作侧栏" aria-expanded={isNarrow() ? controlsMenu : rightDockOpen} onClick={toggleControls}><StudioIcon name="right"/></button>
+      </div>
+    </header>
 
     <div className="lab-workspace">
-      <aside className={`lab-sidebar ${projectMenu ? 'is-open' : ''}`} aria-label="空间项目">
-        <div className="lab-section-label">工作空间</div>
-        <button className="lab-button lab-new" type="button" onClick={newProject} disabled={working}>＋ 新建方案</button>
-        <div className="lab-sidebar-title">我的项目 <span>{projects.length}</span></div>
-        <div className="lab-project-list">
-          {initialLoading ? <p className="lab-muted">正在读取项目…</p> : projects.length === 0 ? <p className="lab-sidebar-empty">还没有项目。<br/>上传平面图后开始第一个方案。</p> : projects.map((project) => <button className={`lab-project ${project.id === selectedId ? 'is-selected' : ''}`} key={project.id} type="button" disabled={Boolean(busy) || opening} onClick={() => void openProject(project)}><span className="lab-project-icon">▧</span><span><strong>{project.title || '未命名空间'}</strong><small>{projectStatusLabel(project)}</small></span></button>)}
+      {(projectMenu || controlsMenu) && <button type="button" className="lab-drawer-scrim" aria-label="关闭侧栏" onClick={() => { setProjectMenu(false); setControlsMenu(false); }}/>}
+      <aside className="lab-sidebar" aria-label="空间项目" aria-hidden={isNarrow() ? !projectMenu : !leftDockOpen}>
+        <div className="lab-dock-heading"><div><span className="lab-section-label">WORKSPACE</span><h2>空间项目 <span>{projects.length}</span></h2></div><button className="lab-icon-button" type="button" aria-label="收起项目侧栏" onClick={() => { setLeftDockOpen(false); setProjectMenu(false); }}><StudioIcon name="left" size={17}/></button></div>
+        <div className="lab-project-tools"><button className="lab-button lab-new" type="button" onClick={newProject} disabled={working}><StudioIcon name="plus" size={16}/>新建方案</button><label className="lab-project-search"><StudioIcon name="search" size={15}/><input aria-label="搜索项目" placeholder="搜索项目" value={projectQuery} onChange={(event) => setProjectQuery(event.target.value)}/></label></div>
+        <div className="lab-project-list" aria-label="项目列表">
+          {initialLoading ? <p className="lab-muted">正在读取项目…</p> : projects.length === 0 ? <p className="lab-sidebar-empty">上传一张平面图，<br/>开始第一个空间方案。</p> : visibleProjects.length === 0 ? <p className="lab-sidebar-empty">没有匹配的项目</p> : visibleProjects.map((project) => <button className={'lab-project' + (project.id === selectedId ? ' is-selected' : '')} key={project.id} type="button" disabled={Boolean(busy) || opening} onClick={() => void openProject(project)} title={project.title}><span className="lab-project-icon"><StudioIcon name="plan" size={21}/></span><span className="lab-project-copy"><strong>{project.title || '未命名空间'}</strong><small><span className={'lab-project-status-dot ' + (project.latestJob?.status || (project.sceneVersion > 0 ? 'succeeded' : 'new'))}/>{projectStatusLabel(project)}</small></span>{project.id === selectedId && <span className="lab-project-selected-mark"/>}</button>)}
         </div>
-        <div className="lab-reference-heading"><span>历史参考</span><small>非 AI 实时生成</small></div>
-        <p className="lab-reference-copy">载入独立参考项目，体验完整编辑器。</p>
-        {baselines.map((baseline, index) => <button className="lab-reference" type="button" disabled={working} key={baseline.id} onClick={() => void loadBaseline(baseline)}><span>{String(index + 1).padStart(2, '0')}</span><span>{baseline.title}</span><span aria-hidden="true">↗</span></button>)}
-        {!initialLoading && baselines.length === 0 && <p className="lab-muted">参考案例暂时不可用</p>}
-        <div className="lab-sidebar-foot"><span className={`lab-dot ${health ? '' : 'is-offline'}`}/>{health ? '实验室已连接' : '实验室待连接'}{health?.model && <small title={health.model}>{health.model}</small>}</div>
+        <details className="lab-reference-section" open><summary><span>参考空间</span><small>{baselines.length} 个案例</small></summary><p>历史参考 · 非本次 AI 生成</p>{baselines.map((baseline, index) => <button className="lab-reference" type="button" disabled={working} key={baseline.id} onClick={() => void loadBaseline(baseline)}><span className="lab-reference-number">{String(index + 1).padStart(2, '0')}</span><span>{baseline.title}</span><StudioIcon name="arrow" size={14}/></button>)}{!initialLoading && baselines.length === 0 && <p className="lab-muted">参考案例暂时不可用</p>}</details>
+        <div className="lab-sidebar-foot"><div><span className={'lab-dot' + (health ? '' : ' is-offline')}/>{health ? '工作空间已连接' : '正在等待连接'}</div>{health?.model && <small title={health.model}>{health.model}</small>}</div>
       </aside>
 
       <div className="lab-editor">
-        <div className="lab-editor-toolbar"><div className="lab-tabs" role="tablist" aria-label="预览内容"><button type="button" role="tab" aria-selected={tab === 'space'} onClick={() => setTab('space')}>空间预览</button><button type="button" role="tab" aria-selected={tab === 'image'} onClick={() => setTab('image')} disabled={!asset && !imagePreview}>原始平面图</button></div><div className="lab-save-actions"><button className="lab-button" type="button" disabled={!scene || displayingDraft || working} onClick={() => void exportScene()}>{busy === 'export' ? '导出中…' : '导出 JSON'}</button><button className="lab-button lab-primary" type="button" disabled={!scene || displayingDraft || !viewerReady || working} onClick={() => void save()}>{busy === 'save' ? '保存中…' : '保存方案'}</button></div></div>
+        <div className="lab-editor-toolbar"><div className="lab-tabs" role="tablist" aria-label="预览内容"><button type="button" role="tab" aria-selected={tab === 'space'} onClick={() => setTab('space')}>空间预览</button><button type="button" role="tab" aria-selected={tab === 'image'} onClick={() => setTab('image')} disabled={!asset && !imagePreview}>原始平面图</button></div><span className="lab-canvas-label">{tab === 'image' ? scaleMode === 'calibrated' ? '比例校准' : 'SOURCE PLAN' : 'SPATIAL WORKSPACE'}</span></div>
         {draft && <div className="lab-draft-bar"><div><button type="button" aria-pressed={previewKind === 'candidate'} onClick={() => { setPreviewKind('candidate'); setTab('space'); }}>候选方案</button>{scene && <button type="button" aria-pressed={previewKind === 'saved'} onClick={() => { setPreviewKind('saved'); setTab('space'); }}>已保存版本 {scene.version}</button>}</div><span>{displayingDraft ? '尚未提交为项目版本' : '正在查看已保存版本'}</span></div>}
-        {draftError && <div className="lab-alert lab-error" role="alert">{draftError} <button className="lab-button" type="button" onClick={() => setDraftRetry((value) => value + 1)}>重新打开候选</button></div>}
-        <div className={`lab-canvas ${viewerSrc && tab === 'space' ? 'has-scene' : ''}`}>
-          {opening || (draftLoading && !viewerSrc) ? <div className="lab-canvas-empty"><span className="lab-spinner"/><p>正在打开空间方案…</p></div> : showImage && asset ? scaleMode === 'calibrated' ? <ScaleCalibrator asset={asset} imageUrl={imagePreview || asset.url} points={calibrationPoints} lengthMm={knownLength} disabled={working} onPoints={setCalibrationPoints} onLength={setKnownLength}/> : <div className="lab-source-image"><img src={imagePreview || asset.url} alt={`原始平面图：${asset.name}`}/><span>原始平面图 · {asset.width} × {asset.height} px</span></div> : viewerSrc ? <iframe key={viewerKey} ref={frameRef} className={`lab-viewer ${displayingDraft ? 'is-draft' : ''}`} tabIndex={displayingDraft ? -1 : 0} title={displayingDraft ? draftCopy.title : '空间方案 2D / 3D 编辑器'} src={viewerSrc} sandbox="allow-scripts allow-same-origin allow-downloads"/> : <div className="lab-canvas-empty"><div className="lab-plan-icon"><PlanIcon/></div><span className="lab-canvas-kicker">平面图 → 可编辑空间</span><h2>{active ? '正在构建你的空间' : finishedWithoutScene ? failedValidation ? '生成未通过检查' : '本次未生成可保存的方案' : '让空间从图纸中展开'}</h2><p>{active ? '任务状态会在右侧更新。候选方案就绪后，将在这里准备视图并进行视觉复核。' : finishedWithoutScene ? '请查看右侧任务卡的结果与具体原因，调整输入后再试。' : '上传一张清晰的平面图，选择比例依据与生成要求。生成后可在这里切换 2D / 3D、调整家具与标注。'}</p>{!active && <button type="button" className="lab-button" onClick={() => fileRef.current?.click()} disabled={working}>{finishedWithoutScene ? '重新选择平面图' : '选择平面图'} <span aria-hidden="true">↗</span></button>}<small>{finishedWithoutScene ? '可核对原图或补充要求后重新提交' : '也可以先载入左侧的历史参考方案'}</small></div>}
+        {draftError && <div className="lab-alert lab-error lab-canvas-alert" role="alert">{draftError} <button className="lab-button" type="button" onClick={() => setDraftRetry((value) => value + 1)}>重新打开候选</button></div>}
+        <div className={'lab-canvas' + (viewerSrc && tab === 'space' ? ' has-scene' : '')}>
+          {opening || (draftLoading && !viewerSrc) ? <div className="lab-canvas-empty"><span className="lab-spinner"/><p>正在打开空间方案…</p></div> : showImage && asset ? scaleMode === 'calibrated' ? <ScaleCalibrator asset={asset} imageUrl={imagePreview || asset.url} points={calibrationPoints} lengthMm={knownLength} disabled={working} onPoints={setCalibrationPoints} onLength={setKnownLength}/> : <div className="lab-source-image"><img src={imagePreview || asset.url} alt={'原始平面图：' + asset.name}/><span>{asset.name}<i/> {asset.width} × {asset.height} px</span></div> : viewerSrc ? <iframe key={viewerKey} ref={frameRef} className={'lab-viewer' + (displayingDraft ? ' is-draft' : '')} tabIndex={displayingDraft ? -1 : 0} title={displayingDraft ? draftCopy.title : '空间方案 2D / 3D 编辑器'} src={viewerSrc} sandbox="allow-scripts allow-same-origin allow-downloads"/> : <div className="lab-canvas-empty"><div className="lab-plan-icon"><PlanIcon/></div><span className="lab-canvas-kicker">FLOORPLAN STUDIO</span><h2>{active ? '正在构建你的空间' : finishedWithoutScene ? failedValidation ? '生成未通过检查' : '本次未生成可保存的方案' : '从一张平面图开始'}</h2><p>{active ? '真实任务进度会持续更新。候选方案就绪后，将在这里进行预览与复核。' : finishedWithoutScene ? '查看创作侧栏中的具体原因，核对原图或补充要求后再试。' : '上传图纸，选择比例依据，构建可编辑的 2D / 3D 空间。'}</p>{!active && <button type="button" className="lab-button" onClick={() => fileRef.current?.click()} disabled={working}>{finishedWithoutScene ? '重新选择平面图' : '选择平面图'} <StudioIcon name="upload" size={15}/></button>}<small>{finishedWithoutScene ? '可核对原图或补充要求后重新提交' : '也可以从项目列表中打开已有空间'}</small></div>}
         </div>
-        <div className="lab-canvas-footer"><span>{displayingDraft ? '候选方案 · 尚未保存' : scene ? `${selected?.title || title || '空间方案'} · 版本 ${scene.version}` : selected ? projectStatusLabel(selected) : job ? statusLabels[job.status] || '方案尚未就绪' : '等待生成空间方案'}</span><span>{displayingDraft ? draftCopy.footer : scene ? sceneSourceLabel(scene.source) : '比例与结构均需核对'}</span></div>
-        {(scene || draft) && <div className="lab-editor-help">{displayingDraft ? draftCopy.help : '在预览内切换 2D / 3D，编辑家具、房间或测量标注。完成后点击「保存方案」。'}</div>}
-        {(scene || draft) && <ModelUncertaintyWarnings warnings={displayingDraft ? draft?.scene?.warnings : scene?.scene?.warnings}/>}
-        {warnings.length > 0 && <details className="lab-validation"><summary>结构校验提醒（{warnings.length}）</summary><ul>{warnings.map((item, index) => <li key={index}>{detailText(item)}</li>)}</ul></details>}
+        <div className="lab-canvas-footer"><span><span className={'lab-footer-dot' + (active ? ' is-active' : '')}/>{displayingDraft ? '候选方案 · 尚未保存' : scene ? (selected?.title || title || '空间方案') + ' · 版本 ' + scene.version : selected ? projectStatusLabel(selected) : job ? statusLabels[job.status] || '方案尚未就绪' : '准备就绪'}</span><span>{displayingDraft ? draftCopy.footer : scene ? sceneSourceLabel(scene.source) : '比例与结构均需核对'}</span></div>
+        {(scene || draft || warnings.length > 0) && <details className="lab-canvas-notes"><summary>说明与提醒{warnings.length > 0 ? ' · ' + warnings.length : ''}</summary>{(scene || draft) && <div className="lab-editor-help">{displayingDraft ? draftCopy.help : '在预览内切换 2D / 3D，编辑家具、房间或测量标注。完成后点击「保存方案」。'}</div>}{(scene || draft) && <ModelUncertaintyWarnings warnings={displayingDraft ? draft?.scene?.warnings : scene?.scene?.warnings}/>}{warnings.length > 0 && <details className="lab-validation"><summary>结构校验提醒（{warnings.length}）</summary><ul>{warnings.map((item, index) => <li key={index}>{detailText(item)}</li>)}</ul></details>}</details>}
       </div>
 
-      <aside className="lab-controls" aria-label="生成与调整">
-        <div className="lab-control-heading"><h2>平面图转 3D</h2><span>01 / 生成空间</span></div>
-        {error && <div className="lab-alert lab-error" role="alert"><strong>操作未完成</strong><p>{error}</p><button type="button" onClick={() => { if (!health) void initialize(); else setError(''); }}>{!health ? '重新连接' : '关闭提示'}</button></div>}
-        {notice && <div className="lab-alert lab-notice" role="status">{notice}</div>}
-        {health && !health.providerConfigured && <div className="lab-alert lab-notice">生成服务尚未就绪。你仍可打开历史参考、编辑方案和调整家具。</div>}
-        <label className="lab-field-label" htmlFor="lab-title">方案名称</label>
-        <input id="lab-title" className="lab-input" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="给这个空间起个名字" maxLength={120} disabled={working || Boolean(selectedId)}/>
-        <label className="lab-field-label" htmlFor="lab-file">平面图 <span>PNG / JPG</span></label>
-        <input className="lab-file-input" ref={fileRef} id="lab-file" type="file" accept="image/png,image/jpeg" disabled={working} onChange={(event) => void upload(event.target.files?.[0])}/>
-        <button className={`lab-upload ${asset ? 'has-file' : ''}`} type="button" disabled={working} onClick={() => fileRef.current?.click()}><span className="lab-upload-symbol" aria-hidden="true">{asset ? '▧' : '↑'}</span><strong>{busy === 'upload' ? '正在上传…' : asset?.name || '点击上传平面图'}</strong><small>{asset ? `${asset.width} × ${asset.height} px · 点击更换` : '清晰完整的图纸，最大 12 MB'}</small></button>
-        <label className="lab-field-label" htmlFor="lab-scale-mode">比例依据</label>
-        <select id="lab-scale-mode" className="lab-input" value={scaleMode} disabled={working} onChange={(event) => { const mode = event.target.value as ScaleMode; setScaleMode(mode); if (mode === 'calibrated' && asset) setTab('image'); }}><option value="auto">自动估算</option><option value="calibrated">已知长度校准</option><option value="manual">手动比例</option></select>
-        {scaleMode === 'manual' ? <><label className="lab-field-label" htmlFor="lab-scale">手动比例 <span>毫米 / 像素</span></label><div className="lab-scale"><input id="lab-scale" className="lab-input" type="number" inputMode="decimal" min="0.001" step="any" placeholder="例如 10" value={scale} onChange={(event) => setScale(event.target.value)} disabled={working}/><span>mm / px</span></div><p className="lab-field-help">按你输入的比例换算。请记录依据，结果不代表现场实测精度。</p></> : scaleMode === 'calibrated' ? <><button className="lab-button lab-calibration-open" type="button" disabled={!asset || working} onClick={() => setTab('image')}>在原图选择两点 · {calibrationPoints.length}/2</button><p className="lab-field-help">在两点间输入已知毫米长度，服务会按原始图片像素重新计算比例。</p></> : <p className="lab-field-help">分析原图中的尺寸标注或可见参照物。估算依据、范围与置信度将在任务中显示，不作为实测尺寸。</p>}
-        <label className="lab-field-label" htmlFor="lab-prompt">生成要求</label>
-        <textarea id="lab-prompt" className="lab-textarea" rows={3} value={prompt} maxLength={4000} onChange={(event) => setPrompt(event.target.value)} disabled={working}/>
-        <button className="lab-button lab-primary lab-generate" type="button" disabled={working || !asset || !health?.providerConfigured} onClick={() => void generate()}>{busy === 'generate' || active ? '正在处理…' : '生成空间方案'}<span aria-hidden="true">→</span></button>
-        <p className="lab-fine-print">AI 可能遗漏门窗或误判结构，请核对后使用。</p>
+      <aside className="lab-controls" aria-label="生成与调整" aria-hidden={isNarrow() ? !controlsMenu : !rightDockOpen}>
+        <div className="lab-dock-heading"><div><span className="lab-section-label">CREATE WITH AI</span><h2>创作面板</h2></div><button className="lab-icon-button" type="button" aria-label="收起创作侧栏" onClick={() => { setRightDockOpen(false); setControlsMenu(false); }}><StudioIcon name="right" size={17}/></button></div>
+        <div className="lab-control-tabs" role="tablist" aria-label="创作方式"><button type="button" role="tab" aria-selected={controlTab === 'generate'} onClick={() => setControlTab('generate')}><StudioIcon name="spark" size={15}/>生成空间</button><button type="button" role="tab" aria-selected={controlTab === 'chat'} onClick={() => setControlTab('chat')}><StudioIcon name="chat" size={15}/>对话调整</button></div>
+        <div className="lab-controls-scroll">
+          {error && <div className="lab-alert lab-error" role="alert"><strong>操作未完成</strong><p>{error}</p><button type="button" onClick={() => { if (!health) void initialize(); else setError(''); }}>{!health ? '重新连接' : '关闭提示'}</button></div>}
+          {notice && <div className="lab-alert lab-notice" role="status">{notice}</div>}
+          {health && !health.providerConfigured && <div className="lab-alert lab-notice">生成服务尚未就绪。可继续打开参考空间和编辑已有方案。</div>}
+          <div className="lab-generate-panel" role="tabpanel" aria-label="生成空间" hidden={controlTab !== 'generate'}>
+            <div className="lab-panel-intro"><h3>从图纸到空间</h3><p>保留原图结构，让空间变得可编辑。</p></div>
+            <label className="lab-field-label" htmlFor="lab-title">方案名称</label>
+            <input id="lab-title" className="lab-input" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="给这个空间起个名字" maxLength={120} disabled={working || Boolean(selectedId)}/>
+            <label className="lab-field-label" htmlFor="lab-file">原始平面图 <span>PNG / JPG</span></label>
+            <input className="lab-file-input" ref={fileRef} id="lab-file" type="file" accept="image/png,image/jpeg" disabled={working} onChange={(event) => void upload(event.target.files?.[0])}/>
+            <button className={'lab-upload' + (asset ? ' has-file' : '')} type="button" disabled={working} onClick={() => fileRef.current?.click()}><span className="lab-upload-symbol">{asset ? <StudioIcon name="plan" size={24}/> : <StudioIcon name="upload" size={24}/>}</span><strong>{busy === 'upload' ? '正在上传…' : asset?.name || '选择平面图'}</strong><small>{asset ? asset.width + ' × ' + asset.height + ' px · 点击更换' : '点击上传 · 最大 12 MB'}</small></button>
+            <label className="lab-field-label" htmlFor="lab-scale-mode">比例依据</label>
+            <select id="lab-scale-mode" className="lab-input" value={scaleMode} disabled={working} onChange={(event) => { const mode = event.target.value as ScaleMode; setScaleMode(mode); if (mode === 'calibrated' && asset) setTab('image'); }}><option value="auto">自动估算</option><option value="calibrated">已知长度校准</option><option value="manual">手动比例</option></select>
+            {scaleMode === 'manual' ? <><label className="lab-field-label" htmlFor="lab-scale">手动比例 <span>毫米 / 像素</span></label><div className="lab-scale"><input id="lab-scale" className="lab-input" type="number" inputMode="decimal" min="0.001" step="any" placeholder="例如 10" value={scale} onChange={(event) => setScale(event.target.value)} disabled={working}/><span>mm / px</span></div><p className="lab-field-help">按输入比例换算，结果不代表现场实测精度。</p></> : scaleMode === 'calibrated' ? <><button className="lab-button lab-calibration-open" type="button" disabled={!asset || working} onClick={() => setTab('image')}>在原图选择两点 · {calibrationPoints.length}/2</button><p className="lab-field-help">填写两点间已知长度，按原始图片像素计算比例。</p></> : <p className="lab-field-help">识别图中尺寸或参照物，任务中将展示估算依据与置信度。</p>}
+            <label className="lab-field-label" htmlFor="lab-prompt">生成要求</label>
+            <textarea id="lab-prompt" className="lab-textarea" rows={4} value={prompt} maxLength={4000} onChange={(event) => setPrompt(event.target.value)} disabled={working}/>
+            <button className="lab-button lab-primary lab-generate" type="button" disabled={working || !asset || !health?.providerConfigured} onClick={() => void generate()}>{busy === 'generate' || active ? '正在处理…' : '生成空间方案'}<StudioIcon name="arrow" size={17}/></button>
+            <p className="lab-fine-print">AI 结果需核对，复核通过后才保存方案。</p>
+          </div>
 
-        {job && <section className={`lab-job ${['failed', 'needs_input'].includes(job.status) ? 'has-error' : ''}`} aria-label="任务状态" aria-live="polite"><div className="lab-job-heading"><strong>{statusLabels[job.status] || job.status}</strong>{active && <button type="button" disabled={busy === 'cancel'} onClick={() => void cancel()}>{busy === 'cancel' ? '取消中…' : '取消任务'}</button>}</div><JobFeedback job={job}/>{active && progress !== null && <><progress max={100} value={progress} aria-label="任务进度"/><small>{Math.round(progress)}%</small></>}{job.status === 'awaiting_review_images' && <div className="lab-capture-status"><p>{captureStatus === 'capturing' ? '正在获取候选方案的实际 2D / 3D 视图…' : captureStatus === 'uploading' ? '正在提交预览视图…' : captureStatus === 'submitted' ? '视图已提交，等待视觉复核。' : '请保持本项目的空间预览打开，以提交实际视图进行复核。'}</p>{captureError && <p className="lab-job-error" role="alert">{captureError}</p>}<button className="lab-button" type="button" disabled={captureStatus === 'capturing' || captureStatus === 'uploading' || captureStatus === 'submitted'} onClick={() => { if (job.draft) captureAttempts.current.delete(`${job.id}:${job.draft.id}`); setCaptureError(''); setCaptureStatus('idle'); setPreviewKind('candidate'); setTab('space'); setCaptureRetry((value) => value + 1); }}>重试提交视图</button></div>}<WorkflowSummary job={job} provenance={displayingDraft ? draft?.scaleProvenance : undefined}/>{job.events && job.events.length > 0 && <details><summary>任务记录</summary><ol>{job.events.map((event, index) => <li key={index}>{typeof event === 'string' ? event : event.message || stageLabels[event.stage || ''] || event.stage || '状态更新'}</li>)}</ol></details>}{(job.usage || !active) && <><p><small>{jobUsageLabel(job.usage, job)}</small></p><small>费用未报价</small></>}</section>}
+          <section className="lab-chat" role="tabpanel" aria-label="对话调整" hidden={controlTab !== 'chat'}>
+            <div className="lab-panel-intro"><span className="lab-chat-orbit"><StudioIcon name="chat" size={22}/></span><h3>让空间更贴近你的想法</h3><p>{displayingDraft ? '候选方案尚未保存，请先完成复核。' : scene ? '对最近保存的方案发出明确调整指令。' : '打开一个已有方案，开始调整空间。'}</p></div>
+            {scene && <div className="lab-chat-context"><StudioIcon name="plan" size={16}/><span>{selected?.title || '当前空间'}<small>版本 {scene.version} · {furniture.length} 件家具</small></span></div>}
+            <p className="lab-chat-instructions">支持家具定位、旋转和尺寸调整。可选择对象插入指令，再按需要修改。</p>
+            {furniture.length > 0 && <><label className="lab-field-label" htmlFor="lab-object">选择对象</label><select id="lab-object" className="lab-input lab-object-select" value="" disabled={working || displayingDraft} onChange={(event) => { if (event.target.value) setChat(event.target.value + '旋转到90度'); }}><option value="">选择家具，插入修改指令</option>{furniture.map((item) => <option value={String(item.id)} key={String(item.id)}>{String(item.name || item.type || '家具')} · {String(item.id)}</option>)}</select></>}
+            <label className="lab-field-label" htmlFor="lab-chat">调整要求</label>
+            <textarea id="lab-chat" className="lab-textarea" rows={5} placeholder={scene ? '例如：' + (furniture[0]?.id || '家具ID') + '旋转到90度' : '生成或打开方案后，继续对话调整'} value={chat} maxLength={4000} disabled={!scene || displayingDraft || working} onChange={(event) => setChat(event.target.value)}/>
+            <button className="lab-button lab-primary lab-modify" type="button" disabled={!scene || displayingDraft || !chat.trim() || working} onClick={() => void modify()}>{busy === 'modify' ? '正在提交…' : '提交修改'}<StudioIcon name="arrow" size={16}/></button>
+            <small>修改基于最近保存版本。预览中有新编辑时，请先保存。</small>
+          </section>
 
-        <section className="lab-chat"><div className="lab-control-heading"><h2>继续调整</h2><span>02 / 对话编辑</span></div><p>支持家具定位、旋转和尺寸调整。选择一个对象插入指令，再按需要修改。</p>{furniture.length > 0 && <><label className="lab-sr-only" htmlFor="lab-object">选择调整的家具</label><select id="lab-object" className="lab-input lab-object-select" value="" disabled={working || displayingDraft} onChange={(event) => { if (event.target.value) setChat(`${event.target.value}旋转到90度`); }}><option value="">选择家具，插入修改指令</option>{furniture.map((item) => <option value={String(item.id)} key={String(item.id)}>{String(item.name || item.type || '家具')} · {String(item.id)}</option>)}</select></>}<label className="lab-sr-only" htmlFor="lab-chat">家具修改要求</label><textarea id="lab-chat" className="lab-textarea" rows={3} placeholder={scene ? `例如：${furniture[0]?.id || '家具ID'}旋转到90度` : '生成或打开方案后，继续对话调整'} value={chat} maxLength={4000} disabled={!scene || displayingDraft || working} onChange={(event) => setChat(event.target.value)}/><button className="lab-button lab-modify" type="button" disabled={!scene || displayingDraft || !chat.trim() || working} onClick={() => void modify()}>{busy === 'modify' ? '正在提交…' : '提交修改'}<span aria-hidden="true">↗</span></button><small>修改基于最近保存版本。预览中有新编辑时，请先保存。复杂改动可在预览中手动编辑。</small></section>
+          {job && <section className={'lab-job' + (['failed', 'needs_input'].includes(job.status) ? ' has-error' : '')} aria-label="任务状态" aria-live="polite">
+            <div className="lab-job-heading"><strong><span className={'lab-dot ' + job.status}/>{statusLabels[job.status] || job.status}</strong>{active && <button type="button" disabled={busy === 'cancel'} onClick={() => void cancel()}>{busy === 'cancel' ? '取消中…' : '取消任务'}</button>}</div>
+            {active && <p className="lab-current-stage">{stageLabels[job.stage || ''] || '等待服务更新'}</p>}
+            {active && progress !== null && <div className="lab-progress-line"><progress max={100} value={progress} aria-label="任务进度"/><small>{Math.round(progress)}%</small></div>}
+            {job.status === 'awaiting_review_images' && <div className="lab-capture-status"><p>{captureStatus === 'capturing' ? '正在获取实际 2D / 3D 视图…' : captureStatus === 'uploading' ? '正在提交预览视图…' : captureStatus === 'submitted' ? '视图已提交，等待视觉复核。' : '请保持本项目的空间预览打开，以提交实际视图进行复核。'}</p>{captureError && <p className="lab-job-error" role="alert">{captureError}</p>}<button className="lab-button" type="button" disabled={captureStatus === 'capturing' || captureStatus === 'uploading' || captureStatus === 'submitted'} onClick={() => { if (job.draft) captureAttempts.current.delete(job.id + ':' + job.draft.id); setCaptureError(''); setCaptureStatus('idle'); setPreviewKind('candidate'); setTab('space'); setCaptureRetry((value) => value + 1); }}>重试提交视图</button></div>}
+            <details className="lab-task-details"><summary>{['failed', 'needs_input'].includes(job.status) ? '查看原因与任务详情' : '任务详情与视觉复核'}</summary><JobFeedback job={job}/><WorkflowSummary job={job} provenance={displayingDraft ? draft?.scaleProvenance : undefined}/>{job.events && job.events.length > 0 && <details><summary>阶段记录</summary><ol>{job.events.map((event, index) => <li key={index}>{typeof event === 'string' ? event : event.message || stageLabels[event.stage || ''] || event.stage || '状态更新'}</li>)}</ol></details>}{(job.usage || !active) && <div className="lab-usage"><small>{jobUsageLabel(job.usage, job)}</small><small>费用未报价</small></div>}</details>
+          </section>}
+        </div>
+        <div className="lab-controls-foot"><StudioIcon name="spark" size={13}/><span>AI 辅助创作 · 人工判断与验收</span></div>
       </aside>
     </div>
   </section>;
