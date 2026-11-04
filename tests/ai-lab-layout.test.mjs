@@ -70,13 +70,24 @@ async function galleryProbe() {
   await new Promise(resolveFrame => requestAnimationFrame(() => requestAnimationFrame(resolveFrame)));
   const root = document.querySelector('.lab-gallery-shell');
   const grid = document.querySelector('.lab-gallery-grid');
-  if (!root || !grid) throw new Error('The tool URL must render the real gallery shell and card grid.');
+  const gallery = document.querySelector('.lab-gallery');
+  const hero = document.querySelector('.lab-gallery-hero');
+  const heading = hero?.querySelector('h1');
+  const newButton = document.querySelector('button.lab-gallery-new-button');
+  if (!root || !grid || !gallery || !hero || !heading || !newButton) throw new Error('The tool URL must render the real gallery, hero, card grid and top-level new-project action.');
   const rect = element => { const value = element.getBoundingClientRect(); return { left: value.left, right: value.right, width: value.width, height: value.height }; };
+  const gridStyle = getComputedStyle(grid), heroStyle = getComputedStyle(hero), galleryStyle = getComputedStyle(gallery);
+  const newButtonRect = newButton.getBoundingClientRect();
+  const newButtonHit = document.elementFromPoint(newButtonRect.left + newButtonRect.width / 2, newButtonRect.top + newButtonRect.height / 2);
   return {
     viewport: { width: innerWidth, height: innerHeight },
     pageScrollWidth: document.scrollingElement.scrollWidth,
-    root: { ...rect(root), clientWidth: root.clientWidth, scrollWidth: root.scrollWidth },
-    grid: { ...rect(grid), clientWidth: grid.clientWidth, scrollWidth: grid.scrollWidth, display: getComputedStyle(grid).display },
+    root: { ...rect(root), clientWidth: root.clientWidth, scrollWidth: root.scrollWidth, background: getComputedStyle(root).backgroundColor },
+    grid: { ...rect(grid), clientWidth: grid.clientWidth, scrollWidth: grid.scrollWidth, display: gridStyle.display, columns: gridStyle.gridTemplateColumns.split(/\s+/).length, gap: parseFloat(gridStyle.columnGap) },
+    padding: { left: parseFloat(galleryStyle.paddingLeft), right: parseFloat(galleryStyle.paddingRight) },
+    hero: { background: heroStyle.backgroundColor, borders: [heroStyle.borderTopWidth, heroStyle.borderRightWidth, heroStyle.borderBottomWidth, heroStyle.borderLeftWidth].map(parseFloat) },
+    headingFontSize: parseFloat(getComputedStyle(heading).fontSize),
+    topNew: { ...rect(newButton), reachable: Boolean(newButtonHit && newButton.contains(newButtonHit)), background: getComputedStyle(newButton).backgroundColor },
     cards: [...grid.querySelectorAll('button.lab-project-card, button.lab-new-card')].map(rect),
     newCard: Boolean(grid.querySelector('button.lab-new-card')),
     editorCount: document.querySelectorAll('.lab-workspace').length,
@@ -290,11 +301,11 @@ test('the new-project editor route keeps edge-to-edge desktop docks and exclusiv
   }
 });
 
-test('the tool gallery keeps real project cards within desktop and mobile horizontal bounds', { skip: !browser ? 'No Chromium browser is installed for actual layout measurement.' : false }, async (context) => {
+test('the tool gallery follows the reference desktop hierarchy and keeps mobile cards within horizontal bounds', { skip: !browser ? 'No Chromium browser is installed for actual layout measurement.' : false }, async (context) => {
   const tempBase = resolve(tmpdir());
   const directory = mkdtempSync(resolve(tempBase, 'ai-lab-layout-'));
   try {
-    for (const [width, height] of [[1440, 900], [390, 844]]) {
+    for (const [width, height] of [[1656, 900], [390, 844]]) {
       const html = resolve(directory, `gallery-${width}.html`);
       writeFileSync(html, fixtureHtml(width, 'gallery'));
       const measured = await measureInBrowser(html, resolve(directory, `profile-${width}`), width, height);
@@ -307,7 +318,19 @@ test('the tool gallery keeps real project cards within desktop and mobile horizo
       for (const card of measured.cards) {
         assert.ok(card.width > 0 && card.height > 0 && card.left >= -1 && card.right <= width + 1, 'Every rendered project card must fit within the viewport.');
       }
-      context.diagnostic(JSON.stringify({ galleryViewport: measured.viewport, gridWidth: measured.grid.width, cardWidths: measured.cards.map(card => card.width) }));
+      if (width === 1656) {
+        assert.equal(measured.grid.columns, 5, 'The reference desktop viewport must offer five project columns.');
+        assert.ok(Math.abs(measured.grid.gap - 24) <= 1, 'Desktop project columns must retain the reference spacing.');
+        assert.ok(Math.abs(measured.cards[0].width - (measured.grid.width - measured.grid.gap * 4) / 5) <= 1, 'The real new-project card must occupy one desktop column.');
+        assert.ok(Math.abs(measured.padding.left - 56) <= 1 && Math.abs(measured.padding.right - 56) <= 1 && Math.abs(measured.grid.left - 56) <= 1 && Math.abs(width - measured.grid.right - 56) <= 8, 'Desktop gallery must use 56px side gutters rather than the old centered max-width.');
+        assert.ok(measured.headingFontSize >= 42, 'The hero title must retain the large reference hierarchy.');
+        assert.ok(measured.hero.borders.every(value => value === 0), 'The hero must use open whitespace without an enclosing frame.');
+        const channels = color => color.match(/\d+(?:\.\d+)?/g).slice(0, 3).map(Number);
+        const neutral = color => { const values = channels(color); return Math.max(...values) - Math.min(...values) <= 3; };
+        assert.ok(neutral(measured.root.background) && neutral(measured.hero.background), 'The gallery and hero must use the reference neutral white/gray palette.');
+        assert.ok(measured.topNew.reachable && Math.max(...channels(measured.topNew.background)) <= 40 && neutral(measured.topNew.background), 'The toolbar must expose a visible, hit-testable black new-project action.');
+      }
+      context.diagnostic(JSON.stringify({ galleryViewport: measured.viewport, gridWidth: measured.grid.width, columns: measured.grid.columns, gap: measured.grid.gap, headingSize: measured.headingFontSize, sidePadding: measured.padding, cardWidths: measured.cards.map(card => card.width) }));
     }
   } finally {
     const resolved = resolve(directory);
