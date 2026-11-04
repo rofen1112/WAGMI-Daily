@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { API, LabApiError, errorMessage, isActiveJob, jobError, jobUsageLabel, post, projectPath, readImage, readViewerState, request, sceneSourceLabel, type LabAsset, type LabBaseline, type LabHealth, type LabJob, type LabProject, type LabScene } from './api';
+import { API, LabApiError, errorMessage, isActiveJob, jobError, jobUsageLabel, jobValidationIssues, post, projectPath, projectStatusLabel, readImage, readViewerState, request, sceneSourceLabel, type LabAsset, type LabBaseline, type LabHealth, type LabJob, type LabProject, type LabScene } from './api';
 import './ai-lab.css';
 
 const statusLabels: Record<string, string> = { queued: '等待处理', running: '正在处理', succeeded: '已完成', failed: '未能完成', cancelled: '已取消', canceled: '已取消', needs_input: '需要补充信息' };
@@ -24,6 +24,13 @@ export function ModelUncertaintyWarnings({ warnings }: { warnings: unknown }) {
     : [];
   if (messages.length === 0) return null;
   return <details className="lab-validation lab-model-warnings"><summary>模型不确定性（{messages.length}）</summary><ul>{messages.map((message, index) => <li key={index}>{message}</li>)}</ul></details>;
+}
+
+export function JobFeedback({ job }: { job: LabJob }) {
+  const failed = ['failed', 'needs_input'].includes(job.status);
+  const message = failed ? jobError(job) : stageLabels[job.stage || ''] || job.message || (isActiveJob(job) ? '等待服务更新' : '');
+  const issues = failed ? jobValidationIssues(job) : [];
+  return <>{message && <p className={failed ? 'lab-job-error' : undefined}>{message.slice(0, 400)}</p>}{issues.length > 0 && <div><p>未通过检查的原因：</p><ul>{issues.map((issue, index) => <li key={index}>{issue.label}</li>)}</ul><details><summary>查看对应对象</summary><ul>{issues.map((issue, index) => <li key={index}>{issue.path || '场景结构'}{issue.code ? ` · ${issue.code}` : ''}</li>)}</ul></details></div>}</>;
 }
 
 function syncProjectLocation(projectId: string | null) {
@@ -134,6 +141,7 @@ export default function AiLabPage() {
       try {
         const result = await request<{ job: LabJob }>(`/jobs/${encodeURIComponent(job.id)}`);
         if (disposed) return;
+        setProjects((current) => current.map((item) => item.id === result.job.projectId ? { ...item, latestJob: result.job } : item));
         if (!isActiveJob(result.job)) {
           await refreshProjects();
           if (disposed) return;
@@ -281,7 +289,11 @@ export default function AiLabPage() {
     setBusy('cancel'); setError('');
     try {
       const result = await post<{ job?: LabJob }>(`/jobs/${encodeURIComponent(job.id)}/cancel`);
-      if (result.job) setJob(result.job);
+      if (result.job) {
+        const cancelledJob = result.job;
+        setJob(cancelledJob);
+        setProjects((current) => current.map((item) => item.id === cancelledJob.projectId ? { ...item, latestJob: cancelledJob } : item));
+      }
       setNotice('已请求取消。已经发出的模型请求可能仍产生用量。');
     } catch (reason) { setError(errorMessage(reason)); }
     finally { setBusy(null); }
@@ -289,6 +301,8 @@ export default function AiLabPage() {
 
   const warnings = scene?.validation?.warnings || [];
   const progress = typeof job?.progress === 'number' && Number.isFinite(job.progress) ? Math.max(0, Math.min(100, job.progress)) : null;
+  const finishedWithoutScene = Boolean(!scene && job && ['failed', 'cancelled', 'canceled', 'needs_input', 'succeeded'].includes(job.status));
+  const failedValidation = job?.status === 'failed' && jobValidationIssues(job).length > 0;
   const showImage = tab === 'image' && (imagePreview || asset?.url);
   const furnitureSource = scene?.state?.furniture ?? scene?.scene?.furniture;
   const furniture = Array.isArray(furnitureSource) ? furnitureSource.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && typeof item.id === 'string')) : [];
@@ -305,7 +319,7 @@ export default function AiLabPage() {
         <button className="lab-button lab-new" type="button" onClick={newProject} disabled={working}>＋ 新建方案</button>
         <div className="lab-sidebar-title">我的项目 <span>{projects.length}</span></div>
         <div className="lab-project-list">
-          {initialLoading ? <p className="lab-muted">正在读取项目…</p> : projects.length === 0 ? <p className="lab-sidebar-empty">还没有项目。<br/>上传平面图后开始第一个方案。</p> : projects.map((project) => <button className={`lab-project ${project.id === selectedId ? 'is-selected' : ''}`} key={project.id} type="button" disabled={Boolean(busy) || opening} onClick={() => void openProject(project)}><span className="lab-project-icon">▧</span><span><strong>{project.title || '未命名空间'}</strong><small>{project.sceneVersion > 0 ? `版本 ${project.sceneVersion}` : '等待生成'}{project.latestJob && isActiveJob(project.latestJob) ? ' · 处理中' : ''}</small></span></button>)}
+          {initialLoading ? <p className="lab-muted">正在读取项目…</p> : projects.length === 0 ? <p className="lab-sidebar-empty">还没有项目。<br/>上传平面图后开始第一个方案。</p> : projects.map((project) => <button className={`lab-project ${project.id === selectedId ? 'is-selected' : ''}`} key={project.id} type="button" disabled={Boolean(busy) || opening} onClick={() => void openProject(project)}><span className="lab-project-icon">▧</span><span><strong>{project.title || '未命名空间'}</strong><small>{projectStatusLabel(project)}</small></span></button>)}
         </div>
         <div className="lab-reference-heading"><span>历史参考</span><small>非 AI 实时生成</small></div>
         <p className="lab-reference-copy">载入独立参考项目，体验完整编辑器。</p>
@@ -317,9 +331,9 @@ export default function AiLabPage() {
       <div className="lab-editor">
         <div className="lab-editor-toolbar"><div className="lab-tabs" role="tablist" aria-label="预览内容"><button type="button" role="tab" aria-selected={tab === 'space'} onClick={() => setTab('space')}>空间预览</button><button type="button" role="tab" aria-selected={tab === 'image'} onClick={() => setTab('image')} disabled={!asset && !imagePreview}>原始平面图</button></div><div className="lab-save-actions"><button className="lab-button" type="button" disabled={!scene || working} onClick={() => void exportScene()}>{busy === 'export' ? '导出中…' : '导出 JSON'}</button><button className="lab-button lab-primary" type="button" disabled={!scene || !viewerReady || working} onClick={() => void save()}>{busy === 'save' ? '保存中…' : '保存方案'}</button></div></div>
         <div className={`lab-canvas ${scene && tab === 'space' ? 'has-scene' : ''}`}>
-          {opening ? <div className="lab-canvas-empty"><span className="lab-spinner"/><p>正在打开空间方案…</p></div> : showImage ? <div className="lab-source-image"><img src={imagePreview || asset?.url} alt={`原始平面图：${asset?.name || '已上传图片'}`}/><span>原始平面图 · {asset?.width} × {asset?.height} px</span></div> : scene && selectedId ? <iframe key={`${selectedId}:${scene.version}`} ref={frameRef} className="lab-viewer" title="空间方案 2D / 3D 编辑器" src={`${API}${projectPath(selectedId)}/viewer?version=${scene.version}`} sandbox="allow-scripts allow-same-origin allow-downloads"/> : <div className="lab-canvas-empty"><div className="lab-plan-icon"><PlanIcon/></div><span className="lab-canvas-kicker">平面图 → 可编辑空间</span><h2>{active ? '正在构建你的空间' : '让空间从图纸中展开'}</h2><p>{active ? '任务状态会在右侧更新。完成后，方案将在这里打开。' : '上传一张清晰的平面图，填写比例与要求。生成后可在这里切换 2D / 3D、调整家具与标注。'}</p>{!active && <button type="button" className="lab-button" onClick={() => fileRef.current?.click()} disabled={working}>选择平面图 <span aria-hidden="true">↗</span></button>}<small>也可以先载入左侧的历史参考方案</small></div>}
+          {opening ? <div className="lab-canvas-empty"><span className="lab-spinner"/><p>正在打开空间方案…</p></div> : showImage ? <div className="lab-source-image"><img src={imagePreview || asset?.url} alt={`原始平面图：${asset?.name || '已上传图片'}`}/><span>原始平面图 · {asset?.width} × {asset?.height} px</span></div> : scene && selectedId ? <iframe key={`${selectedId}:${scene.version}`} ref={frameRef} className="lab-viewer" title="空间方案 2D / 3D 编辑器" src={`${API}${projectPath(selectedId)}/viewer?version=${scene.version}`} sandbox="allow-scripts allow-same-origin allow-downloads"/> : <div className="lab-canvas-empty"><div className="lab-plan-icon"><PlanIcon/></div><span className="lab-canvas-kicker">平面图 → 可编辑空间</span><h2>{active ? '正在构建你的空间' : finishedWithoutScene ? failedValidation ? '生成未通过检查' : '本次未生成可保存的方案' : '让空间从图纸中展开'}</h2><p>{active ? '任务状态会在右侧更新。完成后，方案将在这里打开。' : finishedWithoutScene ? '请查看右侧任务卡的结果与具体原因，调整输入后再试。' : '上传一张清晰的平面图，填写比例与要求。生成后可在这里切换 2D / 3D、调整家具与标注。'}</p>{!active && <button type="button" className="lab-button" onClick={() => fileRef.current?.click()} disabled={working}>{finishedWithoutScene ? '重新选择平面图' : '选择平面图'} <span aria-hidden="true">↗</span></button>}<small>{finishedWithoutScene ? '可核对原图或补充要求后重新提交' : '也可以先载入左侧的历史参考方案'}</small></div>}
         </div>
-        <div className="lab-canvas-footer"><span>{scene ? `${selected?.title || title || '空间方案'} · 版本 ${scene.version}` : '等待生成空间方案'}</span><span>{scene ? sceneSourceLabel(scene.source) : '比例与结构均需核对'}</span></div>
+        <div className="lab-canvas-footer"><span>{scene ? `${selected?.title || title || '空间方案'} · 版本 ${scene.version}` : selected ? projectStatusLabel(selected) : job ? statusLabels[job.status] || '方案尚未就绪' : '等待生成空间方案'}</span><span>{scene ? sceneSourceLabel(scene.source) : '比例与结构均需核对'}</span></div>
         {scene && <div className="lab-editor-help">在预览内切换 2D / 3D，编辑家具、房间或测量标注。完成后点击「保存方案」。</div>}
         {scene && <ModelUncertaintyWarnings warnings={scene.scene?.warnings}/>}
         {warnings.length > 0 && <details className="lab-validation"><summary>结构校验提醒（{warnings.length}）</summary><ul>{warnings.map((item, index) => <li key={index}>{detailText(item)}</li>)}</ul></details>}
@@ -343,7 +357,7 @@ export default function AiLabPage() {
         <button className="lab-button lab-primary lab-generate" type="button" disabled={working || !asset || !scale || !health?.providerConfigured} onClick={() => void generate()}>{busy === 'generate' || active ? '正在处理…' : '生成空间方案'}<span aria-hidden="true">→</span></button>
         <p className="lab-fine-print">AI 可能遗漏门窗或误判结构，请核对后使用。</p>
 
-        {job && <section className={`lab-job ${['failed', 'needs_input'].includes(job.status) ? 'has-error' : ''}`} aria-label="任务状态" aria-live="polite"><div className="lab-job-heading"><strong>{statusLabels[job.status] || job.status}</strong>{active && <button type="button" disabled={busy === 'cancel'} onClick={() => void cancel()}>{busy === 'cancel' ? '取消中…' : '取消任务'}</button>}</div><p>{stageLabels[job.stage || ''] || job.message || (active ? '等待服务更新' : '')}</p>{active && progress !== null && <><progress max={100} value={progress} aria-label="任务进度"/><small>{Math.round(progress)}%</small></>}{jobError(job) && ['failed', 'needs_input'].includes(job.status) && <p className="lab-job-error">{jobError(job)}</p>}{job.events && job.events.length > 0 && <details><summary>任务记录</summary><ol>{job.events.map((event, index) => <li key={index}>{typeof event === 'string' ? event : event.message || stageLabels[event.stage || ''] || event.stage || '状态更新'}</li>)}</ol></details>}{(job.usage || !active) && <><p><small>{jobUsageLabel(job.usage, job)}</small></p><small>费用未报价</small></>}</section>}
+        {job && <section className={`lab-job ${['failed', 'needs_input'].includes(job.status) ? 'has-error' : ''}`} aria-label="任务状态" aria-live="polite"><div className="lab-job-heading"><strong>{statusLabels[job.status] || job.status}</strong>{active && <button type="button" disabled={busy === 'cancel'} onClick={() => void cancel()}>{busy === 'cancel' ? '取消中…' : '取消任务'}</button>}</div><JobFeedback job={job}/>{active && progress !== null && <><progress max={100} value={progress} aria-label="任务进度"/><small>{Math.round(progress)}%</small></>}{job.events && job.events.length > 0 && <details><summary>任务记录</summary><ol>{job.events.map((event, index) => <li key={index}>{typeof event === 'string' ? event : event.message || stageLabels[event.stage || ''] || event.stage || '状态更新'}</li>)}</ol></details>}{(job.usage || !active) && <><p><small>{jobUsageLabel(job.usage, job)}</small></p><small>费用未报价</small></>}</section>}
 
         <section className="lab-chat"><div className="lab-control-heading"><h2>继续调整</h2><span>02 / 对话编辑</span></div><p>支持家具定位、旋转和尺寸调整。选择一个对象插入指令，再按需要修改。</p>{furniture.length > 0 && <><label className="lab-sr-only" htmlFor="lab-object">选择调整的家具</label><select id="lab-object" className="lab-input lab-object-select" value="" disabled={working} onChange={(event) => { if (event.target.value) setChat(`${event.target.value}旋转到90度`); }}><option value="">选择家具，插入修改指令</option>{furniture.map((item) => <option value={String(item.id)} key={String(item.id)}>{String(item.name || item.type || '家具')} · {String(item.id)}</option>)}</select></>}<label className="lab-sr-only" htmlFor="lab-chat">家具修改要求</label><textarea id="lab-chat" className="lab-textarea" rows={3} placeholder={scene ? `例如：${furniture[0]?.id || '家具ID'}旋转到90度` : '生成或打开方案后，继续对话调整'} value={chat} maxLength={4000} disabled={!scene || working} onChange={(event) => setChat(event.target.value)}/><button className="lab-button lab-modify" type="button" disabled={!scene || !chat.trim() || working} onClick={() => void modify()}>{busy === 'modify' ? '正在提交…' : '提交修改'}<span aria-hidden="true">↗</span></button><small>修改基于最近保存版本。预览中有新编辑时，请先保存。复杂改动可在预览中手动编辑。</small></section>
       </aside>

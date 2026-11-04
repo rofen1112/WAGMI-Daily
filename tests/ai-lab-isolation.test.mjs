@@ -47,7 +47,8 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
   const listeners = new Map();
   window.addEventListener = (type, callback) => { if (!listeners.has(type)) listeners.set(type, new Set()); listeners.get(type).add(callback); };
   window.removeEventListener = (type, callback) => listeners.get(type)?.delete(callback);
-  const projects = [{ id: 'p1', title: '住宅', sceneVersion: 2 }, { id: 'p2', title: '办公', sceneVersion: 1 }];
+  const failedJob = { id: 'j3', projectId: 'p3', status: 'failed', validation: { errors: [{ code: 'outside_boundary', path: '$.rooms[11].poly' }] } };
+  const projects = [{ id: 'p1', title: '住宅', sceneVersion: 2 }, { id: 'p2', title: '办公', sceneVersion: 1 }, { id: 'p3', title: '未通过校验', sceneVersion: 0, latestJob: failedJob }];
   const requests = [];
   const hooks = [];
   let cursor = 0, dirty = false, effects = [], tree;
@@ -59,7 +60,9 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
     useEffect(callback, deps) { const index = cursor++; if (!hooks[index] || !equal(hooks[index].deps, deps)) { hooks[index] = { deps }; effects.push(callback); } },
   };
   const jsx = (type, props, key) => ({ type, props, key });
+  const helpers = await load('src/features/ai-lab/api.ts');
   const api = {
+    ...helpers,
     API: '/api/ai-lab/v1', LabApiError: class extends Error {}, isActiveJob: () => false,
     errorMessage: (error) => error.message, projectPath: (id) => `/projects/${id}`, jobError: () => '', sceneSourceLabel: () => '生成结果需人工核对',
     async request(path) {
@@ -67,6 +70,7 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
       if (path === '/health') return { status: 'ok', providerConfigured: true };
       if (path === '/projects') return { projects };
       if (path === '/baselines') return { baselines: [] };
+      if (path === '/projects/p3/scene') return null;
       if (path.endsWith('/scene')) return { scene: { furniture: [], metadata: { mmPerPixel: path.includes('/p1/') ? 25 : -2 } }, state: null, version: 2 };
       throw new Error(`Unexpected request: ${path}`);
     },
@@ -121,6 +125,61 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
   query = new URLSearchParams(window.location.hash.split('?')[1]);
   assert.equal(query.has('projectId'), false); assert.equal(query.get('tool'), 'floorplan3d');
   assert.equal(requests.filter((path) => path === '/projects/p1/scene').length, 2);
+  await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p3');
+  assert.ok(find(tree, (node) => node.type === 'h2' && node.props.children === '生成未通过检查'));
+  const footer = find(tree, (node) => node.props?.className === 'lab-canvas-footer');
+  assert.equal(footer.props.children[0].props.children, '生成失败');
+});
+
+test('project labels reflect terminal and active jobs while retaining saved versions', async () => {
+  const api = await load('src/features/ai-lab/api.ts');
+  const project = { id: 'p', title: '测试项目', sceneVersion: 0 };
+  assert.equal(api.projectStatusLabel(project), '尚未生成');
+  for (const [status, label] of [['queued', '排队中'], ['running', '生成中'], ['failed', '生成失败'], ['cancelled', '已取消'], ['needs_input', '需补信息']]) {
+    assert.equal(api.projectStatusLabel({ ...project, latestJob: { status } }), label);
+  }
+  assert.equal(api.projectStatusLabel({ ...project, sceneVersion: 3, latestJob: { status: 'succeeded' } }), '版本 3 · 已保存');
+  assert.equal(api.projectStatusLabel({ ...project, sceneVersion: 3, latestJob: { status: 'failed', source: 'modified' } }), '版本 3 · 修改失败');
+  assert.equal(api.projectStatusLabel({ ...project, sceneVersion: 3, latestJob: { status: 'failed' } }), '版本 3 · 生成失败');
+  assert.equal(api.projectStatusLabel({ ...project, sceneVersion: 3 }), '版本 3 · 已保存');
+});
+
+test('failure details translate bounded geometry issues without raw provider payloads or repeated summaries', async () => {
+  const React = require('react');
+  const { renderToStaticMarkup } = require('react-dom/server');
+  const api = await load('src/features/ai-lab/api.ts');
+  const page = await load('src/features/ai-lab/AiLabPage.tsx', { require(id) {
+    if (id === './api') return api;
+    if (id === './ai-lab.css') return {};
+    return require(id);
+  } });
+  const summary = '场景未通过校验，请调整输入后重试。';
+  const errors = [
+    { code: 'outside_boundary', path: '$.rooms[11].poly', message: 'rawproviderbody MUST_NOT_RENDER' },
+    { code: 'room_overlap', path: '$.rooms[1].poly' },
+    { code: 'invalid_polygon', path: '$.rooms[2].poly' },
+    { code: 'out_of_bounds', path: '$.furniture[0]' },
+    { code: 'nonpositive', path: '$.furniture[1].w' },
+  ];
+  const job = { status: 'failed', message: summary, validation: { errors }, error: { message: summary, details: { errors: [...errors, { code: 'invalid_polygon', path: '<script>alert(1)</script>', message: 'MUST_NOT_RENDER' }, ...Array.from({ length: 30 }, (_, index) => ({ code: 'out_of_bounds', path: `$.rooms[${index + 20}].poly` }))], rawproviderbody: 'MUST_NOT_RENDER' } } };
+  const issues = api.jobValidationIssues(job);
+  assert.equal(issues.length, 8);
+  assert.equal(issues[0].label, '第12个房间：房间范围超出模型给出的建筑外轮廓，请检查生成的房间边界。');
+  assert.match(issues[1].label, /第2个房间：.*重叠/);
+  assert.match(issues[2].label, /轮廓无效/);
+  assert.match(issues[3].label, /第1个家具：.*场景范围/);
+  assert.match(issues[4].label, /尺寸必须大于 0/);
+  const html = renderToStaticMarkup(React.createElement(page.JobFeedback, { job }));
+  assert.equal(html.split(summary).length - 1, 1);
+  assert.match(html, /第12个房间：房间范围超出模型给出的建筑外轮廓/);
+  assert.match(html, /查看对应对象/);
+  assert.match(html, /\$\.rooms\[11\]\.poly/);
+  assert.doesNotMatch(html, /MUST_NOT_RENDER|rawproviderbody|<script>|alert\(1\)/);
+  const escaped = renderToStaticMarkup(React.createElement(page.JobFeedback, { job: { status: 'failed', error: { message: '<img src=x onerror=alert(1)>' } } }));
+  assert.match(escaped, /&lt;img/); assert.doesNotMatch(escaped, /<img/);
+  for (const value of [null, 'rawproviderbody', { errors: 'rawproviderbody' }]) {
+    assert.equal(api.jobValidationIssues({ status: 'failed', validation: value, error: { details: value } }).length, 0);
+  }
 });
 
 test('API errors preserve actionable server messages and reject malformed successes', async () => {
