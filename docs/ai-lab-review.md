@@ -1,4 +1,4 @@
-# AI 实验室 MVP 技术验收记录
+﻿# AI 实验室 MVP 技术验收记录
 
 审查日期：2026-11-03，包含初审后的修复复核。对象为本次 staging 和已同步目标 checkout 的前端、独立 Vite 配置、Python 服务、场景引擎、legacy iframe renderer、相关测试与许可文件。独立审查仅作源码和离线检查，未调用付费模型或启停服务；下述目标 checkout 的完整测试、构建及实际启动结果由主任务执行并回报。真实模型调用与浏览器画面验收仍须引用主任务另行保存的证据。
 
@@ -44,3 +44,20 @@
 每张图保存一条私有 run manifest：原图 SHA-256、原始宽高、尺度及假设来源、运行时间、项目/job/version、完整参数、每次调用状态/耗时/厂商 usage、是否修复、最终 validation、候选像素 JSON、compiled scene/state 和原图叠加的 2D/固定视角 3D 截图。密钥与用户图片不得进入 tracked 公共源码；未返回 token、货币费用和中断原因按实际未知记录。
 
 人工逐图核对房间数量与分区、墙轮廓、门窗检出和位置、主要家具检出与朝向、空白区保留及幻觉新增；可在原图像素坐标计算房间/墙体 IoU、门窗 precision/recall 与位置误差。没有可靠标尺时不宣称 mm 误差精度。每图分别给出：首次完成、修复后完成、可渲染、人工可用及失败原因；三图全列入分母，报告原始结果与人工编辑后结果，不能用后者覆盖原始模型表现。
+
+## 2026-11-04 分阶段工作流独立集成审查补充
+
+核心冻结前独立只读检查了 `server/scale.py`、`workflow.py`、`workflow_prompts.py`、checkpoint持久化与前端draft/capture/provenance交互。审查没有调用付费模型、启动HTTP服务或修改其他负责人的代码。下列发现已由对应负责人修复，修复后本轮独立运行新workflow的18项离线回归（排除会监听端口的HTTP项）及前端15项测试，全部通过。主任务尚未执行的目标checkout总回归、构建、浏览器与真实模型结果不计入这段证据。
+
+| 已复现问题 | 修复闭环与回归 |
+| --- | --- |
+| 复核先截取前100项，再检查severity，会把第101项critical忽略并保留pass=true | 过长issues数组直接拒绝，任何保留的major/critical强制不通过。`test_review_cannot_hide_critical_issues_beyond_display_limit`通过 |
+| 家具多带height等不支持字段时，scene可通过但default_state无法渲染；原流程却发布awaiting_review_images，导致viewer失败 | 发布draft前一并校验editorState，将错误纳入有限geometry repair。`test_invalid_editor_state_is_repaired_before_publishing_a_draft`通过 |
+| preview状态公开后，快速截图回执已推进visual_review，却被worker finally写回旧preview/空captures覆盖 | finally与receipt在同事务下合并新checkpoint和captures，避免回退。`test_immediate_capture_receipt_cannot_be_overwritten_by_worker_finally`通过 |
+| 后端review/description/reason与前端visualReview/message/reasons不一致，实际复核原因不显示 | 统一公开visualReview并提供reasons；前端兼容规范reason/description。`workflow summaries show actual scale evidence and visual conclusions with bounded escaped text`通过 |
+
+其余已核对的关键边界：手动和两点校准仍执行图纸分析，但明确覆盖模型尺度；图纸锚点比值由服务计算，矛盾标注要求用户处理，对象先验只保留estimated及范围，未知比例不默用22或baseline。置信度与标注文本仍是来源声明，不是独立测绘或OCR真值证明。compiler使用服务固定的provenance并仅在像素到mm边界缩放；显式primitive展开幂等。家具阶段只允许furniture/furnitureRows/notes，不能替换建筑字段。major/critical不得因模型声称pass而被放行。
+
+draftId在候选变化后更新；旧候选截图及不同内容覆盖被拒绝，相同截图回执幂等且不重复排队。取消等待或正在复核的任务不会提交正式版本；等待截图释放单worker供其它项目使用，重启不自动重放已预约的付费调用，已有相应离线回归。`codex-workflow-v1`默认预算为最多8次调用、共享最多2次修复、最多2次视觉复核；2026-11-04真实迁移验收显式采用12/4/4并保存到每个job。历史单次模式的旧预算需单列，不能作为新流程比较基线。
+
+在本次源码与离线测试范围内，上述阻断已关闭。真实截图非空与身份对应、完整浏览器自动续跑、模型图纸还原质量和三图公平benchmark仍由主任务分别留证；模型自评通过不替代人工验收，历史参考兼容不能充作自动生成成功。

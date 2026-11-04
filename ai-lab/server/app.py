@@ -20,6 +20,9 @@ from pathlib import Path
 from .prompts import PROMPT_VERSION, generation_messages, parse_json, repair_messages
 from .provider import MODEL, ProviderError, SeedanceProvider, normalize_usage, read_private_config
 from .store import LabError, Store, dump, now, uid
+from .workflow import WorkflowRunner, PIPELINE_VERSION, LEGACY_PIPELINE, settings as provider_settings, parse_workflow_limits
+from .workflow_prompts import WORKFLOW_PROMPT_VERSION
+from .scale import validate_scale_input
 
 PREFIX = "/api/ai-lab/v1"
 MAX_BODY = 18 * 1024 * 1024
@@ -69,15 +72,46 @@ def public_asset(asset):
     return {key: asset[key] for key in ("id", "name", "mime", "width", "height")} | {"url": f"{PREFIX}/assets/{asset['id']}"}
 
 
+def generation_input(value):
+    """Project user input fields only; never publish a whole internal payload."""
+    if not isinstance(value, dict):
+        return {}
+    result = {}
+    if value.get("scaleMode") in ("auto", "calibrated", "manual"):
+        result["scaleMode"] = value["scaleMode"]
+    scale = value.get("mmPerPixel")
+    if isinstance(scale, (int, float)) and not isinstance(scale, bool):
+        try:
+            if math.isfinite(scale) and scale > 0:
+                result["mmPerPixel"] = scale
+        except (OverflowError, ValueError):
+            pass
+    calibration = value.get("calibration")
+    if isinstance(calibration, dict):
+        try:
+            points = [calibration.get(key) for key in ("p1", "p2")]
+            length = calibration.get("lengthMm")
+            if all(isinstance(point, list) and len(point) == 2 and all(isinstance(n, (int, float)) and not isinstance(n, bool) and math.isfinite(n) for n in point) for point in points) and isinstance(length, (int, float)) and not isinstance(length, bool) and math.isfinite(length) and length > 0:
+                result["calibration"] = {"p1": copy.deepcopy(points[0]), "p2": copy.deepcopy(points[1]), "lengthMm": length}
+        except (OverflowError, ValueError):
+            pass
+    if isinstance(value.get("prompt"), str):
+        result["prompt"] = value["prompt"][:12000]
+    return result
+
+
 class Lab:
     def __init__(self, root, data_dir=None, provider=None, engine=None, start_worker=True):
         self.root = Path(root).resolve()
+        config = read_private_config(self.root)
+        self.workflow_limits = parse_workflow_limits(config)
         self.store = Store(data_dir or self.root / ".local-ai-lab")
-        self.provider = provider or SeedanceProvider(read_private_config(self.root))
+        self.provider = provider or SeedanceProvider(config)
         self._engine = engine
         self.pending = queue.Queue()
         self.stop_event = threading.Event()
         self.worker = None
+        self.workflow = WorkflowRunner(self)
         with self.store.transaction() as db:
             for row in db.execute("SELECT id,record FROM jobs ORDER BY created"):
                 if json.loads(row["record"])["status"] == "queued":
@@ -99,18 +133,40 @@ class Lab:
             self.worker.join(timeout=1)
 
     def health(self):
-        return {"status": "ok", "model": MODEL, "providerConfigured": self.provider.configured, "capabilities": {"imageInputVerified": bool(self.provider.supports_images), "generation": bool(self.provider.configured and self.provider.supports_images), "modify": True, "cancel": True, "export": True, "baselineReference": True, "concurrency": 1, "maxRepairCalls": 1, "usageAccounting": "vendor_only", "promptVersion": PROMPT_VERSION}}
+        return {"status": "ok", "model": MODEL, "providerConfigured": self.provider.configured, "capabilities": {"imageInputVerified": bool(self.provider.supports_images), "generation": bool(self.provider.configured and self.provider.supports_images), "modify": True, "cancel": True, "export": True, "baselineReference": True, "concurrency": 1, "maxRepairCalls": 1, "usageAccounting": "vendor_only", "promptVersion": PROMPT_VERSION, "pipelineVersions": [LEGACY_PIPELINE, PIPELINE_VERSION], "workflowPromptVersion": WORKFLOW_PROMPT_VERSION, "workflowBudget": copy.deepcopy(self.workflow_limits), "browserReviewCapture": True}}
 
     def projects(self):
         with self.store.transaction() as db:
             items = []
             for row in db.execute("SELECT * FROM projects ORDER BY updated DESC"):
                 item = {"id": row["id"], "title": row["title"], "updatedAt": row["updated"], "sceneVersion": row["version"]}
-                job = db.execute("SELECT record FROM jobs WHERE project_id=? ORDER BY created DESC LIMIT 1", (row["id"],)).fetchone()
+                job = db.execute("SELECT id FROM jobs WHERE project_id=? ORDER BY created DESC,rowid DESC LIMIT 1", (row["id"],)).fetchone()
                 if job:
-                    item["latestJob"] = json.loads(job["record"])
+                    item["latestJob"] = self.public_job(job["id"], db)
                 items.append(item)
         return {"projects": items}
+
+    def public_job(self, job_id, db=None):
+        """Read-only recovery adapter for both new and historical generation jobs."""
+        job = self.store.job(job_id, db)
+        result = copy.deepcopy(job["record"])
+        payload = job["payload"]
+        if payload.get("action", "generate") != "generate":
+            result.pop("input", None)
+            result.pop("sourceAsset", None)
+            return result
+        # New jobs preserve the submitted subset, including an intentionally
+        # empty subset. Older records can only recover fields in their payload.
+        result["input"] = generation_input(result["input"] if isinstance(result.get("input"), dict) else payload)
+        result["sourceAsset"] = None
+        asset_id = payload.get("assetId")
+        if isinstance(asset_id, str) and re.fullmatch(r"[a-f0-9]{32}", asset_id):
+            try:
+                result["sourceAsset"] = public_asset(self.store.asset(asset_id, db))
+            except LabError as exc:
+                if exc.code != "asset_not_found":
+                    raise
+        return result
 
     def create_project(self, body):
         title = str(body.get("title", "新空间项目")).strip()[:120] or "新空间项目"
@@ -145,9 +201,14 @@ class Lab:
     def create_job(self, project_id, body, idempotency_key=None):
         if body.get("action", "generate") not in ("generate", "modify"):
             raise LabError("invalid_action", "仅支持 generate 或 modify。")
-        payload = {k: v for k, v in body.items() if k in ("action", "assetId", "mmPerPixel", "prompt", "baseVersion", "patch")}
+        payload = {k: v for k, v in body.items() if k in ("action", "assetId", "mmPerPixel", "prompt", "baseVersion", "patch", "pipelineVersion", "scaleMode", "calibration")}
         payload.setdefault("action", "generate")
         payload.setdefault("prompt", "")
+        payload.setdefault("pipelineVersion", LEGACY_PIPELINE)
+        if payload["pipelineVersion"] not in (LEGACY_PIPELINE, PIPELINE_VERSION) or (payload["pipelineVersion"] == PIPELINE_VERSION and payload["action"] != "generate"):
+            raise LabError("invalid_pipeline", "分阶段工作流仅用于生成；请选择支持的pipelineVersion。")
+        if payload["pipelineVersion"] == PIPELINE_VERSION:
+            payload.setdefault("scaleMode", "auto")
         if not isinstance(payload["prompt"], str) or len(payload["prompt"]) > 12000:
             raise LabError("invalid_prompt", "指令应为不超过 12000 字符的文本。")
         if idempotency_key is not None and (not isinstance(idempotency_key, str) or not 1 <= len(idempotency_key) <= 160):
@@ -160,7 +221,7 @@ class Lab:
                 if prior:
                     if prior["request_hash"] != request_hash:
                         raise LabError("idempotency_conflict", "同一幂等键已用于不同请求。", 409)
-                    return {"job": json.loads(prior["record"])}
+                    return {"job": self.public_job(prior["id"], db)}
             base_version = payload.get("baseVersion", project["version"])
             if not isinstance(base_version, int) or isinstance(base_version, bool):
                 raise LabError("invalid_version", "baseVersion 必须为整数。")
@@ -168,14 +229,24 @@ class Lab:
                 raise LabError("version_conflict", "场景已更新，请重新加载。", 409, {"currentVersion": project["version"]})
             payload["baseVersion"] = base_version
             if payload["action"] == "generate":
-                self.store.asset(str(payload.get("assetId", "")), db)
-                scale = payload.get("mmPerPixel")
-                if not isinstance(scale, (int, float)) or isinstance(scale, bool) or not math.isfinite(scale) or not 0 < scale <= 100000:
-                    raise LabError("scale_required", "请明确提供大于零的 mmPerPixel；它只是尺度假设。")
+                asset = self.store.asset(str(payload.get("assetId", "")), db)
+                if payload["pipelineVersion"] == PIPELINE_VERSION:
+                    validate_scale_input(payload, asset)
+                else:
+                    scale = payload.get("mmPerPixel")
+                    if not isinstance(scale, (int, float)) or isinstance(scale, bool) or not math.isfinite(scale) or not 0 < scale <= 100000:
+                        raise LabError("scale_required", "请明确提供大于零的 mmPerPixel；它只是尺度假设。")
             elif base_version == 0:
                 raise LabError("scene_not_found", "请先生成或载入参考场景。", 404)
+            if payload["pipelineVersion"] == PIPELINE_VERSION:
+                payload["workflowLimits"] = copy.deepcopy(self.workflow_limits)
             job_id = uid()
-            record = {"id": job_id, "projectId": project_id, "status": "queued", "stage": "queued", "progress": 0, "message": "等待处理。", "events": [{"at": now(), "stage": "queued", "message": "等待处理。"}], "usage": None, "timings": {}, "model": MODEL if payload["action"] == "generate" else None, "promptVersion": PROMPT_VERSION, "source": "generated" if payload["action"] == "generate" else "modified"}
+            record = {"id": job_id, "projectId": project_id, "status": "queued", "stage": "queued", "progress": 0, "message": "等待处理。", "events": [{"at": now(), "stage": "queued", "message": "等待处理。"}], "usage": None, "timings": {}, "model": MODEL if payload["action"] == "generate" else None, "pipelineVersion": payload["pipelineVersion"], "promptVersion": WORKFLOW_PROMPT_VERSION if payload["pipelineVersion"] == PIPELINE_VERSION else PROMPT_VERSION, "providerSettings": provider_settings(self.provider), "source": "generated" if payload["action"] == "generate" else "modified"}
+            if payload["pipelineVersion"] == PIPELINE_VERSION:
+                record["budget"] = {**payload["workflowLimits"], "callsUsed": 0, "repairsUsed": 0, "visualReviewsUsed": 0}
+            if payload["action"] == "generate":
+                record["sourceAsset"] = public_asset(asset)
+                record["input"] = generation_input(body)
             db.execute("INSERT INTO jobs VALUES(?,?,?,?,?,?,?)", (job_id, project_id, dump(payload), dump(record), idempotency_key, request_hash, now()))
         self.pending.put(job_id)
         return {"job": record}
@@ -188,7 +259,7 @@ class Lab:
                 record.update(status="cancelled", stage="cancelled", message="已取消后续处理；已发出的模型请求可能仍产生费用。")
                 record["events"].append({"at": now(), "stage": "cancelled", "message": record["message"]})
                 db.execute("UPDATE jobs SET record=? WHERE id=?", (dump(record), job_id))
-            return {"job": record}
+            return {"job": self.public_job(job_id, db)}
 
     def _cancelled(self, job_id):
         return self.store.job(job_id)["record"]["status"] == "cancelled"
@@ -204,6 +275,9 @@ class Lab:
         started = time.monotonic()
         job = self.store.job(job_id)
         if job["record"]["status"] != "queued":
+            return
+        if job["payload"].get("pipelineVersion") == PIPELINE_VERSION:
+            self.workflow.run(job_id)
             return
         payload = job["payload"]
         project_id = job["project_id"]
@@ -432,7 +506,8 @@ class Lab:
     def viewer(self, project_id):
         value = self.store.scene(project_id)
         render = importlib.import_module("engine.viewer").render_viewer_html
-        return render(value["scene"], value["state"], project_id, value["version"])
+        source_url = (value.get("sourceAsset") or {}).get("url")
+        return render(value["scene"], value["state"], project_id, value["version"], source_asset_url=source_url)
 
     def static_file(self, relative):
         parts = relative.split("/")
@@ -523,7 +598,15 @@ class Handler(BaseHTTPRequestHandler):
                 if route == "/health": result = lab.health()
                 elif route == "/projects": result = lab.projects()
                 elif route == "/baselines": result = lab.baselines()
-                elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})", route): result = {"job": lab.store.job(match[1])["record"]}
+                elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})", route): result = {"job": lab.public_job(match[1])}
+                elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/(draft|viewer)", route):
+                    if match[2] == "draft":
+                        result = lab.workflow.draft(match[1])
+                    else:
+                        query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+                        draft_id = query.get("draftId", [None])[0]
+                        self._send(200, lab.workflow.viewer(match[1], draft_id), "text/html; charset=utf-8", {"Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; frame-ancestors 'self'; object-src 'none'; base-uri 'none'"})
+                        return
                 elif match := re.fullmatch(r"/assets/([a-f0-9]{32})", route):
                     asset = lab.store.asset(match[1])
                     self._send(200, (lab.store.root / "assets" / asset["filename"]).read_bytes(), asset["mime"])
@@ -540,6 +623,7 @@ class Handler(BaseHTTPRequestHandler):
                 if route == "/projects": result, status = lab.create_project(body), 201
                 elif route == "/assets": result, status = lab.upload(body), 201
                 elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/cancel", route): result = lab.cancel(match[1])
+                elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/review-images", route): result, status = lab.workflow.review_images(match[1], body), 202
                 elif match := re.fullmatch(r"/projects/([a-f0-9]{32})/(jobs|state|baseline)", route):
                     if match[2] == "jobs": result, status = lab.create_job(match[1], body, self.headers.get("Idempotency-Key") or body.get("idempotencyKey")), 202
                     elif match[2] == "state": result = lab.save_state(match[1], body)

@@ -16,6 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ai-lab"))
 from server.app import Handler, Lab, PREFIX, initial_state
 from server.provider import ProviderError, SeedanceProvider
+from server.response_json import NORMALIZATION_VERSION
 from server.prompts import PROMPT_VERSION, generation_messages, repair_messages
 from server.store import LabError
 
@@ -142,6 +143,69 @@ class LabTests(unittest.TestCase):
         self.assertEqual(record["error"]["code"], "api_key_missing")
         self.assertEqual(record["usage"], {"calls": [], "cost": None})
         self.assertEqual(self.lab.store.project(self.pid)["version"], 0)
+
+    def test_failed_generation_input_and_source_recover_after_reopening(self):
+        self.provider.configured = False
+        self.provider._key = "provider-private-secret"
+        calibration = {"p1": [0, 0], "p2": [100, 0], "lengthMm": 1000, "apiKey": "must-not-publish"}
+        body = self.body | {"pipelineVersion": "codex-workflow-v1", "scaleMode": "calibrated", "calibration": calibration, "prompt": "保留原始房间和留白", "apiKey": "must-not-publish", "internalPath": str(self.root)}
+        record = self.submit_run(body)
+        self.assertEqual(record["status"], "failed", record)
+        self.lab.close()
+        self.lab = Lab(self.root, provider=self.provider, engine=Engine(), start_worker=False)
+        recovered = self.lab.public_job(record["id"])
+        self.assertEqual(recovered["sourceAsset"], self.asset)
+        self.assertEqual(recovered["input"], {"scaleMode": "calibrated", "mmPerPixel": 10, "calibration": {"p1": [0, 0], "p2": [100, 0], "lengthMm": 1000}, "prompt": "保留原始房间和留白"})
+        self.assertEqual(self.lab.projects()["projects"][0]["latestJob"], recovered)
+        encoded = json.dumps(recovered)
+        for private in ("provider-private-secret", "must-not-publish", "apiKey", "filename", str(self.root)):
+            self.assertNotIn(private, encoded)
+        self.assertEqual(self.provider.calls, 0)
+
+    def test_historical_generation_recovery_is_read_only_and_http_consistent(self):
+        job = self.lab.create_job(self.pid, self.body)["job"]
+        with self.lab.store.transaction() as db:
+            old = self.lab.store.job(job["id"], db)
+            record, payload = old["record"], old["payload"]
+            record.pop("input", None)
+            record.pop("sourceAsset", None)
+            record.update(status="failed", stage="failed")
+            payload.update(apiKey="private-old-key", internalPath=str(self.root), provider={"apiKey": "private-old-key"})
+            before = (json.dumps(payload), json.dumps(record))
+            db.execute("UPDATE jobs SET payload=?,record=? WHERE id=?", (*before, job["id"]))
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        server.lab, server.allowed_origins = self.lab, {"http://127.0.0.1:5186"}
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        base = f"http://127.0.0.1:{server.server_port}" + PREFIX
+        try:
+            recovered = json.load(urllib.request.urlopen(base + f"/jobs/{job['id']}"))["job"]
+            latest = json.load(urllib.request.urlopen(base + "/projects"))["projects"][0]["latestJob"]
+            self.assertEqual(recovered, latest)
+            self.assertEqual(recovered["sourceAsset"], self.asset)
+            self.assertEqual(recovered["input"], {"mmPerPixel": 10, "prompt": "layout"})
+            self.assertNotIn("scaleMode", recovered["input"])
+            for private in ("private-old-key", "apiKey", "internalPath", "filename", str(self.root)):
+                self.assertNotIn(private, json.dumps(recovered))
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(2)
+        with self.lab.store.transaction() as db:
+            row = db.execute("SELECT payload,record FROM jobs WHERE id=?", (job["id"],)).fetchone()
+            self.assertEqual((row["payload"], row["record"]), before)
+        self.assertEqual(self.provider.calls, 0)
+
+    def test_modify_job_does_not_expose_generation_inputs(self):
+        self.submit_run()
+        modify = self.lab.create_job(self.pid, {"action": "modify", "baseVersion": 1, "assetId": self.asset["id"], "mmPerPixel": 10, "prompt": "f1旋转到90度"})["job"]
+        public = self.lab.public_job(modify["id"])
+        self.assertNotIn("sourceAsset", public)
+        self.assertNotIn("input", public)
+        latest = self.lab.projects()["projects"][0]["latestJob"]
+        self.assertEqual(latest["id"], modify["id"])
+        self.assertNotIn("sourceAsset", latest)
+        self.assertNotIn("input", latest)
 
     def test_unknown_image_capability_needs_input(self):
         self.provider.supports_images = False
@@ -326,7 +390,36 @@ class WireTests(unittest.TestCase):
         self.assertFalse(body["stream"])
         self.assertNotIn("reasoning", body)
         self.assertNotIn("thinking", body)
-        self.assertEqual(result, {"content": "OK", "usage": usage})
+        self.assertNotIn("text", body)
+        self.assertEqual({key: result[key] for key in ("content", "usage")}, {"content": "OK", "usage": usage})
+        self.assertFalse(result["normalization"]["applied"])
+        self.assertEqual(result["normalization"]["reason"], "json_mode_disabled")
+
+    def test_json_mode_explicit_responses_payload_and_disabled_default(self):
+        payload = {"status": "completed", "output": [{"type": "message", "content": [{"type": "output_text", "text": '{"ok":true}'}]}], "usage": {"total_tokens": 20}}
+        for mode in ("0", "1"):
+            with self.subTest(mode=mode):
+                provider = SeedanceProvider({"AI_LAB_API_KEY": "test-secret", "AI_LAB_GATEWAY_WIRE_MODE": "responses", "AI_LAB_JSON_MODE": mode})
+                with mock.patch("urllib.request.urlopen", return_value=self.Response(payload)) as send:
+                    result = provider.complete([{ "role": "user", "content": 'Return JSON {"ok":true}'}])
+                body = json.loads(send.call_args.args[0].data)
+                if mode == "1":
+                    self.assertEqual(body["text"], {"format": {"type": "json_object"}})
+                else:
+                    self.assertNotIn("text", body)
+                self.assertEqual(provider.json_mode, mode == "1")
+                self.assertEqual(json.loads(result["content"]), {"ok": True})
+                self.assertEqual(send.call_count, 1)
+
+    def test_invalid_json_mode_or_wrong_wire_rejected_before_network(self):
+        for wire, mode in (("responses", "true"), ("responses", "2"), ("responses", ""), ("responses", True), ("responses", 1), ("messages", "1")):
+            with self.subTest(wire=wire, mode=mode):
+                provider = SeedanceProvider({"AI_LAB_API_KEY": "test-secret", "AI_LAB_GATEWAY_WIRE_MODE": wire, "AI_LAB_JSON_MODE": mode})
+                with mock.patch("urllib.request.urlopen") as send:
+                    with self.assertRaises(ProviderError) as error:
+                        provider.complete([{ "role": "user", "content": "test"}])
+                self.assertEqual(error.exception.code, "provider_config_invalid")
+                send.assert_not_called()
 
     def test_reasoning_effort_is_explicit_responses_only_opt_in(self):
         payload = {"status": "completed", "output": [{"type": "message", "content": [{"type": "output_text", "text": "OK"}]}], "usage": {"output_tokens_details": {"reasoning_tokens": 0}}}
@@ -369,6 +462,86 @@ class WireTests(unittest.TestCase):
         self.assertEqual(error.exception.response_status, "incomplete")
         self.assertIsNone(error.exception.incomplete_reason)
         self.assertNotIn("test-secret", str(vars(error.exception)))
+
+
+class StrictJsonRepeatTests(unittest.TestCase):
+    def setUp(self):
+        fixture = Path(__file__).resolve().parent / "fixtures" / "ai-lab-response-repeat.json"
+        self.fixture = json.loads(fixture.read_text(encoding="utf-8"))
+        self.single = json.dumps(self.fixture["single"], ensure_ascii=False, separators=(",", ":"))
+
+    def complete(self, parts, mode="1"):
+        payload = {"status": "completed", "output": [{"type": "message", "content": [{"type": "output_text", "text": part}]} for part in parts], "usage": {"input_tokens": 3, "output_tokens": 5, "total_tokens": 8}}
+        provider = SeedanceProvider({"AI_LAB_API_KEY": "test-private-key", "AI_LAB_GATEWAY_WIRE_MODE": "responses", "AI_LAB_JSON_MODE": mode})
+        with mock.patch("urllib.request.urlopen", return_value=WireTests.Response(payload)):
+            return provider.complete([{ "role": "user", "content": "Return one JSON object"}])
+
+    def test_abstract_office_repeat_in_one_text_and_multiple_complete_blocks(self):
+        for parts in ([self.single + self.fixture["separator"] + self.single], [self.single, self.single]):
+            with self.subTest(parts=len(parts)):
+                result = self.complete(parts)
+                self.assertEqual(result["content"], self.single)
+                self.assertEqual(json.loads(result["content"]), self.fixture["single"])
+                report = result["normalization"]
+                self.assertEqual(report["version"], NORMALIZATION_VERSION)
+                self.assertTrue(report["applied"])
+                self.assertEqual(report["count"], 2)
+                self.assertEqual(report["equivalence"], "byte_identical")
+                shape = result["outputStructure"]
+                self.assertEqual(shape["outputItemCount"], len(parts))
+                self.assertEqual(shape["outputTextPartCount"], len(parts))
+                self.assertEqual(shape["items"][0]["parts"][0]["textLength"], len(parts[0]))
+                self.assertEqual(len(shape["items"][0]["parts"][0]["textHash"]), 64)
+                self.assertNotIn("示意办公平面", json.dumps(shape, ensure_ascii=False))
+                self.assertNotIn("test-private-key", json.dumps(shape))
+
+    def test_structural_equivalence_allows_key_order_whitespace_and_exact_numbers(self):
+        first = '{ "nested":{"value":1},"flag":true }'
+        second = '{"flag":true,"nested":{"value":1.0}}'
+        result = self.complete([first, second])
+        self.assertEqual(result["content"], first)
+        self.assertEqual(result["normalization"]["equivalence"], "structurally_identical")
+        self.assertEqual(result["normalization"]["count"], 2)
+
+    def test_single_complete_object_preserves_original_text(self):
+        original = " \n" + self.single + "\t "
+        result = self.complete([original])
+        self.assertEqual(result["content"], original)
+        self.assertFalse(result["normalization"]["applied"])
+        self.assertEqual(result["normalization"]["count"], 1)
+
+    def test_different_objects_and_boolean_number_collisions_are_rejected(self):
+        for parts in ([ '{"v":true}', '{"v":1}' ], [ '{"v":1}', '{"v":2}' ], [ '{"v":"1"}', '{"v":1}' ], [ '{"v":0.1}', '{"v":0.10000000000000001}' ], [ '{"v":[1,2]}', '{"v":[2,1]}' ]):
+            with self.subTest(parts=parts):
+                with self.assertRaises(ProviderError) as error:
+                    self.complete(parts)
+                self.assertEqual(error.exception.code, "provider_response_json_conflict")
+                self.assertEqual(error.exception.usage["total_tokens"], 8)
+                self.assertFalse(error.exception.normalization["applied"])
+                self.assertEqual(error.exception.normalization["count"], 2)
+                self.assertEqual(error.exception.output_structure["outputItemCount"], 2)
+                self.assertNotIn("test-private-key", str(vars(error.exception)))
+
+    def test_partial_blocks_extra_text_constants_and_duplicate_keys_are_rejected(self):
+        midpoint = len(self.single) // 2
+        cases = [[self.single[:midpoint], self.single[midpoint:]], ["prefix " + self.single], [self.single + " trailing"], [self.single, '{"next":'], ["[]"], ['{"v":NaN}'], ['{"v":Infinity}'], ['{"v":-Infinity}'], ['{"v":1,"v":2}'], ['{"v":1,"v":2}', '{"v":2}']]
+        for parts in cases:
+            with self.subTest(parts=parts):
+                with self.assertRaises(ProviderError) as error:
+                    self.complete(parts)
+                self.assertEqual(error.exception.code, "provider_response_json_invalid")
+                self.assertFalse(error.exception.normalization["applied"])
+                self.assertEqual(error.exception.usage["total_tokens"], 8)
+                self.assertEqual(error.exception.output_structure["outputTextPartCount"], len(parts))
+
+    def test_json_mode_zero_keeps_legacy_text_and_block_concatenation_unchanged(self):
+        for parts in (["legacy plain text"], [self.single, "\n" + self.single], [self.single[:20], self.single[20:]]):
+            with self.subTest(parts=parts):
+                result = self.complete(parts, mode="0")
+                self.assertEqual(result["content"], "".join(parts))
+                self.assertFalse(result["normalization"]["applied"])
+                self.assertIsNone(result["normalization"]["count"])
+                self.assertEqual(result["normalization"]["reason"], "json_mode_disabled")
 
 
 class PromptContractTests(unittest.TestCase):

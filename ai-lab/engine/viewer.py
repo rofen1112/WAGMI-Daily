@@ -1,5 +1,6 @@
 """Safe same-origin HTML renderer for a separately validated legacy scene."""
 import json
+import re
 from copy import deepcopy
 from pathlib import Path
 from .scene import validate_scene, validate_state, default_state
@@ -8,7 +9,7 @@ TEMPLATE = Path(__file__).resolve().parents[1] / 'viewer' / 'index.html'
 PLACEHOLDER = '__AI_LAB_SCENE_JSON__'
 
 
-def render_viewer_html(scene, state, project_id, version):
+def render_viewer_html(scene, state, project_id, version, source_asset_url=None):
     """Return isolated HTML; the only injection is an inert safely escaped JSON blob.
 
     Preserve stored scene and state. Renderer-only optional presentation defaults
@@ -32,7 +33,12 @@ def render_viewer_html(scene, state, project_id, version):
     normalized.setdefault('titleEn',normalized.get('title','AI Lab'))
     for key in ('dimensions','extraLintels','annotations','polygonWalls','columns','steps'):normalized.setdefault(key,[])
     normalized.setdefault('windowHeads',[2400]*len(scene['windows']))
-    payload={'scene':normalized,'state':state,'context':{'projectId':project_id,'version':version}}
+    context={'projectId':project_id,'version':version}
+    if source_asset_url is not None:
+        if not isinstance(source_asset_url,str) or re.fullmatch(r'/api/ai-lab/v1/assets/[a-f0-9]{32}',source_asset_url) is None:
+            raise ValueError('Source overlay requires an allowlisted same-origin asset URL.')
+        context['sourceAssetUrl']=source_asset_url
+    payload={'scene':normalized,'state':state,'context':context}
     serialized=json.dumps(payload,ensure_ascii=False,separators=(',',':'),allow_nan=False)
     serialized=serialized.replace('&','\\u0026').replace('<','\\u003c').replace('>','\\u003e').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
     template=TEMPLATE.read_text(encoding='utf-8')

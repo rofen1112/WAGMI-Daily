@@ -100,6 +100,46 @@ def _furniture(items, v, path='$.furniture', bounds=None):
                 _issue(v,p,'Furniture footprint is outside scene bounds.','out_of_bounds')
 
 
+def validate_scale_provenance(provenance,mm_per_pixel=None,image_width=None,image_height=None):
+    """Validate an explicit scale source. Confidence is a claim, never proof of survey accuracy."""
+    v=_result();p='$.metadata.scaleProvenance'
+    required={'mode','mmPerPixel','confidence','evidence','assumptions'}
+    allowed=required|{'rangeMmPerPixel','anchors'}
+    if not isinstance(provenance,dict):_issue(v,p,'Scale provenance must be an object.','invalid_scale_provenance');return v
+    _scan_json(provenance,v,p)
+    if not required.issubset(provenance) or set(provenance)-allowed:_issue(v,p,'Scale provenance requires mode, mmPerPixel, confidence, evidence and assumptions; unsupported fields are rejected.','invalid_scale_provenance')
+    mode=provenance.get('mode');scale=provenance.get('mmPerPixel')
+    if mode not in ('manual','measured','estimated'):_issue(v,p+'.mode','Scale mode must be manual, measured or estimated.')
+    if not _positive(scale):_issue(v,p+'.mmPerPixel','Scale must be finite and positive.')
+    elif mm_per_pixel is not None and (_positive(mm_per_pixel) and not math.isclose(scale,mm_per_pixel,rel_tol=1e-9,abs_tol=1e-9)):_issue(v,p+'.mmPerPixel','Provenance scale must equal the compiled mmPerPixel.','scale_mismatch')
+    if provenance.get('confidence') not in ('low','medium','high'):_issue(v,p+'.confidence','Confidence must be low, medium or high.')
+    for key in ('evidence','assumptions'):
+        values=provenance.get(key)
+        if not isinstance(values,list) or len(values)>16 or (key=='evidence' and not values) or any(not isinstance(value,str) or not value.strip() or len(value)>1000 for value in values):_issue(v,p+'.'+key,'Expected bounded nonblank text items; evidence cannot be empty.')
+    interval=provenance.get('rangeMmPerPixel')
+    if 'rangeMmPerPixel' in provenance:
+        if not isinstance(interval,list) or len(interval)!=2 or not all(_positive(n) for n in interval) or interval[0]>interval[1]:_issue(v,p+'.rangeMmPerPixel','Scale range must be a finite positive [low, high].')
+        elif _positive(scale) and not interval[0]<=scale<=interval[1]:_issue(v,p+'.rangeMmPerPixel','Selected scale must lie inside its reported range.')
+    anchors=provenance.get('anchors',[])
+    if not isinstance(anchors,list) or len(anchors)>32:_issue(v,p+'.anchors','Anchors must be a bounded array.');anchors=[]
+    measured_anchors=0
+    for i,anchor in enumerate(anchors):
+        q=f'{p}.anchors[{i}]'
+        if not isinstance(anchor,dict) or set(anchor)!={'label','p1','p2','lengthMm','source'}:_issue(v,q,'Anchor requires label, p1, p2, lengthMm and source.');continue
+        if not isinstance(anchor['label'],str) or not anchor['label'].strip() or len(anchor['label'])>400:_issue(v,q+'.label','Anchor label must be bounded text.')
+        if anchor['source'] not in ('dimension_annotation','user_measurement','object_prior'):_issue(v,q+'.source','Unsupported scale anchor source.')
+        if not _point(anchor['p1']) or not _point(anchor['p2']) or not _positive(anchor['lengthMm']):_issue(v,q,'Anchor points and positive real length must be finite.');continue
+        distance=math.dist(anchor['p1'],anchor['p2'])
+        if distance<=0:_issue(v,q,'Anchor points must be distinct.');continue
+        for point in (anchor['p1'],anchor['p2']):
+            if point[0]<0 or point[1]<0 or (_positive(image_width) and point[0]>image_width) or (_positive(image_height) and point[1]>image_height):_issue(v,q,'Anchor must use coordinates inside the original image.')
+        if anchor['source'] in ('dimension_annotation','user_measurement'):
+            measured_anchors+=1
+            if mode=='measured' and _positive(scale) and not math.isclose(anchor['lengthMm']/distance,scale,rel_tol=.02,abs_tol=1e-9):_issue(v,q,'Measured anchor ratio differs from selected mmPerPixel by more than 2%.','scale_anchor_mismatch')
+    if mode=='measured' and not measured_anchors:_issue(v,p+'.anchors','Measured scale requires a dimension annotation or supplied-length anchor; object priors are estimates.')
+    return v
+
+
 def validate_scene(scene):
     """Validate a complete legacy scene in mm; never rescales or mutates it."""
     v=_result()
@@ -121,8 +161,16 @@ def validate_scene(scene):
     for key in ('areaLabel','areaLabelEn','dimensionNote'):
         if key in metadata and not _text(metadata[key]):
             _issue(v,'$.metadata.'+key,'Renderer metadata text must be a string.')
+    for key in ('sourcePixels','tracingPixels'):
+        if key in metadata and (not isinstance(metadata[key],list) or len(metadata[key])!=2 or not all(_positive(n) for n in metadata[key])):_issue(v,'$.metadata.'+key,'Image dimensions must contain two finite positive values.')
+    if 'originPixels' in metadata and not _point(metadata['originPixels']):_issue(v,'$.metadata.originPixels','Pixel origin must be a finite point.')
     scale=metadata.get('mmPerPixel')
     if not _positive(scale): _issue(v,'$.metadata.mmPerPixel','An explicit positive mm/pixel scale is required.','invalid_scale')
+    if 'scaleProvenance' in metadata:
+        dimensions=metadata.get('sourcePixels',[])
+        dimensions=dimensions if isinstance(dimensions,list) and len(dimensions)==2 else [None,None]
+        provenance_validation=validate_scale_provenance(metadata['scaleProvenance'],scale,*dimensions)
+        v['errors'].extend(provenance_validation['errors'])
     ceiling=metadata.get('ceilingHeightMm',2800)
     if not _positive(ceiling): _issue(v,'$.metadata.ceilingHeightMm','Ceiling height must be positive.'); ceiling=2800
     b=scene.get('bounds',{})
@@ -217,11 +265,14 @@ def validate_scene(scene):
         if key in scene and not _point(scene[key]): _issue(v,'$.'+key,'Walk position must be a finite point.')
     if 'labelFontSize' in scene and not _positive(scene['labelFontSize']): _issue(v,'$.labelFontSize','Label font size must be positive.')
     for k in ('rooms','walls','windows','doors','slides','furniture','polygonWalls','columns','steps'): v['counts'][k]=len(scene.get(k,[])) if isinstance(scene.get(k,[]),list) else 0
-    _issue(v,'$.metadata.mmPerPixel','Scale and areas are illustrative estimates, not measured precision.','estimated_scale',True)
+    if isinstance(metadata.get('scaleProvenance'),dict) and metadata['scaleProvenance'].get('mode')=='measured':
+        _issue(v,'$.metadata.mmPerPixel','Scale is calibrated to a supplied/read length; image reconstruction and areas are not site-survey verified.','calibrated_not_surveyed',True)
+    else:
+        _issue(v,'$.metadata.mmPerPixel','Scale and areas are illustrative estimates, not measured precision.','estimated_scale',True)
     return v
 
 
-def compile_pixel_scene(candidate,image_width,image_height,mm_per_pixel,project_id,title=''):
+def compile_pixel_scene(candidate,image_width,image_height,mm_per_pixel,project_id,title='',*,scale_provenance=None):
     """Compile original-image pixel plan coordinates; vertical mm and vectors stay unchanged."""
     v=_result()
     for key,value in (('image_width',image_width),('image_height',image_height),('mm_per_pixel',mm_per_pixel)):
@@ -232,6 +283,15 @@ def compile_pixel_scene(candidate,image_width,image_height,mm_per_pixel,project_
     if v['errors']: return {},v
     _scan_json(candidate,v)
     if v['errors']: return {},v
+    from .primitives import expand_primitives
+    try:
+        candidate=expand_primitives(deepcopy(candidate))
+    except ValueError as error:
+        _issue(v,'$',str(error) or 'Invalid deterministic primitive.','invalid_primitive');return {},v
+    if scale_provenance is None:
+        scale_provenance={'mode':'manual','mmPerPixel':mm_per_pixel,'confidence':'low','evidence':['用户显式提供毫米/像素数值，未记录校尺锚点。'],'assumptions':['该比例仅作为建模尺度输入，不代表实测精度。']}
+    provenance_validation=validate_scale_provenance(scale_provenance,mm_per_pixel,image_width,image_height)
+    if provenance_validation['errors']:return {},provenance_validation
     source_meta=candidate.get('metadata',{})
     if not isinstance(source_meta,dict): _issue(v,'$.metadata','Metadata must be an object.'); return {},v
     if source_meta.get('coordinateUnits') in ('mm','millimeters') or source_meta.get('compiledBy'):
@@ -303,7 +363,7 @@ def compile_pixel_scene(candidate,image_width,image_height,mm_per_pixel,project_
     s.setdefault('dimensions',[]);s.setdefault('extraLintels',[]);s.setdefault('annotations',[])
     s.setdefault('windowSills',[900]*len(s['windows']) if isinstance(s['windows'],list)else [])
     s.setdefault('windowHeads',[2400]*len(s['windows']) if isinstance(s['windows'],list)else [])
-    s['metadata']={**source_meta,'sourcePixels':[image_width,image_height],'originPixels':[0,0],'mmPerPixel':scale,'coordinateUnits':'mm','compiledBy':'ai-lab-pixel-compiler-v1','ceilingHeightMm':source_meta.get('ceilingHeightMm',2800),'dimensionNote':'Scale supplied or assumed by the user; dimensions and areas are estimates, not measured.','method':'Model output compiled from original image pixels; geometry validation does not verify image fidelity.'}
+    s['metadata']={**source_meta,'sourcePixels':[image_width,image_height],'tracingPixels':[image_width,image_height],'originPixels':[0,0],'mmPerPixel':scale,'scaleProvenance':deepcopy(scale_provenance),'coordinateUnits':'mm','compiledBy':'ai-lab-pixel-compiler-v1','ceilingHeightMm':source_meta.get('ceilingHeightMm',2800),'dimensionNote':'比例已按提供的已知长度校准；图像重建与面积仍非现场测绘。' if scale_provenance['mode']=='measured' else '比例为人工输入或图像估算；尺寸与面积均为建模估算，非现场测绘。','method':'Model output compiled from original image pixels; geometry validation does not verify image fidelity.'}
     return s,validate_scene(s)
 
 

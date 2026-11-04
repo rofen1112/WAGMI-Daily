@@ -40,12 +40,22 @@ class Store:
             CREATE TABLE IF NOT EXISTS assets(id TEXT PRIMARY KEY,name TEXT,mime TEXT,width INTEGER,height INTEGER,filename TEXT NOT NULL,sha256 TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS versions(project_id TEXT,version INTEGER,scene TEXT,state TEXT,validation TEXT,source_asset TEXT,source_type TEXT,created TEXT,PRIMARY KEY(project_id,version));
             CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,payload TEXT NOT NULL,record TEXT NOT NULL,idem TEXT,request_hash TEXT,created TEXT,UNIQUE(project_id,idem));
+            CREATE TABLE IF NOT EXISTS workflow_runs(job_id TEXT PRIMARY KEY,state TEXT NOT NULL,updated TEXT NOT NULL);
             """)
             # A vendor call cannot safely be replayed following a process restart.
             for row in db.execute("SELECT id,record FROM jobs"):
                 record = json.loads(row["record"])
                 if record["status"] == "running":
                     record.update(status="failed", stage="interrupted", error={"code": "server_restarted", "message": "服务重启中断任务；未自动重试付费请求。"})
+                    checkpoint = db.execute("SELECT state FROM workflow_runs WHERE job_id=?", (row["id"],)).fetchone()
+                    if checkpoint:
+                        state = json.loads(checkpoint["state"])
+                        for call in state.get("calls", []):
+                            if call.get("status") == "running":
+                                call["status"] = "interrupted"
+                        state["inFlight"] = None
+                        record["usage"] = {"calls": state.get("calls", []), "cost": None}
+                        db.execute("UPDATE workflow_runs SET state=?,updated=? WHERE job_id=?", (dump(state), now(), row["id"]))
                     db.execute("UPDATE jobs SET record=? WHERE id=?", (dump(record), row["id"]))
 
     @contextlib.contextmanager
@@ -94,6 +104,43 @@ class Store:
                 record.setdefault("events", []).append({"at": now(), "stage": fields["stage"], "message": fields.get("message", "")})
             db.execute("UPDATE jobs SET record=? WHERE id=?", (dump(record), job_id))
             return record
+
+    def workflow(self, job_id, db=None):
+        if db is None:
+            with self.transaction() as connection:
+                return self.workflow(job_id, connection)
+        row = db.execute("SELECT state FROM workflow_runs WHERE job_id=?", (job_id,)).fetchone()
+        return json.loads(row["state"]) if row else None
+
+    def put_workflow(self, job_id, state, db=None):
+        if db is None:
+            with self.transaction() as connection:
+                return self.put_workflow(job_id, state, connection)
+        self.job(job_id, db)
+        db.execute("INSERT INTO workflow_runs VALUES(?,?,?) ON CONFLICT(job_id) DO UPDATE SET state=excluded.state,updated=excluded.updated", (job_id, dump(state), now()))
+
+    def artifact(self, job_id, value=None, blob=None, suffix="json"):
+        """Private artifacts have opaque filenames, never derived from model paths."""
+        self.job(job_id)
+        directory = self.root / "jobs" / job_id
+        directory.mkdir(parents=True, exist_ok=True)
+        artifact_id = uid()
+        name = artifact_id + (".bin" if blob is not None else ".json")
+        raw = blob if blob is not None else dump(value).encode("utf-8")
+        temporary = directory / (name + ".tmp")
+        temporary.write_bytes(raw)
+        temporary.replace(directory / name)
+        import hashlib
+        return {"id": artifact_id, "name": name, "sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)}
+
+    def artifact_bytes(self, job_id, artifact):
+        name = artifact.get("name", "")
+        if not isinstance(name, str) or not __import__("re").fullmatch(r"[a-f0-9]{32}\.(?:bin|json)", name):
+            raise LabError("artifact_not_found", "任务产物不存在。", 404)
+        path = self.root / "jobs" / job_id / name
+        if not path.is_file() or path.is_symlink():
+            raise LabError("artifact_not_found", "任务产物不存在。", 404)
+        return path.read_bytes()
 
     def asset(self, asset_id, db=None):
         if db is None:

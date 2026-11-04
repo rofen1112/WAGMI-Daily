@@ -53,6 +53,7 @@ aside.right{border-right:0;border-left:1px solid var(--line)}
 .item small{color:var(--muted);font-size:11px}
 .hint{padding:10px 14px 16px;color:var(--muted);font-size:12px}
 main{position:relative;overflow:hidden;background:var(--paper)}
+#sourceOverlayControls[hidden]{display:none!important}
 #plan{width:100%;height:100%;display:block;touch-action:none;cursor:default}
 #plan.panning{cursor:grabbing}
 #plan.tool-measure{cursor:crosshair}
@@ -243,8 +244,12 @@ main.drawer-panel #fab{opacity:0;visibility:hidden}
       <button class="btn" id="zoomOut" title="缩小" data-en-title="Zoom out">−</button>
       <button class="btn" id="zoomIn" title="放大" data-en-title="Zoom in">＋</button>
       <button class="btn" id="fit" title="适应窗口 (F)" data-en-title="Fit to window (F)" data-en="Fit">适应</button>
-      <button class="btn" id="s60" title="按 1:60 显示（与原图同比例）" data-en-title="Show at 1:60 (same scale as the original plan)">1:60</button>
+      <button class="btn" id="s60" title="按 1:60 显示（仅视图缩放，不是图纸校尺）" data-en-title="Show at 1:60 (view zoom, not image calibration)">1:60</button>
       <button class="btn" id="s100" title="按 1:100 显示" data-en-title="Show at 1:100">1:100</button>
+    </div>
+    <div class="grp only2d" id="sourceOverlayControls" hidden>
+      <label class="btn" style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="sourceOverlayToggle"><span data-en="Source overlay">原图叠加</span></label>
+      <input type="range" id="sourceOverlayOpacity" min="0" max="0.85" step="0.05" value="0.35" style="width:65px" aria-label="原图叠加透明度" title="原图叠加透明度">
     </div>
     <div class="grp only3d" id="modes3d">
       <button class="btn on" data-mode="orbit" data-en="Orbit">鸟瞰</button>
@@ -314,6 +319,7 @@ main.drawer-panel #fab{opacity:0;visibility:hidden}
       <g id="gLabels" pointer-events="none"></g>
       <g id="gDims" pointer-events="none"></g>
       <g id="gMeasure" pointer-events="none"></g>
+      <g id="gSource" pointer-events="none" display="none"></g>
       <g id="gSel"></g>
     </svg>
     <div id="view3d">
@@ -817,9 +823,11 @@ function renderAll(){
 
 function updateHeader(){
   const tot = ROOMS.filter(r => r.counted !== false).reduce((a,r) => a + area(r.poly), 0);
-  $('#subtitle').textContent = FLOORPLAN_CASE
-    ? tr(`图片描摹 · 估算 ${FLOORPLAN_CASE.metadata.mmPerPixel} mm/参考px · 室内约 ${fmt(tot)} m²（非实测）`, `Image tracing · Estimated ${FLOORPLAN_CASE.metadata.mmPerPixel} mm/ref px · Indoors ≈ ${fmt(tot)} m² (not measured)`)
-    : tr(`套内使用面积约 ${fmt(tot)} m² · 尺寸单位 mm · 原图比例 1:60`, `Net floor area ≈ ${fmt(tot)} m² · Units: mm · Original scale 1:60`);
+  const provenance = FLOORPLAN_CASE.metadata.scaleProvenance;
+  const mode = provenance?.mode;
+  const label = {manual:tr('手动比例','Manual scale'),measured:tr('已知长度校准','Known-length calibration'),estimated:tr('图像估算比例','Image-estimated scale')}[mode] || tr('历史比例（估算）','Legacy estimated scale');
+  $('#subtitle').textContent = tr(`${label} · ${FLOORPLAN_CASE.metadata.mmPerPixel} mm/原图px · 分区约 ${fmt(tot)} m²（非测绘）`,`${label} · ${FLOORPLAN_CASE.metadata.mmPerPixel} mm/image px · Partitions ≈ ${fmt(tot)} m² (not surveyed)`);
+  $('#subtitle').title = (provenance?.evidence || []).concat(provenance?.assumptions || []).join('\n');
   if (FLOORPLAN_CASE) $('.brand b').textContent = tr(FLOORPLAN_CASE.title,FLOORPLAN_CASE.titleEn);
   $('#undo').disabled = !undoStack.length; $('#redo').disabled = !redoStack.length;
   $('#undo').style.opacity = undoStack.length ? 1 : .4; $('#redo').style.opacity = redoStack.length ? 1 : .4;
@@ -834,6 +842,16 @@ function renderPanel(){
   if (ui.sel?.kind === 'furn'){ const f = getF(ui.sel.id); if (f){ p.innerHTML = furnPanel(f); bindFurnPanel(f); return; } }
   if (ui.sel?.kind === 'room'){ p.innerHTML = roomPanel(ROOMS.find(r => r.id === ui.sel.id)); bindRoomPanel(); return; }
   p.innerHTML = overviewPanel(); bindOverview();
+}
+
+function scaleProvenancePanel(){
+  const source = FLOORPLAN_CASE.metadata.scaleProvenance;
+  if (!source) return `<section><h3>${tr('比例来源','Scale source')}</h3><p class="muted">${tr('历史案例仅记录比例数值，未记录可靠校尺锚点；尺寸与面积按估算使用。','The legacy case records a scale value without reliable calibration anchors. Dimensions and areas remain estimates.')}</p></section>`;
+  const modes = {manual:tr('手动输入','Manual input'),measured:tr('已知长度校准','Known-length calibration'),estimated:tr('图像与参照物估算','Image / object-prior estimate')};
+  const confidence = {low:tr('低','Low'),medium:tr('中','Medium'),high:tr('高','High')}[source.confidence];
+  const range = source.rangeMmPerPixel ? `<div class="muted">${tr('估算范围','Estimated range')} ${source.rangeMmPerPixel[0]}–${source.rangeMmPerPixel[1]} mm/px</div>` : '';
+  const items = [...source.evidence,...source.assumptions];
+  return `<section><h3>${tr('比例来源','Scale source')}</h3><div>${modes[source.mode]} · ${tr('置信度','Confidence')} ${confidence}</div>${range}<ul class="muted" style="padding-left:16px">${items.map(item=>`<li>${esc(item)}</li>`).join('')}</ul><small class="muted">${tr('校准只表示使用了已知长度，不代表现场实测或整张图重建准确。','Calibration uses a known length; it does not establish survey accuracy or reconstruction fidelity.')}</small></section>`;
 }
 
 function overviewPanel(){
@@ -855,6 +873,7 @@ function overviewPanel(){
     <table>${rows}</table>
     <div class="total"><span>${esc(tr(FLOORPLAN_CASE?.metadata.areaLabel || '套内使用面积',FLOORPLAN_CASE?.metadata.areaLabelEn || 'Net floor area'))}</span><b>${fmt(tot)} m²</b></div>
     <div class="muted" style="font-size:11px;margin-top:4px">${esc(FLOORPLAN_CASE ? tr((FLOORPLAN_CASE.metadata.dimensionNote || '图片未标注尺寸；面积为估算，结构属性未确认。') + (ROOMS.some(r=>r.outdoor) ? '* 室外区域不计入室内面积。' : ''),'Dimensions and areas are estimated; structural status is unknown. Outdoor areas marked * are excluded.') : tr('* 飘窗不计入使用面积；面积按墙体内净尺寸计算','* Bay windows are excluded; areas use net inner wall dimensions'))}</div></section>
+  ${scaleProvenancePanel()}
   <section><h3>${tr('地面材料估算','Flooring Estimate')} <small>${tr('含 5% 损耗','incl. 5% waste')}</small></h3>
     <table>${matRows}</table>
     <div class="total"><span>${tr('地面材料合计','Flooring total')}</span><b>¥${Math.round(cost).toLocaleString()}</b></div></section>
@@ -1338,6 +1357,74 @@ addEventListener('pointercancel', e => endLibDrag(e, false));
 
 /* ======================= 导入导出 ======================= */
 function download(name, blob){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
+// Overlay mapping uses the same pixel origin and one mm/px transform as geometry.
+// Legacy traced cases may use tracingPixels distinct from the original raster size.
+function sourceOverlayMapping(){
+  const metadata = FLOORPLAN_CASE.metadata;
+  const pixels = metadata.tracingPixels || metadata.sourcePixels;
+  const origin = metadata.originPixels || [0,0];
+  const scale = metadata.mmPerPixel;
+  if (!Array.isArray(pixels) || pixels.length !== 2 || !pixels.every(n => typeof n === 'number' && Number.isFinite(n) && n > 0) || !Array.isArray(origin) || origin.length !== 2 || !origin.every(Number.isFinite) || !Number.isFinite(scale) || scale <= 0) return null;
+  return {x:-origin[0]*scale || 0,y:-origin[1]*scale || 0,width:pixels[0]*scale,height:pixels[1]*scale};
+}
+function initSourceOverlay(){
+  const source = AI_LAB.context.sourceAssetUrl, mapping = sourceOverlayMapping();
+  if (typeof source !== 'string' || !/^\/api\/ai-lab\/v1\/assets\/[a-f0-9]{32}$/.test(source) || !mapping) return;
+  const image = document.createElementNS('http://www.w3.org/2000/svg','image');
+  image.id = 'sourceOverlayImage'; image.setAttribute('href',source);
+  image.setAttribute('preserveAspectRatio','none');
+  Object.entries(mapping).forEach(([key,value]) => image.setAttribute(key,String(value)));
+  $('#gSource').appendChild(image); $('#sourceOverlayControls').hidden = false;
+  const update = () => { $('#gSource').setAttribute('display',$('#sourceOverlayToggle').checked ? 'inline' : 'none'); $('#gSource').setAttribute('opacity',$('#sourceOverlayOpacity').value); };
+  $('#sourceOverlayToggle').addEventListener('change',update);
+  $('#sourceOverlayOpacity').addEventListener('input',update);
+  update();
+}
+function loadCaptureImage(url){
+  return new Promise((resolve,reject) => {
+    const image = new Image();
+    const timer = setTimeout(() => { image.src = ''; reject(new Error('capture_image_timeout')); },8000);
+    image.onload = () => { clearTimeout(timer); resolve(image); };
+    image.onerror = () => { clearTimeout(timer); reject(new Error('capture_image_unavailable')); };
+    image.src = url;
+  });
+}
+function captureCanvasSize(width,height,maxSide=1280){
+  const factor = Math.min(1,maxSide/Math.max(width,height));
+  return {width:Math.max(1,Math.round(width*factor)),height:Math.max(1,Math.round(height*factor))};
+}
+async function capturePlanDataUrl(){
+  const clone = svg.cloneNode(true), size = captureCanvasSize(BOUNDS.w,BOUNDS.h);
+  clone.setAttribute('viewBox',`${BOUNDS.x} ${BOUNDS.y} ${BOUNDS.w} ${BOUNDS.h}`);
+  clone.setAttribute('width',size.width); clone.setAttribute('height',size.height);
+  clone.querySelector('#gSel').replaceChildren();
+  const grid = clone.querySelector('#gGrid');
+  grid.innerHTML = `<rect x="${BOUNDS.x}" y="${BOUNDS.y}" width="${BOUNDS.w}" height="${BOUNDS.h}" fill="${ui.layers.grid?'url(#grid)':'#f7f4ee'}"/>`;
+  // Review captures show generated geometry only; keep the user's overlay controls unchanged.
+  clone.querySelector('#gSource')?.remove();
+  const background = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  Object.entries({x:BOUNDS.x,y:BOUNDS.y,width:BOUNDS.w,height:BOUNDS.h,fill:'#f7f4ee'}).forEach(([key,value]) => background.setAttribute(key,String(value)));
+  clone.insertBefore(background,clone.querySelector('#gGrid'));
+  const raster = await loadCaptureImage('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(clone)));
+  const canvas = document.createElement('canvas'); Object.assign(canvas,size);
+  canvas.getContext('2d').drawImage(raster,0,0,size.width,size.height);
+  return canvas.toDataURL('image/png');
+}
+let labCapturePending = false;
+async function captureLabViews(){
+  if (labCapturePending || switching) throw new Error('capture_busy');
+  if (!window.View3D?.capture) throw new Error('capture_engine_unavailable');
+  labCapturePending = true;
+  try {
+    // Both functions render from current state without mutating editor state,
+    // view mode, undo history, overlay controls or localStorage.
+    const sceneDataUrl = window.View3D.capture();
+    const planDataUrl = await capturePlanDataUrl();
+    return {planDataUrl,sceneDataUrl};
+  } finally { labCapturePending = false; }
+}
+initSourceOverlay();
+
 function exportPNG(){
   if (is3D()) return window.View3D.shot();
   const clone = svg.cloneNode(true), W = 3200, H = Math.round(W*BOUNDS.h/BOUNDS.w);
@@ -1393,7 +1480,7 @@ document.querySelectorAll('#layers .btn').forEach(b => b.onclick = () => {
 $('#zoomIn').onclick = () => zoomCenter(1.25);
 $('#zoomOut').onclick = () => zoomCenter(.8);
 $('#fit').onclick = fitView;
-$('#s60').onclick = () => { setRatio(60); toast(tr('已按 1:60 显示（与原始户型图同比例）', 'Showing at 1:60 (same scale as the original plan)')); };
+$('#s60').onclick = () => { setRatio(60); toast(tr('已按 1:60 显示（仅视图缩放）', 'Showing at 1:60 (view zoom only)')); };
 $('#s100').onclick = () => setRatio(100);
 $('#undo').onclick = undo; $('#redo').onclick = redo;
 $('#clearAll').onclick = clearLayout;
@@ -1463,13 +1550,23 @@ $('#tip').textContent = TIPS()['2d'];
 fitView(); renderAll();
 
 // Same-origin iframe bridge. Only serializable editor state crosses this boundary.
-window.addEventListener('message', event => {
-  if (event.source !== window.parent || event.origin !== window.location.origin || !event.data || event.data.type !== 'ai-lab:get-state') return;
+window.addEventListener('message', async event => {
+  if (event.source !== window.parent || event.origin !== window.location.origin || !event.data || !['ai-lab:get-state','ai-lab:capture'].includes(event.data.type)) return;
   const requestId = event.data.requestId;
-  if (typeof requestId !== 'string' || requestId.length > 200) return;
-  window.parent.postMessage({type:'ai-lab:state',requestId,state:structuredClone(state)},window.location.origin);
+  if (typeof requestId !== 'string' || !requestId || requestId.length > 200) return;
+  if (event.data.type === 'ai-lab:get-state'){
+    window.parent.postMessage({type:'ai-lab:state',requestId,state:structuredClone(state)},window.location.origin);
+    return;
+  }
+  try {
+    const captures = await captureLabViews();
+    window.parent.postMessage({type:'ai-lab:captures',requestId,...captures},window.location.origin);
+  } catch (error){
+    const code = ['capture_busy','capture_engine_unavailable','capture_image_timeout','capture_image_unavailable'].includes(error?.message) ? error.message : 'capture_failed';
+    window.parent.postMessage({type:'ai-lab:captures',requestId,planDataUrl:null,sceneDataUrl:null,error:{code,message:'无法取得完整2D/3D预览，请等待画面就绪后重试。'}},window.location.origin);
+  }
 });
-window.parent.postMessage({type:'ai-lab:ready'},window.location.origin);
+// Readiness is announced below after the local 3D module exposes capture.
 </script>
 <script type="module">
 /* ============================================================
@@ -2682,6 +2779,95 @@ function loop(){
 
 function shot(){ const a = document.createElement('a'); a.download = tr('户型装修方案', 'floor-plan-design') + '-3D.png'; a.href = renderer.domElement.toDataURL('image/png'); a.click(); }
 
+// Review captures use a fixed landscape camera, independent of the iframe's
+// current size/view. Fit rendered model geometry, never the image's whitespace.
+function captureRenderedBounds(groups){
+  const bounds = new THREE.Box3();
+  groups.forEach(group => {
+    group.updateWorldMatrix(true,true);
+    group.traverseVisible(object => {
+      if (!object.geometry) return;
+      if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
+      if (object.geometry.boundingBox) bounds.union(object.geometry.boundingBox.clone().applyMatrix4(object.matrixWorld));
+    });
+  });
+  if (bounds.isEmpty()) throw new Error('capture_empty_scene');
+  return bounds;
+}
+function captureFrameForBounds(bounds){
+  const min = bounds.min, max = bounds.max, target = [(min.x+max.x)/2,(min.y+max.y)/2,(min.z+max.z)/2];
+  const normalize = vector => { const length = Math.hypot(...vector); return vector.map(value=>value/length); };
+  const dot = (a,b) => a.reduce((sum,value,index)=>sum+value*b[index],0);
+  const direction = normalize([.68,1.18,.78]);
+  const right = normalize([direction[2],0,-direction[0]]);
+  const up = [direction[1]*right[2],direction[2]*right[0]-direction[0]*right[2],-direction[1]*right[0]];
+  const aspect = 1280/960, fov = 45, tangent = Math.tan(fov*Math.PI/360), padding = 1.12;
+  let distance = .5, maxDepth = 0;
+  for (const x of [min.x,max.x]) for (const y of [min.y,max.y]) for (const z of [min.z,max.z]){
+    const point = [x-target[0],y-target[1],z-target[2]], depth = dot(point,direction);
+    maxDepth = Math.max(maxDepth,depth);
+    distance = Math.max(distance,depth+padding*Math.max(Math.abs(dot(point,right))/(tangent*aspect),Math.abs(dot(point,up))/tangent));
+  }
+  const diagonal = Math.hypot(max.x-min.x,max.y-min.y,max.z-min.z);
+  return {width:1280,height:960,aspect,fov,target,position:target.map((value,index)=>value+direction[index]*distance),near:Math.max(.01,(distance-maxDepth)*.1),far:Math.max(50,distance+diagonal*4)};
+}
+function disposeCaptureArchitecture(groups){
+  const shared = new Set([...matCache.values(),...Object.values(floorMats),glassMat,wallMat,capMat,frameMat,edgeMat,skirtMat]);
+  const materials = new Set(), geometries = new Set();
+  groups.forEach(group => {
+    group.traverse(object => {
+      if (object.geometry) geometries.add(object.geometry);
+      (Array.isArray(object.material) ? object.material : object.material ? [object.material] : []).forEach(material => { if (!shared.has(material)) materials.add(material); });
+    });
+    group.clear();
+  });
+  geometries.forEach(geometry=>geometry.dispose()); materials.forEach(material=>material.dispose());
+}
+function captureSceneDataUrl(){
+  if (anim || fly || switching) throw new Error('capture_busy');
+  init();
+  const wasActive = active;
+  try { active = true; sync(false); } finally { active = wasActive; }
+  const previous = {
+    active,camera:camera.clone(),target:orbit.target.clone(),grow,furnGrow,orbitEnabled:orbit.enabled,
+    size:renderer.getSize(new THREE.Vector2()),pixelRatio:renderer.getPixelRatio(),viewport:renderer.getViewport(new THREE.Vector4()),
+    options:{...opt},archFloor,archUp,lampG,doors:doors.slice(),colliders,polyColliders,
+    floorVisible:archFloor.visible,upVisible:archUp.visible,lampVisible:lampG.visible,furnitureVisible:furnG.visible,
+    selectionVisible:selHelper?.visible
+  };
+  let temporary = [];
+  try {
+    active = true; orbit.enabled = false;
+    previous.archFloor.visible = false; previous.archUp.visible = false; previous.lampG.visible = false;
+    archFloor = new THREE.Group(); archUp = new THREE.Group(); lampG = new THREE.Group();
+    temporary = [archFloor,archUp,lampG]; scene.add(...temporary);
+    opt.cut = Math.min(H,1.2); opt.mode = 'orbit'; opt.night = false; opt.hour = 10;
+    grow = 1; furnGrow = 1; furnG.visible = true;
+    if (selHelper) selHelper.visible = false;
+    buildArch(); applyGrow();
+    const frame = captureFrameForBounds(captureRenderedBounds([archFloor,archUp,furnG]));
+    renderer.setPixelRatio(1); renderer.setSize(frame.width,frame.height,false);
+    camera.aspect = frame.aspect; camera.fov = frame.fov; camera.zoom = 1;
+    camera.near = frame.near; camera.far = frame.far; camera.clearViewOffset();
+    camera.up.set(0,1,0); camera.position.fromArray(frame.position); orbit.target.fromArray(frame.target);
+    camera.lookAt(orbit.target); camera.updateProjectionMatrix(); camera.updateMatrixWorld(true);
+    renderer.render(scene,camera);
+    return renderer.domElement.toDataURL('image/jpeg',0.88);
+  } finally {
+    scene.remove(...temporary);
+    archFloor = previous.archFloor; archUp = previous.archUp; lampG = previous.lampG;
+    doors.splice(0,doors.length,...previous.doors); colliders = previous.colliders; polyColliders = previous.polyColliders;
+    Object.assign(opt,previous.options);
+    active = previous.active; grow = previous.grow; furnGrow = previous.furnGrow;
+    camera.copy(previous.camera,false); orbit.target.copy(previous.target); orbit.enabled = previous.orbitEnabled;
+    archFloor.visible = previous.floorVisible; archUp.visible = previous.upVisible; lampG.visible = previous.lampVisible; furnG.visible = previous.furnitureVisible;
+    if (selHelper && previous.selectionVisible !== undefined) selHelper.visible = previous.selectionVisible;
+    renderer.setPixelRatio(previous.pixelRatio); renderer.setSize(previous.size.x,previous.size.y,false); renderer.setViewport(previous.viewport);
+    applyLight(); applyGrow(); disposeCaptureArchitecture(temporary);
+    if (previous.active) renderer.render(scene,camera);
+  }
+}
+
 function relang(){ syncWalkTexts(); if (inited) buildLabels(); }
 
 
@@ -2704,7 +2890,8 @@ function disposeLabViewer(){
 window.addEventListener('pagehide', disposeLabViewer, {once:true});
 window.addEventListener('unload', disposeLabViewer, {once:true});
 
-window.View3D = {enter, exit, relang, sync:() => sync(), shot, groundAt, flyToRoom:id => active && !anim && flyToRoom(id), walking:() => active && opt.mode === 'walk'};
+window.View3D = {enter, exit, relang, sync:() => sync(), shot, capture:captureSceneDataUrl, groundAt, flyToRoom:id => active && !anim && flyToRoom(id), walking:() => active && opt.mode === 'walk'};
+window.parent.postMessage({type:'ai-lab:ready'},window.location.origin);
 </script>
 </body>
 </html>

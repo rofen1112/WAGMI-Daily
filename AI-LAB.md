@@ -26,20 +26,26 @@ powershell -NoProfile -File scripts/start-ai-lab-dev.ps1
 
 ## 已实现的产品链路
 
-- PNG/JPG 上传、显式比例、要求输入、单队列生成、进度、取消、重启中断处理和幂等提交。
-- 图像与规则交给模型，生成原图像素 JSON；确定性编译器仅进行一次像素到毫米转换，检查边界、房间相交、合法对象和门窗参数。最多一次针对校验错误的模型修复；仍失败则不提交新场景。
+- PNG/JPG 上传、自动估算/图上两点已知长度校准/手动比例、要求输入、单队列生成、进度、取消、重启中断处理和幂等提交。尺度记录来源、锚点、依据、范围和置信度；无依据时要求补充，不套用参考比例。
+- 新界面显式提交 `codex-workflow-v1`：图纸分析及尺度选择→结构→可见家具/设施→结构与编辑状态校验→候选预览→浏览器真实2D/3D截图→原图视觉复核→限定修正与再次截图复核→版本保存。候选始终标记未提交；等待截图时释放worker，重新打开项目可继续，取消不会保存。历史未指定版本的API请求仍走 `legacy-single-v1`，历史结果不能冒充完整工作流结果。
+- 确定性编译器仅进行一次像素到毫米转换，检查边界、房间相交、合法对象和门窗参数。显式 `wallSegments`、`furnitureRows`、`stairRuns` 展开为同一legacy几何，不执行模型代码，不补猜测厚度或夹紧越界坐标。
 - 复用 floorplan 的 2D/3D、家具库、测量与编辑器，iframe 样式隔离，缓存按项目和版本分开；完整 scene 与当前 state 一并保存、导出。
 - 聊天支持明确对象的移动、旋转、尺寸及房间名称/材质修改。明确语法本地执行，其他语言最多一次模型调用转为受限 patch。当前不能通过聊天增删墙、自动重构房间或任意执行代码。
-- 供应商返回的 usage 逐调用保存，包括失败和一次修复。缺失用量明确显示未知；无已确认单价时费用为空，不捏造价格。
+- 供应商返回的usage、参数、每阶段输入/输出哈希、尺度和复核结果逐调用保存，包括失败及修复。阶段产物和截图留在私有目录，缺失用量明确显示未知；无已确认单价时费用为空。
 
-所有尺寸和面积基于用户比例。几何校验通过不代表识图准确、施工精度或与原图一致。当前尚无自动多视角视觉复核，仍需人工核对原图和 3D。
+尺度可以来自图纸标注、用户已知长度或模型估算；均不代表现场实测。几何通过、模型视觉复核通过和独立人工验收分别记录。模型复核不能替代人工还原质量判断。原图叠加可在viewer内开关，自动复核图排除叠加层，避免把原图当成生成结果。
+
+默认调用/修复/视觉复核上限为8/2/2。私有配置 `AI_LAB_WORKFLOW_MAX_CALLS`、`AI_LAB_WORKFLOW_MAX_REPAIRS`、`AI_LAB_WORKFLOW_MAX_REVIEWS` 可设置有界预算，新job创建时即固定快照；旧任务重启不扩额。比较模型应固定同一流程、输入、尺度策略、推理档位和预算，并保留所有失败及人工修改记录。此前Codex会话的历史参考结果与新API测试不构成同条件模型排名。迁移范围见 [流程记录](docs/ai-lab-workflow-parity.md)。
 
 ## 验收与隔离
 
 ```powershell
 python tests/ai-lab-engine-test.py
+python tests/ai-lab-primitives-test.py
 python tests/ai-lab-server.test.py
+python tests/ai-lab-server-workflow.test.py
 node --test tests/ai-lab-isolation.test.mjs
+node --test tests/ai-lab-layout.test.mjs
 npm run typecheck
 npm run build:lab
 node scripts/verify-ai-lab-isolation.mjs
@@ -48,6 +54,8 @@ node scripts/verify-ai-lab-isolation.mjs
 可选 `AI_LAB_LEGACY_FIXTURES` 指向私有原案例父目录，以只读方式执行三例兼容检查。隔离脚本在内存构建 public/admin/lab，禁止载入原 Vite 配置、私有 env、发布插件和 public 数据，不写构建文件；public/admin 均不包含实验室模块、导航和 API。
 
 2026-11-03：实验室引擎 10 项（含三例）、后端 24 项、前端 9 项通过，类型检查与 lab 构建通过。全库 `npm test` 曾为 235/236；`data-contract.test.mjs` 因鲜克隆缺少忽略的 `data/dev/papers-catalog.json` 在注册内部子测试前退出。因此全库数据契约验收未完成；没有补造历史数据或绕过既有测试。独立技术审查见 [审查记录](docs/ai-lab-review.md)。真实模型验收另行记录，不以离线 mock 或参考兼容代替。
+
+2026-11-04：分阶段工作流、自动/两点校尺、真实截图回传与有界复核已在真实网关贯通。三张真实图的原始失败、重复响应修复后的定点复验及尺度证据均见 [迁移验收](docs/ai-lab-workflow-acceptance.md)，不能用功能链路通过替代还原质量通过。失败/需补输入的项目重新打开时恢复原图和原提交输入；终态候选明确任务已停止。
 
 ## 交接与发布边界
 

@@ -5,17 +5,20 @@ import os
 import urllib.error
 import urllib.request
 from pathlib import Path
+from .response_json import JsonResponseError, normalization_report, normalize_json_objects, response_output_structure
 
 MODEL = "deepseek-v4-1-flash-260910"
 ENDPOINT = "https://etc.seedance-api.net/server/api/call"
 
 
 class ProviderError(Exception):
-    def __init__(self, code, message, *, usage=None, response_status=None, incomplete_reason=None):
+    def __init__(self, code, message, *, usage=None, response_status=None, incomplete_reason=None, normalization=None, output_structure=None):
         self.code, self.message = code, message
         self.usage = normalize_usage(usage)
         self.response_status = response_status if response_status in ("completed", "incomplete", "in_progress", "queued", "failed", "cancelled") else None
         self.incomplete_reason = incomplete_reason if incomplete_reason in ("max_output_tokens", "content_filter", "max_tokens") else None
+        self.normalization = normalization
+        self.output_structure = output_structure
         super().__init__(message)
 
 
@@ -30,7 +33,7 @@ def read_private_config(root):
                 continue
             key, value = line.split("=", 1)
             values[key.strip()] = value.strip().strip("\"'")
-    for key in ("AI_LAB_API_KEY", "SEEDANCE_API_KEY", "API_KEY", "AI_LAB_GATEWAY_IMAGE_VERIFIED", "AI_LAB_MODEL_TIMEOUT", "AI_LAB_GATEWAY_WIRE_MODE", "AI_LAB_MAX_OUTPUT_TOKENS", "AI_LAB_REASONING_EFFORT"):
+    for key in ("AI_LAB_API_KEY", "SEEDANCE_API_KEY", "API_KEY", "AI_LAB_GATEWAY_IMAGE_VERIFIED", "AI_LAB_MODEL_TIMEOUT", "AI_LAB_GATEWAY_WIRE_MODE", "AI_LAB_MAX_OUTPUT_TOKENS", "AI_LAB_REASONING_EFFORT", "AI_LAB_JSON_MODE", "AI_LAB_WORKFLOW_MAX_CALLS", "AI_LAB_WORKFLOW_MAX_REPAIRS", "AI_LAB_WORKFLOW_MAX_REVIEWS"):
         if key in os.environ:
             values[key] = os.environ[key]
     return values
@@ -69,6 +72,9 @@ class SeedanceProvider:
         # Explicit opt-in only. Upstream documents this knob; gateway passthrough
         # must still be established by the operator's bounded live test.
         self.reasoning_effort = config.get("AI_LAB_REASONING_EFFORT", "").strip()
+        json_mode = config.get("AI_LAB_JSON_MODE", "0")
+        self.json_mode = json_mode == "1"
+        self._json_mode_valid = isinstance(json_mode, str) and json_mode in ("0", "1")
         try:
             self.max_output_tokens = max(1024, min(int(config.get("AI_LAB_MAX_OUTPUT_TOKENS", "12000")), 32000))
         except ValueError:
@@ -85,6 +91,8 @@ class SeedanceProvider:
             raise ProviderError("provider_config_invalid", "模型网关协议配置无效。")
         if self.reasoning_effort and (self.wire_mode != "responses" or self.reasoning_effort not in ("none", "low", "high", "max")):
             raise ProviderError("provider_config_invalid", "思考强度仅支持 Responses 模式的 none、low、high、max。")
+        if not self._json_mode_valid or (self.json_mode and self.wire_mode != "responses"):
+            raise ProviderError("provider_config_invalid", "AI_LAB_JSON_MODE 仅支持0或1，开启1时必须使用Responses协议。")
         payload_body = {"apiKey": self._key, "model": self.model}
         if self.wire_mode == "responses":
             inputs = []
@@ -100,6 +108,8 @@ class SeedanceProvider:
             payload_body["stream"] = False
             if self.reasoning_effort:
                 payload_body["reasoning"] = {"effort": self.reasoning_effort}
+            if self.json_mode:
+                payload_body["text"] = {"format": {"type": "json_object"}}
         else:
             payload_body["messages"] = messages
         body = json.dumps(payload_body, ensure_ascii=False).encode("utf-8")
@@ -130,17 +140,28 @@ class SeedanceProvider:
                     break
         if isinstance(payload, dict) and payload.get("error"):
             raise ProviderError("provider_rejected", "模型网关拒绝请求；请核验该网关的实际协议与模型权限。", **response_accounting(payload))
+        output_structure = response_output_structure(payload, self.wire_mode)
         if self.wire_mode == "responses" and isinstance(payload, dict) and payload.get("status") not in (None, "completed"):
-            raise ProviderError("provider_response_incomplete", "模型响应尚未完成或因输出上限中断；未保存场景。", **response_accounting(payload))
+            raise ProviderError("provider_response_incomplete", "模型响应尚未完成或因输出上限中断；未保存场景。", output_structure=output_structure, **response_accounting(payload))
         try:
             if self.wire_mode == "responses":
-                content = "".join(part.get("text", "") for item in payload.get("output", []) if isinstance(item, dict) for part in item.get("content", []) if isinstance(part, dict) and part.get("type") == "output_text")
+                text_parts = [part.get("text", "") for item in payload.get("output", []) if isinstance(item, dict) for part in item.get("content", []) if isinstance(part, dict) and part.get("type") == "output_text"]
+                content = "".join(text_parts)
                 if not content:
                     content = payload.get("output_text")
+                    text_parts = [content]
             else:
                 content = payload["choices"][0]["message"]["content"]
+                text_parts = [content]
             if not isinstance(content, str):
                 raise ValueError()
         except (KeyError, IndexError, TypeError, ValueError):
-            raise ProviderError("provider_response_invalid", "模型网关响应缺少可解析的文本内容。", **response_accounting(payload)) from None
-        return {"content": content, "usage": normalize_usage(payload.get("usage"))}
+            raise ProviderError("provider_response_invalid", "模型网关响应缺少可解析的文本内容。", output_structure=output_structure, **response_accounting(payload)) from None
+        normalization = normalization_report(text_parts=len(text_parts))
+        if self.json_mode:
+            try:
+                content, normalization = normalize_json_objects(text_parts)
+            except JsonResponseError as exc:
+                code = "provider_response_json_conflict" if exc.report["reason"] == "conflicting_objects" else "provider_response_json_invalid"
+                raise ProviderError(code, "JSON模式响应含冲突对象、残片或额外文字，未截取部分结果。", normalization=exc.report, output_structure=output_structure, **response_accounting(payload)) from None
+        return {"content": content, "usage": normalize_usage(payload.get("usage")), "normalization": normalization, "outputStructure": output_structure}
