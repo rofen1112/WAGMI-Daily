@@ -9,6 +9,7 @@ import type { Snapshot } from './types';
 const isAdminBuild = import.meta.env.MODE === 'admin';
 const isLabBuild = import.meta.env.MODE === 'lab';
 const AiLabPage = isLabBuild ? lazy(() => import('./features/ai-lab/AiLabPage')) : null;
+const AiLabHub = isLabBuild ? lazy(() => import('./features/ai-lab/AiLabHub')) : null;
 const AiEventsPage = lazy(() => import('./pages/AiEventsPage'));
 const GithubRadarPage = lazy(() => import('./pages/GithubRadarPage'));
 const OperationsPage = isAdminBuild ? lazy(() => import('./pages/OperationsPage')) : null;
@@ -52,6 +53,8 @@ export default function App() {
   const [theme, setTheme] = useState<ThemeSettings>(readStoredTheme);
   const { route, params, navigate, updateParams } = useHashRoute(isAdminBuild, isLabBuild);
   const isLabRoute = isLabBuild && route === 'ai-lab';
+  const labTool = params.get('tool');
+  const isLabToolRoute = isLabRoute && (labTool === 'floorplan3d' || (!labTool && Boolean(params.get('projectId'))));
   const navigation = isLabBuild ? labNav : isAdminBuild ? adminNav : publicNav;
   const themeColors = useMemo(() => buildThemeColors(theme), [theme]);
 
@@ -72,9 +75,13 @@ export default function App() {
   }, [reloadKey, isLabRoute]);
 
   useEffect(() => {
+    if (isLabToolRoute) {
+      document.title = 'Floorplan-Editor · AI 实验室';
+      return;
+    }
     const current = navigation.find((item) => item.route === route);
     document.title = `${current?.label ?? '今日'} · ark.insight`;
-  }, [navigation, route]);
+  }, [navigation, route, isLabToolRoute]);
 
   const toggleFollow = (projectId: string) => {
     setFollowed((current) => {
@@ -87,7 +94,10 @@ export default function App() {
   };
 
   const page = useMemo(() => {
-    if (isLabRoute && AiLabPage) return <AiLabPage />;
+    if (isLabRoute) {
+      if (isLabToolRoute && AiLabPage) return <AiLabPage />;
+      return AiLabHub ? <AiLabHub /> : null;
+    }
     if (!snapshot) return null;
     if (route === 'ai') return <AiEventsPage snapshot={snapshot} params={params} updateParams={updateParams} />;
     if (route === 'github') {
@@ -118,7 +128,7 @@ export default function App() {
     }
     if (route === 'operations' && isAdminBuild && OperationsPage) return <OperationsPage snapshot={snapshot} onPublished={() => setReloadKey((value) => value + 1)} />;
     return <TodayPage snapshot={snapshot} isAdmin={isAdminBuild} navigate={navigate} />;
-  }, [followed, navigate, params, route, snapshot, updateParams, isLabRoute]);
+  }, [followed, navigate, params, route, snapshot, updateParams, isLabRoute, isLabToolRoute]);
 
   const navigateFromMenu = (target: RouteName) => {
     setMenuOpen(false);
@@ -147,8 +157,8 @@ export default function App() {
         },
       }}
     >
-      <div className={`app-shell${isLabRoute ? ' lab-shell' : ''}`}>
-        {!isLabRoute && <header className="app-header">
+      <div className={`app-shell${isLabToolRoute ? ' lab-shell' : ''}`}>
+        {!isLabToolRoute && <header className="app-header">
           <div className="header-inner">
             <a className="brand" href={routeHref('today')}>
               <span className="brand-mark" aria-hidden="true"><img src="/brand/ark-ghost.png" alt="" /></span>
@@ -173,7 +183,7 @@ export default function App() {
           </div>
         </header>}
 
-        <main className={`app-main${isLabRoute ? ' lab-main' : ''}`} style={isLabRoute ? { width: '100%', maxWidth: 'none', margin: 0, padding: 0 } : undefined}>
+        <main className={`app-main${isLabToolRoute ? ' lab-main' : ''}`} style={isLabToolRoute ? { width: '100%', maxWidth: 'none', margin: 0, padding: 0 } : undefined}>
           {isLabRoute ? <Suspense fallback={<div className="loading-state"><Spin size="large" /><span>正在打开实验室</span></div>}>{page}</Suspense> : error ? (
             <Result
               status="warning"

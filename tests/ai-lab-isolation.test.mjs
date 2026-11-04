@@ -21,10 +21,14 @@ async function loadLabPage(context) {
   const calibration = await load('src/features/ai-lab/ScaleCalibrator.tsx', context);
   const workflow = await load('src/features/ai-lab/WorkflowSummary.tsx', context);
   const icons = await load('src/features/ai-lab/StudioIcon.tsx', context);
+  const thumbnail = await load('src/features/ai-lab/SceneThumbnail.tsx', { ...context, require(id) { return id === './StudioIcon' ? icons : context.require(id); } });
+  const gallery = await load('src/features/ai-lab/ProjectsGallery.tsx', { ...context, require(id) { if (id === './StudioIcon') return icons; if (id === './SceneThumbnail') return thumbnail; return context.require(id); } });
   return load('src/features/ai-lab/AiLabPage.tsx', { ...context, require(id) {
     if (id === './ScaleCalibrator') return calibration;
     if (id === './WorkflowSummary') return workflow;
     if (id === './StudioIcon') return icons;
+    if (id === './ProjectsGallery') return gallery;
+    if (id === './assets/ark-logo.png') return { default: '/test-assets/ark-logo.png' };
     return context.require(id);
   } });
 }
@@ -54,9 +58,48 @@ test('public and admin cannot enter the lab route; lab keeps its dedicated tool 
   for (const admin of [false, true]) assert.equal((await route('#/ai-lab?tool=floorplan3d', admin, false)).route, 'today');
   const lab = await route('', false, true);
   assert.equal(lab.route, 'ai-lab');
-  assert.equal(lab.href, '#/ai-lab?tool=floorplan3d');
+  assert.equal(lab.href, '#/ai-lab');
+  assert.equal((await route('#/ai-lab?tool=floorplan3d&projectId=p1', false, true)).params.get('projectId'), 'p1');
   assert.equal((await route('#/operations', false, true)).route, 'ai-lab');
   assert.equal((await route('#/github', false, false)).route, 'github');
+});
+
+test('gallery uses real projects, recent sorting and honest saved/unfinished card states', async () => {
+  const React = require('react');
+  const { renderToStaticMarkup } = require('react-dom/server');
+  let requests = 0;
+  const api = await load('src/features/ai-lab/api.ts');
+  const icons = await load('src/features/ai-lab/StudioIcon.tsx', { require });
+  const thumbnail = await load('src/features/ai-lab/SceneThumbnail.tsx', { require(id) { if (id === './api') return { ...api, request() { requests++; throw new Error('SSR must not load scenes'); } }; if (id === './StudioIcon') return icons; return require(id); } });
+  const gallery = await load('src/features/ai-lab/ProjectsGallery.tsx', { require(id) { if (id === './api') return api; if (id === './StudioIcon') return icons; if (id === './SceneThumbnail') return thumbnail; return require(id); } });
+  const projects = [{ id: 'older', title: '较早保存的住宅', sceneVersion: 2, updatedAt: '2026-11-01T01:00:00Z' }, { id: 'failed', title: '需要核对的办公室', sceneVersion: 0, updatedAt: '2026-11-04T01:00:00Z', latestJob: { status: 'failed' } }];
+  assert.equal(gallery.sortGalleryProjects(projects, '', 'recent')[0].id, 'failed');
+  assert.equal(gallery.sortGalleryProjects(projects, '  住宅 ', 'recent').length, 1);
+  const html = renderToStaticMarkup(React.createElement(gallery.default, { projects, baselines: [], loading: false, busy: false, error: '', onOpen() {}, onNew() {}, onBaseline() {}, onRetry() {} }));
+  assert.match(html, /你的3D项目/); assert.match(html, /新建3D项目/); assert.match(html, /需要核对的办公室/); assert.match(html, /生成失败/); assert.match(html, /版本 2 · 已保存/); assert.match(html, /尚无已保存方案/);
+  assert.ok(html.indexOf('需要核对的办公室') < html.indexOf('较早保存的住宅'));
+  assert.doesNotMatch(html, /<main|<iframe|<canvas|Rhino/); assert.equal(requests, 0);
+});
+
+test('scene thumbnails preserve real edited geometry and cache bounded concurrent scene reads', async () => {
+  const React = require('react'); const { renderToStaticMarkup } = require('react-dom/server');
+  const api = await load('src/features/ai-lab/api.ts'); const icons = await load('src/features/ai-lab/StudioIcon.tsx', { require });
+  let active = 0, maximum = 0, reads = 0; const pending = [];
+  const fixture = { scene: { rooms: [{ poly: [[0, 0], [100, 0], [100, 100], [0, 100]] }], walls: [[0, 0, 5, 100, 'e'], [95, 0, 100, 100, 'e']], furniture: [{ cx: 5, cy: 5, w: 2, d: 3, rot: 0 }] }, state: { demolished: ['w0'], furniture: [{ cx: 70, cy: 20, w: 10, d: 20, rot: 90 }] }, source: 'baseline_reference' };
+  const thumbnail = await load('src/features/ai-lab/SceneThumbnail.tsx', { require(id) { if (id === './StudioIcon') return icons; if (id === './api') return { ...api, request(path) { assert.match(path, /^\/projects\/[^/]+\/scene$/); reads++; active++; maximum = Math.max(maximum, active); return new Promise((resolve) => pending.push(() => { active--; resolve(fixture); })); } }; return require(id); } });
+  const geometry = thumbnail.thumbnailGeometry(fixture);
+  assert.equal(geometry.walls.length, 1); assert.equal(geometry.walls[0].x, 95); assert.equal(geometry.furniture[0].cx, 70); assert.equal(geometry.furniture[0].rot, 90); assert.equal(geometry.source, 'baseline_reference');
+  const html = renderToStaticMarkup(React.createElement(thumbnail.ThumbnailSvg, { geometry, title: '<script>空间</script>' }));
+  assert.match(html, /<svg/); assert.match(html, /rotate\(90 70 20\)/); assert.match(html, /&lt;script&gt;/); assert.doesNotMatch(html, /<iframe|<canvas|<script>/);
+  assert.equal(thumbnail.thumbnailGeometry({ scene: { rooms: [{ poly: [['unsafe', 0], [1, 0], [0, 1]] }] }, state: null }), null);
+  const first = thumbnail.loadThumbnail({ id: 'p1', sceneVersion: 1 });
+  assert.equal(thumbnail.loadThumbnail({ id: 'p1', sceneVersion: 1 }), first);
+  const promises = [first, ...[2, 3, 4, 5].map((id) => thumbnail.loadThumbnail({ id: 'p' + id, sceneVersion: 1 }))];
+  assert.equal(reads, 3);
+  for (let turn = 0; turn < 6; turn++) { while (pending.length) pending.shift()(); await new Promise(setImmediate); }
+  await Promise.all(promises); assert.equal(reads, 5); assert.equal(maximum, 3);
+  const nextVersion = thumbnail.loadThumbnail({ id: 'p1', sceneVersion: 2 }); assert.equal(reads, 6); pending.shift()(); await nextVersion;
+  assert.equal(await thumbnail.loadThumbnail({ id: 'empty', sceneVersion: 0 }), null); assert.equal(reads, 6);
 });
 
 test('calibration maps contained-image coordinates to source pixels and submits each scale mode explicitly', async () => {
@@ -262,7 +305,7 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
       requests.push(path);
       if (path === '/health') return { status: 'ok', providerConfigured: true };
       if (path === '/projects') return projectRefreshResponse ? projectRefreshResponse() : { projects: projects.map((project) => ({ ...project })) };
-      if (path === '/baselines') return { baselines: [] };
+      if (path === '/baselines') return { baselines: [{ id: 'reference-one', title: '离线历史参考' }] };
       if (['/projects/p3/scene', '/projects/p4/scene', '/projects/p5/scene'].includes(path)) return null;
       if (path === '/projects/p6/scene') return { scene: { furniture: [], metadata: { mmPerPixel: 99 } }, state: null, version: 2, sourceAsset: { ...recoveryAsset, id: 'older', url: '/api/ai-lab/v1/assets/older' } };
       if (path.endsWith('/scene')) return { scene: { furniture: [], metadata: { mmPerPixel: path.includes('/p1/') ? 25 : -2 } }, state: null, version: 2 };
@@ -315,13 +358,16 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
   assert.equal(requests.filter((path) => path === '/projects/p1/scene').length, 2);
   await navigateHash('#/ai-lab?tool=floorplan3d&context=handoff');
   assert.equal(find(tree, (node) => node.type === 'iframe'), null);
-  const second = find(tree, (node) => node.type === 'button' && node.key === 'p2');
-  assert.ok(second); await second.props.onClick(); await flush();
+  assert.match(tree.props.className, /lab-gallery-shell/);
+  assert.equal(new URLSearchParams(window.location.hash.split('?')[1]).has('view'), false);
+  const galleryProps = () => find(tree, (node) => typeof node.props?.onNew === 'function' && Array.isArray(node.props.projects)).props;
+  galleryProps().onOpen(projects.find((project) => project.id === 'p2')); await flush();
   assert.equal(new URLSearchParams(window.location.hash.split('?')[1]).get('projectId'), 'p2');
   const create = find(tree, (node) => node.type === 'button' && node.props.className?.includes('lab-new'));
   create.props.onClick(); await flush();
   query = new URLSearchParams(window.location.hash.split('?')[1]);
   assert.equal(query.has('projectId'), false); assert.equal(query.get('tool'), 'floorplan3d');
+  assert.equal(query.get('view'), 'new');
   assert.equal(requests.filter((path) => path === '/projects/p1/scene').length, 2);
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p3');
   assert.ok(find(tree, (node) => node.type === 'h2' && node.props.children === '生成未通过检查'));
@@ -408,7 +454,47 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
   assert.doesNotMatch(tree.props.className, /mobile-controls-open|mobile-projects-open/);
   assert.equal(find(tree, (node) => node.type === 'iframe').key, dockFrame);
   assert.equal(requests.length, requestsBeforeDockChanges, 'Dock and tab changes must not issue requests.');
-  assert.equal(find(tree, (node) => node.type === 'a' && node.props['aria-label'] === '返回 ark.insight').props.href, 'http://127.0.0.1:8080/');
+  const backToProjects = find(tree, (node) => node.type === 'a' && node.props['aria-label'] === '返回项目管理');
+  assert.equal(backToProjects.props.href, '#/ai-lab?tool=floorplan3d'); backToProjects.props.onClick({ preventDefault() {} }); await flush();
+  assert.match(tree.props.className, /lab-gallery-shell/); assert.equal(new URLSearchParams(window.location.hash.split('?')[1]).has('projectId'), false);
+  const sceneReadsBeforeGallery = requests.filter((path) => path.endsWith('/scene')).length;
+  galleryProps().onNew(); await flush();
+  assert.equal(new URLSearchParams(window.location.hash.split('?')[1]).get('view'), 'new');
+  assert.doesNotMatch(tree.props.className, /lab-gallery-shell/); assert.equal(find(tree, (node) => node.type === 'iframe'), null);
+  assert.equal(requests.filter((path) => path.endsWith('/scene')).length, sceneReadsBeforeGallery, 'New project enters an empty editor without API creation or scene loading.');
+  await navigateHash('#/ai-lab?tool=floorplan3d'); assert.match(tree.props.className, /lab-gallery-shell/);
+  await navigateHash('#/ai-lab'); assert.equal(window.location.hash, '#/ai-lab'); assert.match(tree.props.className, /lab-gallery-shell/);
+  await navigateHash('#/ai-lab?tool=unknown&projectId=p1'); assert.equal(window.location.hash, '#/ai-lab?tool=unknown&projectId=p1'); assert.match(tree.props.className, /lab-gallery-shell/);
+  await navigateHash('#/ai-lab?projectId=p1'); assert.ok(find(tree, (node) => node.type === 'iframe' && node.props.src.includes('/projects/p1/viewer')));
+  assert.equal(new URLSearchParams(window.location.hash.split('?')[1]).get('tool'), 'floorplan3d');
+  find(tree, (node) => node.type === 'a' && node.props['aria-label'] === '返回项目管理').props.onClick({ preventDefault() {} }); await flush();
+  let resolveReference;
+  const referencePosts = [];
+  api.post = async (path) => {
+    referencePosts.push(path);
+    if (path === '/projects') return new Promise((resolve) => { resolveReference = resolve; });
+    if (path === '/projects/reference-created/baseline') return { version: 1 };
+    throw new Error('Unexpected reference request');
+  };
+  galleryProps().onBaseline(galleryProps().baselines[0]); await flush();
+  await navigateHash('#/ai-lab');
+  resolveReference({ project: { id: 'reference-created', title: '迟到的参考载入', sceneVersion: 0 } }); await flush();
+  assert.equal(window.location.hash, '#/ai-lab'); assert.match(tree.props.className, /lab-gallery-shell/);
+  assert.equal(requests.includes('/projects/reference-created/scene'), false);
+  assert.equal(referencePosts.length, 2);
+  await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p4');
+  let resolveGeneration;
+  let generationPosts = 0;
+  api.post = async (path, body) => {
+    assert.equal(path, '/projects/p4/jobs'); assert.equal(body.pipelineVersion, 'codex-workflow-v1'); generationPosts++;
+    return new Promise((resolve) => { resolveGeneration = resolve; });
+  };
+  find(tree, (node) => node.type === 'button' && node.props.className?.includes('lab-generate')).props.onClick(); await flush();
+  await navigateHash('#/ai-lab');
+  resolveGeneration({ job: { id: 'late-generation', projectId: 'p4', status: 'queued' } }); await flush();
+  assert.equal(window.location.hash, '#/ai-lab'); assert.match(tree.props.className, /lab-gallery-shell/);
+  assert.equal(galleryProps().projects.find((project) => project.id === 'p4').latestJob.id, 'j4');
+  assert.equal(generationPosts, 1);
 });
 
 test('project labels reflect terminal and active jobs while retaining saved versions', async () => {

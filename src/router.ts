@@ -15,7 +15,7 @@ function readLocation(isAdmin: boolean, isLab: boolean) {
 }
 
 export function routeHref(route: RouteName, params?: URLSearchParams): string {
-  if (route === 'ai-lab' && !params) return '#/ai-lab?tool=floorplan3d';
+  if (route === 'ai-lab' && !params) return '#/ai-lab';
   const query = params?.toString();
   return `#/${route}${query ? `?${query}` : ''}`;
 }

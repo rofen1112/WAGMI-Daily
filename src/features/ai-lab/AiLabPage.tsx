@@ -3,12 +3,23 @@ import { API, LabApiError, calibratedScale, draftStatusCopy, errorMessage, gener
 import ScaleCalibrator from './ScaleCalibrator';
 import WorkflowSummary, { workflowStageLabels } from './WorkflowSummary';
 import StudioIcon from './StudioIcon';
+import ProjectsGallery from './ProjectsGallery';
+import arkLogo from './assets/ark-logo.png';
 import './ai-lab.css';
 
 const statusLabels: Record<string, string> = { queued: '等待处理', running: '正在处理', awaiting_review_images: '等待预览复核', succeeded: '已完成', failed: '未能完成', cancelled: '已取消', canceled: '已取消', needs_input: '需要补充信息' };
 const stageLabels: Record<string, string> = { queued: '排队中', generating: '生成空间', repairing: '修正结构', compiling: '构建方案', completed: '方案已就绪', succeeded: '方案已就绪', calling_model: '模型处理中', ...workflowStageLabels };
 const defaultPrompt = '请识别户型的墙体、门窗与房间结构，保留原图布局。';
-const studioBackHref = import.meta.env.DEV ? 'http://127.0.0.1:8080/' : '/#/today';
+
+export function floorplanLocation(hash: string) {
+  const [path, query = ''] = hash.replace(/^#\/?/, '').split('?');
+  const params = new URLSearchParams(query);
+  const projectId = params.get('projectId') || null;
+  const tool = params.get('tool');
+  const isFloorplan = path === 'ai-lab' && (tool === 'floorplan3d' || (!tool && Boolean(projectId)));
+  const isNew = isFloorplan && !projectId && params.get('view') === 'new';
+  return { isFloorplan, projectId, isNew, view: isFloorplan && (projectId || isNew) ? 'editor' as const : 'gallery' as const };
+}
 
 function PlanIcon() {
   return <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M9 11h46v42H9zM9 31h24V11M33 31v22M33 37h22" stroke="currentColor" strokeWidth="1.5"/><path d="M19 31h7m15 6h7" stroke="var(--color-surface)" strokeWidth="3"/><path d="M19 31v-7a7 7 0 0 1 7 7M41 37v7a7 7 0 0 0 7-7" stroke="currentColor" strokeWidth="1"/></svg>;
@@ -38,16 +49,21 @@ export function JobFeedback({ job }: { job: LabJob }) {
   return <>{message && <p className={failed ? 'lab-job-error' : undefined}>{message.slice(0, 400)}</p>}{issues.length > 0 && <div><p>未通过检查的原因：</p><ul>{issues.map((issue, index) => <li key={index}>{issue.label}</li>)}</ul><details><summary>查看对应对象</summary><ul>{issues.map((issue, index) => <li key={index}>{issue.path || '场景结构'}{issue.code ? ` · ${issue.code}` : ''}</li>)}</ul></details></div>}</>;
 }
 
-function syncProjectLocation(projectId: string | null) {
-  const [path, query = ''] = window.location.hash.split('?');
+function syncProjectLocation(projectId: string | null, view: 'new' | 'gallery' = 'gallery', push = false) {
+  const [, query = ''] = window.location.hash.split('?');
   const params = new URLSearchParams(query);
-  if (!params.has('tool')) params.set('tool', 'floorplan3d');
-  if (projectId) params.set('projectId', projectId);
-  else params.delete('projectId');
-  window.history.replaceState(null, '', `${path || '#/ai-lab'}?${params}`);
+  params.set('tool', 'floorplan3d');
+  if (projectId) { params.set('projectId', projectId); params.delete('view'); }
+  else { params.delete('projectId'); if (view === 'new') params.set('view', 'new'); else params.delete('view'); }
+  const href = `#/ai-lab?${params}`;
+  if (push && window.location.hash !== href) window.location.hash = href;
+  else window.history.replaceState(null, '', href);
 }
 
 export default function AiLabPage() {
+  const [workspaceView, setWorkspaceView] = useState<'gallery' | 'editor'>(floorplanLocation(window.location.hash).view);
+  const workspaceViewRef = useRef(workspaceView);
+  workspaceViewRef.current = workspaceView;
   const [projects, setProjects] = useState<LabProject[]>([]);
   const [baselines, setBaselines] = useState<LabBaseline[]>([]);
   const [health, setHealth] = useState<LabHealth | null>(null);
@@ -122,18 +138,20 @@ export default function AiLabPage() {
   }, [refreshProjects]);
 
   useEffect(() => { void initialize(); }, [initialize]);
+  useEffect(() => () => { ++selectionToken.current; unknownProjectLookup.current = null; }, []);
 
   const fetchScene = useCallback(async (id: string) => {
     try { return await request<LabScene>(`${projectPath(id)}/scene`); }
     catch (reason) { if (reason instanceof LabApiError && reason.status === 404) return null; throw reason; }
   }, []);
 
-  const openProject = useCallback(async (project: LabProject) => {
+  const openProject = useCallback(async (project: LabProject, recordHistory = false) => {
     const token = ++selectionToken.current;
     const input = generationInputSnapshot(project.latestJob);
     initialProjectRestored.current = true;
     selectedIdRef.current = project.id;
-    syncProjectLocation(project.id);
+    workspaceViewRef.current = 'editor'; setWorkspaceView('editor');
+    syncProjectLocation(project.id, 'gallery', recordHistory);
     setSelectedId(project.id); setScene(null); setJob(project.latestJob || null); setAsset(input.sourceAsset || null); setImagePreview('');
     setDraft(null); setDraftLoading(false); setDraftError(''); setCaptureError(''); setCaptureStatus('idle'); setPreviewKind('candidate');
     setScale(input.mmPerPixel !== undefined ? String(input.mmPerPixel) : ''); setScaleMode(input.scaleMode || 'auto'); setPrompt(input.prompt ?? defaultPrompt);
@@ -164,6 +182,7 @@ export default function AiLabPage() {
   useEffect(() => {
     if (initialLoading || !projectsLoaded.current || initialProjectRestored.current) return;
     initialProjectRestored.current = true;
+    if (!floorplanLocation(window.location.hash).isFloorplan) return;
     const id = initialProjectId.current;
     if (!id) return;
     const project = projects.find((item) => item.id === id);
@@ -271,25 +290,41 @@ export default function AiLabPage() {
     ++selectionToken.current;
     initialProjectRestored.current = true;
     selectedIdRef.current = null;
-    syncProjectLocation(null);
+    workspaceViewRef.current = 'editor'; setWorkspaceView('editor');
+    syncProjectLocation(null, 'new', true);
     setSelectedId(null); setScene(null); setAsset(null); setImagePreview(''); setJob(null); setTitle(''); setError(''); setNotice(''); setChat(''); setViewerReady(false); setTab('space'); setProjectMenu(false); setControlsMenu(false);
     setScale(''); setScaleMode('auto'); setCalibrationPoints([]); setKnownLength(''); setDraft(null); setDraftLoading(false); setDraftError(''); setCaptureError(''); setCaptureStatus('idle');
-    setControlTab('generate');
+    setControlTab('generate'); setPrompt(defaultPrompt); setBusy(null);
+  }, []);
+
+  const showGallery = useCallback((changeUrl: boolean) => {
+    ++selectionToken.current;
+    initialProjectRestored.current = true;
+    unknownProjectLookup.current = null;
+    selectedIdRef.current = null;
+    workspaceViewRef.current = 'gallery'; setWorkspaceView('gallery');
+    setSelectedId(null); setJob(null); setScene(null); setDraft(null); setDraftLoading(false); setViewerReady(false); setOpening(false);
+    setProjectMenu(false); setControlsMenu(false); setError(''); setBusy(null);
+    if (changeUrl) syncProjectLocation(null, 'gallery', true);
   }, []);
 
   useEffect(() => {
     let disposed = false;
     const onHashChange = () => {
-      const [path, query = ''] = window.location.hash.split('?');
-      if (path !== '#/ai-lab') return;
-      const id = new URLSearchParams(query).get('projectId') || null;
+      const location = floorplanLocation(window.location.hash);
+      if (!location.isFloorplan || location.view === 'gallery') { showGallery(false); return; }
+      const id = location.projectId;
       initialProjectId.current = id;
+      if (location.isNew) {
+        if (workspaceViewRef.current !== 'editor' || selectedIdRef.current !== null) newProject();
+        return;
+      }
       if (!projectsLoaded.current) {
         initialProjectRestored.current = false;
         return;
       }
       if (id === selectedIdRef.current) return;
-      if (!id) { newProject(); return; }
+      if (!id) return;
       const project = projectsRef.current.find((item) => item.id === id);
       if (project) void openProject(project);
       else {
@@ -297,8 +332,8 @@ export default function AiLabPage() {
         const lookup = { id, selection: selectionToken.current };
         unknownProjectLookup.current = lookup;
         const isCurrent = () => {
-          const [currentPath, currentQuery = ''] = window.location.hash.split('?');
-          return !disposed && unknownProjectLookup.current === lookup && selectionToken.current === lookup.selection && currentPath === '#/ai-lab' && new URLSearchParams(currentQuery).get('projectId') === id;
+          const current = floorplanLocation(window.location.hash);
+          return !disposed && unknownProjectLookup.current === lookup && selectionToken.current === lookup.selection && current.isFloorplan && current.view === 'editor' && current.projectId === id;
         };
         void refreshProjects().then((latest) => {
           if (!isCurrent()) return;
@@ -312,11 +347,13 @@ export default function AiLabPage() {
     };
     window.addEventListener('hashchange', onHashChange);
     return () => { disposed = true; window.removeEventListener('hashchange', onHashChange); };
-  }, [newProject, openProject, refreshProjects]);
+  }, [newProject, openProject, refreshProjects, showGallery]);
 
   const ensureProject = async () => {
     if (selectedId) return selectedId;
+    const token = selectionToken.current;
     const result = await post<{ project: LabProject }>('/projects', { title: title.trim() || asset?.name.replace(/\.[^.]+$/, '') || '未命名空间' });
+    if (token !== selectionToken.current || workspaceViewRef.current !== 'editor') throw new Error('页面已切换，尚未开始生成。');
     setSelectedId(result.project.id);
     selectedIdRef.current = result.project.id;
     syncProjectLocation(result.project.id);
@@ -326,15 +363,18 @@ export default function AiLabPage() {
 
   const upload = async (file?: File) => {
     if (!file) return;
+    const token = selectionToken.current;
     setBusy('upload'); setError(''); setNotice('');
     try {
       const dataUrl = await readImage(file);
+      if (token !== selectionToken.current) return;
       const result = await post<{ asset: LabAsset }>('/assets', { name: file.name, dataUrl });
+      if (token !== selectionToken.current) return;
       setAsset(result.asset); setImagePreview(dataUrl); setTab('image');
       setCalibrationPoints([]); setKnownLength('');
       if (!title) setTitle(file.name.replace(/\.[^.]+$/, ''));
-    } catch (reason) { setError(errorMessage(reason)); }
-    finally { setBusy(null); if (fileRef.current) fileRef.current.value = ''; }
+    } catch (reason) { if (token === selectionToken.current) setError(errorMessage(reason)); }
+    finally { if (token === selectionToken.current) { setBusy(null); if (fileRef.current) fileRef.current.value = ''; } }
   };
 
   const generate = async () => {
@@ -344,28 +384,33 @@ export default function AiLabPage() {
     let scalePayload;
     try { scalePayload = generationScalePayload(scaleMode, scale, calibrationPoints, knownLength, asset); }
     catch (reason) { setError(errorMessage(reason)); return; }
+    const token = selectionToken.current;
     setBusy('generate');
     try {
       const id = await ensureProject();
       const result = await post<{ job: LabJob }>(`${projectPath(id)}/jobs`, { assetId: asset.id, ...scalePayload, pipelineVersion: 'codex-workflow-v1', prompt: prompt.trim(), action: 'generate', baseVersion: scene?.version ?? 0 });
+      if (token !== selectionToken.current || selectedIdRef.current !== id) return;
       setDraft(null); setDraftLoading(false); setDraftError(''); setCaptureError(''); setCaptureStatus('idle'); setPreviewKind('candidate');
       setJob(result.job); setTab('space');
       setProjects((current) => current.map((item) => item.id === id ? { ...item, latestJob: result.job } : item));
-    } catch (reason) { setError(errorMessage(reason)); }
-    finally { setBusy(null); }
+    } catch (reason) { if (token === selectionToken.current) setError(errorMessage(reason)); }
+    finally { if (token === selectionToken.current) setBusy(null); }
   };
 
   const loadBaseline = async (baseline: LabBaseline) => {
+    const token = selectionToken.current;
     setBusy(`baseline:${baseline.id}`); setError(''); setNotice('');
     try {
       // Reference loading creates its own project so it cannot overwrite an AI result.
       const created = await post<{ project: LabProject }>('/projects', { title: `${baseline.title} · 参考方案` });
       await post(`${projectPath(created.project.id)}/baseline`, { baselineId: baseline.id });
       await refreshProjects();
-      await openProject(created.project);
-      setNotice('已载入历史参考方案。这是预先整理的案例，并非本次 AI 生成。');
-    } catch (reason) { setError(errorMessage(reason)); }
-    finally { setBusy(null); }
+      if (token !== selectionToken.current || !floorplanLocation(window.location.hash).isFloorplan) return;
+      setBusy(null);
+      await openProject(created.project, true);
+      if (selectedIdRef.current === created.project.id && workspaceViewRef.current === 'editor') setNotice('已载入历史参考方案。这是预先整理的案例，并非本次 AI 生成。');
+    } catch (reason) { if (token === selectionToken.current) setError(errorMessage(reason)); }
+    finally { if (token === selectionToken.current) setBusy(null); }
   };
 
   const save = async () => {
@@ -396,13 +441,15 @@ export default function AiLabPage() {
 
   const modify = async () => {
     if (!selectedId || !scene || !chat.trim() || displayingDraft || active) return;
+    const token = selectionToken.current;
     setBusy('modify'); setError(''); setNotice('');
     try {
       const result = await post<{ job: LabJob }>(`${projectPath(selectedId)}/jobs`, { action: 'modify', prompt: chat.trim(), baseVersion: scene.version });
+      if (token !== selectionToken.current || selectedIdRef.current !== selectedId) return;
       setJob(result.job); setChat(''); setTab('space');
       setProjects((current) => current.map((item) => item.id === selectedId ? { ...item, latestJob: result.job } : item));
-    } catch (reason) { setError(errorMessage(reason)); }
-    finally { setBusy(null); }
+    } catch (reason) { if (token === selectionToken.current) setError(errorMessage(reason)); }
+    finally { if (token === selectionToken.current) setBusy(null); }
   };
 
   const cancel = async () => {
@@ -454,15 +501,16 @@ export default function AiLabPage() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [leftDockOpen, rightDockOpen]);
 
+  if (workspaceView === 'gallery') return <section className="ai-lab lab-gallery-shell" aria-label="Floorplan-Editor 项目管理"><header className="lab-gallery-topbar"><a href="#/ai-lab" className="lab-gallery-back" aria-label="返回应用目录"><StudioIcon name="back" size={17}/><span>AI 实验室</span></a><div className="lab-gallery-brand"><img src={arkLogo} alt="暗壳"/><strong>Floorplan-Editor</strong></div><span className="lab-gallery-connection"><span className={'lab-dot' + (health ? '' : ' is-offline')}/>{health ? '工作空间已连接' : '等待连接'}</span></header><ProjectsGallery projects={projects} baselines={baselines} loading={initialLoading} busy={Boolean(busy) || opening} error={error} onOpen={(project) => void openProject(project, true)} onNew={newProject} onBaseline={(baseline) => void loadBaseline(baseline)} onRetry={() => void initialize()}/></section>;
+
   return <section className={'ai-lab' + (!leftDockOpen ? ' is-left-collapsed' : '') + (!rightDockOpen ? ' is-right-collapsed' : '') + (projectMenu ? ' mobile-projects-open' : '') + (controlsMenu ? ' mobile-controls-open' : '') + (focusMode ? ' is-focused' : '')} aria-label="AI 实验室">
     <header className="lab-appbar">
       <div className="lab-brand-area">
-        <a href={studioBackHref} className="lab-back-link" aria-label="返回 ark.insight" title="返回 ark.insight"><StudioIcon name="back" size={17}/></a>
-        <div className="lab-studio-brand"><span className="lab-studio-mark"><StudioIcon name="plan" size={23}/></span><span><strong>SPACE LAB</strong><small>Floorplan Studio</small></span></div>
+        <a href="#/ai-lab?tool=floorplan3d" className="lab-back-link" aria-label="返回项目管理" title="返回项目管理" onClick={(event) => { event.preventDefault(); showGallery(true); }}><StudioIcon name="back" size={17}/></a>
+        <div className="lab-studio-brand"><img className="lab-ark-logo" src={arkLogo} alt="暗壳"/><span><strong>Floorplan-Editor</strong><small>空间编辑器</small></span></div>
       </div>
       <div className="lab-project-identity"><h1 title={selected?.title || title || '新建空间'}>{selected?.title || title || '新建空间'}</h1>{scene && <span className="lab-version">v{scene.version}</span>}{displayingDraft && <span className="lab-draft-pill">未保存候选</span>}</div>
       <div className="lab-appbar-actions">
-        <button className="lab-icon-button lab-panel-toggle" type="button" title={leftDockOpen ? '收起项目侧栏' : '显示项目侧栏'} aria-label="切换项目侧栏" aria-expanded={isNarrow() ? projectMenu : leftDockOpen} onClick={toggleProjects}><StudioIcon name="left"/></button>
         <button className="lab-icon-button lab-focus-button" type="button" title={focusMode ? '退出专注画布' : '专注画布'} aria-label="专注画布" aria-pressed={focusMode} onClick={toggleFocus}><StudioIcon name="focus"/></button>
         <span className="lab-appbar-divider"/>
         <button className="lab-button lab-export-button" type="button" disabled={!scene || displayingDraft || working} onClick={() => void exportScene()}>{busy === 'export' ? '导出中…' : '导出 JSON'}</button>
@@ -477,18 +525,18 @@ export default function AiLabPage() {
         <div className="lab-dock-heading"><div><span className="lab-section-label">WORKSPACE</span><h2>空间项目 <span>{projects.length}</span></h2></div><button className="lab-icon-button" type="button" aria-label="收起项目侧栏" onClick={() => { setLeftDockOpen(false); setProjectMenu(false); }}><StudioIcon name="left" size={17}/></button></div>
         <div className="lab-project-tools"><button className="lab-button lab-new" type="button" onClick={newProject} disabled={working}><StudioIcon name="plus" size={16}/>新建方案</button><label className="lab-project-search"><StudioIcon name="search" size={15}/><input aria-label="搜索项目" placeholder="搜索项目" value={projectQuery} onChange={(event) => setProjectQuery(event.target.value)}/></label></div>
         <div className="lab-project-list" aria-label="项目列表">
-          {initialLoading ? <p className="lab-muted">正在读取项目…</p> : projects.length === 0 ? <p className="lab-sidebar-empty">上传一张平面图，<br/>开始第一个空间方案。</p> : visibleProjects.length === 0 ? <p className="lab-sidebar-empty">没有匹配的项目</p> : visibleProjects.map((project) => <button className={'lab-project' + (project.id === selectedId ? ' is-selected' : '')} key={project.id} type="button" disabled={Boolean(busy) || opening} onClick={() => void openProject(project)} title={project.title}><span className="lab-project-icon"><StudioIcon name="plan" size={21}/></span><span className="lab-project-copy"><strong>{project.title || '未命名空间'}</strong><small><span className={'lab-project-status-dot ' + (project.latestJob?.status || (project.sceneVersion > 0 ? 'succeeded' : 'new'))}/>{projectStatusLabel(project)}</small></span>{project.id === selectedId && <span className="lab-project-selected-mark"/>}</button>)}
+          {initialLoading ? <p className="lab-muted">正在读取项目…</p> : projects.length === 0 ? <p className="lab-sidebar-empty">上传一张平面图，<br/>开始第一个空间方案。</p> : visibleProjects.length === 0 ? <p className="lab-sidebar-empty">没有匹配的项目</p> : visibleProjects.map((project) => <button className={'lab-project' + (project.id === selectedId ? ' is-selected' : '')} key={project.id} type="button" disabled={Boolean(busy) || opening} onClick={() => void openProject(project, true)} title={project.title}><span className="lab-project-icon"><StudioIcon name="plan" size={21}/></span><span className="lab-project-copy"><strong>{project.title || '未命名空间'}</strong><small><span className={'lab-project-status-dot ' + (project.latestJob?.status || (project.sceneVersion > 0 ? 'succeeded' : 'new'))}/>{projectStatusLabel(project)}</small></span>{project.id === selectedId && <span className="lab-project-selected-mark"/>}</button>)}
         </div>
         <details className="lab-reference-section" open><summary><span>参考空间</span><small>{baselines.length} 个案例</small></summary><p>历史参考 · 非本次 AI 生成</p>{baselines.map((baseline, index) => <button className="lab-reference" type="button" disabled={working} key={baseline.id} onClick={() => void loadBaseline(baseline)}><span className="lab-reference-number">{String(index + 1).padStart(2, '0')}</span><span>{baseline.title}</span><StudioIcon name="arrow" size={14}/></button>)}{!initialLoading && baselines.length === 0 && <p className="lab-muted">参考案例暂时不可用</p>}</details>
         <div className="lab-sidebar-foot"><div><span className={'lab-dot' + (health ? '' : ' is-offline')}/>{health ? '工作空间已连接' : '正在等待连接'}</div>{health?.model && <small title={health.model}>{health.model}</small>}</div>
       </aside>
 
       <div className="lab-editor">
-        <div className="lab-editor-toolbar"><div className="lab-tabs" role="tablist" aria-label="预览内容"><button type="button" role="tab" aria-selected={tab === 'space'} onClick={() => setTab('space')}>空间预览</button><button type="button" role="tab" aria-selected={tab === 'image'} onClick={() => setTab('image')} disabled={!asset && !imagePreview}>原始平面图</button></div><span className="lab-canvas-label">{tab === 'image' ? scaleMode === 'calibrated' ? '比例校准' : 'SOURCE PLAN' : 'SPATIAL WORKSPACE'}</span></div>
+        <div className="lab-editor-toolbar"><button className="lab-icon-button lab-project-dock-toggle" type="button" title={leftDockOpen ? '收起项目侧栏' : '显示项目侧栏'} aria-label="切换项目侧栏" aria-expanded={isNarrow() ? projectMenu : leftDockOpen} onClick={toggleProjects}><StudioIcon name="left"/></button><div className="lab-tabs" role="tablist" aria-label="预览内容"><button type="button" role="tab" aria-selected={tab === 'space'} onClick={() => setTab('space')}>空间预览</button><button type="button" role="tab" aria-selected={tab === 'image'} onClick={() => setTab('image')} disabled={!asset && !imagePreview}>原始平面图</button></div><span className="lab-canvas-label">{tab === 'image' ? scaleMode === 'calibrated' ? '比例校准' : 'SOURCE PLAN' : 'SPATIAL WORKSPACE'}</span></div>
         {draft && <div className="lab-draft-bar"><div><button type="button" aria-pressed={previewKind === 'candidate'} onClick={() => { setPreviewKind('candidate'); setTab('space'); }}>候选方案</button>{scene && <button type="button" aria-pressed={previewKind === 'saved'} onClick={() => { setPreviewKind('saved'); setTab('space'); }}>已保存版本 {scene.version}</button>}</div><span>{displayingDraft ? '尚未提交为项目版本' : '正在查看已保存版本'}</span></div>}
         {draftError && <div className="lab-alert lab-error lab-canvas-alert" role="alert">{draftError} <button className="lab-button" type="button" onClick={() => setDraftRetry((value) => value + 1)}>重新打开候选</button></div>}
         <div className={'lab-canvas' + (viewerSrc && tab === 'space' ? ' has-scene' : '')}>
-          {opening || (draftLoading && !viewerSrc) ? <div className="lab-canvas-empty"><span className="lab-spinner"/><p>正在打开空间方案…</p></div> : showImage && asset ? scaleMode === 'calibrated' ? <ScaleCalibrator asset={asset} imageUrl={imagePreview || asset.url} points={calibrationPoints} lengthMm={knownLength} disabled={working} onPoints={setCalibrationPoints} onLength={setKnownLength}/> : <div className="lab-source-image"><img src={imagePreview || asset.url} alt={'原始平面图：' + asset.name}/><span>{asset.name}<i/> {asset.width} × {asset.height} px</span></div> : viewerSrc ? <iframe key={viewerKey} ref={frameRef} className={'lab-viewer' + (displayingDraft ? ' is-draft' : '')} tabIndex={displayingDraft ? -1 : 0} title={displayingDraft ? draftCopy.title : '空间方案 2D / 3D 编辑器'} src={viewerSrc} sandbox="allow-scripts allow-same-origin allow-downloads"/> : <div className="lab-canvas-empty"><div className="lab-plan-icon"><PlanIcon/></div><span className="lab-canvas-kicker">FLOORPLAN STUDIO</span><h2>{active ? '正在构建你的空间' : finishedWithoutScene ? failedValidation ? '生成未通过检查' : '本次未生成可保存的方案' : '从一张平面图开始'}</h2><p>{active ? '真实任务进度会持续更新。候选方案就绪后，将在这里进行预览与复核。' : finishedWithoutScene ? '查看创作侧栏中的具体原因，核对原图或补充要求后再试。' : '上传图纸，选择比例依据，构建可编辑的 2D / 3D 空间。'}</p>{!active && <button type="button" className="lab-button" onClick={() => fileRef.current?.click()} disabled={working}>{finishedWithoutScene ? '重新选择平面图' : '选择平面图'} <StudioIcon name="upload" size={15}/></button>}<small>{finishedWithoutScene ? '可核对原图或补充要求后重新提交' : '也可以从项目列表中打开已有空间'}</small></div>}
+          {opening || (draftLoading && !viewerSrc) ? <div className="lab-canvas-empty"><span className="lab-spinner"/><p>正在打开空间方案…</p></div> : showImage && asset ? scaleMode === 'calibrated' ? <ScaleCalibrator asset={asset} imageUrl={imagePreview || asset.url} points={calibrationPoints} lengthMm={knownLength} disabled={working} onPoints={setCalibrationPoints} onLength={setKnownLength}/> : <div className="lab-source-image"><img src={imagePreview || asset.url} alt={'原始平面图：' + asset.name}/><span>{asset.name}<i/> {asset.width} × {asset.height} px</span></div> : viewerSrc ? <iframe key={viewerKey} ref={frameRef} className={'lab-viewer' + (displayingDraft ? ' is-draft' : '')} tabIndex={displayingDraft ? -1 : 0} title={displayingDraft ? draftCopy.title : '空间方案 2D / 3D 编辑器'} src={viewerSrc} sandbox="allow-scripts allow-same-origin allow-downloads"/> : <div className="lab-canvas-empty"><div className="lab-plan-icon"><PlanIcon/></div><span className="lab-canvas-kicker">FLOORPLAN-EDITOR</span><h2>{active ? '正在构建你的空间' : finishedWithoutScene ? failedValidation ? '生成未通过检查' : '本次未生成可保存的方案' : '从一张平面图开始'}</h2><p>{active ? '真实任务进度会持续更新。候选方案就绪后，将在这里进行预览与复核。' : finishedWithoutScene ? '查看创作侧栏中的具体原因，核对原图或补充要求后再试。' : '上传图纸，选择比例依据，构建可编辑的 2D / 3D 空间。'}</p>{!active && <button type="button" className="lab-button" onClick={() => fileRef.current?.click()} disabled={working}>{finishedWithoutScene ? '重新选择平面图' : '选择平面图'} <StudioIcon name="upload" size={15}/></button>}<small>{finishedWithoutScene ? '可核对原图或补充要求后重新提交' : '也可以从项目列表中打开已有空间'}</small></div>}
         </div>
         <div className="lab-canvas-footer"><span><span className={'lab-footer-dot' + (active ? ' is-active' : '')}/>{displayingDraft ? '候选方案 · 尚未保存' : scene ? (selected?.title || title || '空间方案') + ' · 版本 ' + scene.version : selected ? projectStatusLabel(selected) : job ? statusLabels[job.status] || '方案尚未就绪' : '准备就绪'}</span><span>{displayingDraft ? draftCopy.footer : scene ? sceneSourceLabel(scene.source) : '比例与结构均需核对'}</span></div>
         {(scene || draft || warnings.length > 0) && <details className="lab-canvas-notes"><summary>说明与提醒{warnings.length > 0 ? ' · ' + warnings.length : ''}</summary>{(scene || draft) && <div className="lab-editor-help">{displayingDraft ? draftCopy.help : '在预览内切换 2D / 3D，编辑家具、房间或测量标注。完成后点击「保存方案」。'}</div>}{(scene || draft) && <ModelUncertaintyWarnings warnings={displayingDraft ? draft?.scene?.warnings : scene?.scene?.warnings}/>}{warnings.length > 0 && <details className="lab-validation"><summary>结构校验提醒（{warnings.length}）</summary><ul>{warnings.map((item, index) => <li key={index}>{detailText(item)}</li>)}</ul></details>}</details>}

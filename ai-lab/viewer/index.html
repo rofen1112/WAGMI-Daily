@@ -219,8 +219,8 @@ main.drawer-panel #fab{opacity:0;visibility:hidden}
 :root{--bg:#e7ebec;--paper:#e7ebec;--panel:#f8f9f9;--line:#dce1e2;--ink:#293136;--muted:#77838a;--accent:#ec765b;--accent-soft:#fce6df;--teal:#46696c}
 html,body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--paper);font-optical-sizing:auto}
 .app{display:block;position:relative;height:100vh;height:100dvh;padding:0;overflow:hidden}
-.app>main{position:absolute;inset:0;display:block;background:#e7ebec;background-image:radial-gradient(#adb7bd55 .7px,transparent .7px);background-size:20px 20px}
-.editor-topbar{position:absolute;inset:0 0 auto;z-index:15;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;gap:12px;padding:16px 18px;background:linear-gradient(#e7ebecf5,#e7ebecb0 70%,#e7ebec00);border:0;pointer-events:none}
+.app>main{position:absolute;inset:0;display:block;background:#e7ebec}
+.editor-topbar{position:absolute;inset:0 0 auto;z-index:15;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;gap:12px;padding:16px 18px;background:transparent;border:0;pointer-events:none}
 .editor-topbar>*{pointer-events:auto}.editor-topbar .brand .editor-eyebrow{display:flex!important}.editor-topbar .brand #subtitle{display:block!important}.brand{min-width:0;margin:0;gap:3px;max-width:260px;padding:2px 0}.brand b{font-size:14px;font-weight:650;letter-spacing:-.025em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.brand #subtitle{font-size:10px;line-height:1.45;color:#6f7c83;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.editor-eyebrow{font-size:10px!important;font-weight:650;letter-spacing:.08em;color:#65747d!important;display:flex;align-items:center;gap:7px}.editor-eyebrow i{font-style:normal;font-size:8px;font-weight:500;letter-spacing:0;color:#7b8b84;border:1px solid #c9d8cf;border-radius:4px;padding:1px 4px;background:#f4f8f4}
 .grp{gap:3px;border:0;background:transparent;padding:0}.btn{min-height:36px;min-width:36px;padding:8px 11px;border-radius:9px;font-size:12px;font-weight:550;line-height:1.2;cursor:pointer;transition:background .16s,color .16s,box-shadow .16s,transform .12s}.btn:hover{background:#dfe5e7}.btn:active{transform:scale(.96)}.btn:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid #db6349;outline-offset:3px}.btn.on,.btn.chip.on{background:#fbe3db;color:#ac4933;box-shadow:inset 0 0 0 1px #f5c5b7}.btn.primary{background:var(--accent);color:#fff}.btn.primary:hover{background:#dd684e}.btn.danger{color:#b45042}.icon-button{padding:6px;font-size:20px;display:inline-grid;place-items:center}.tool-symbol{font-size:19px;line-height:1}.btn:disabled{opacity:.4;cursor:default;transform:none}
 .seg{padding:4px;gap:2px;border:1px solid #ffffffd0;border-radius:13px;background:#f8fafbd9;box-shadow:0 4px 16px #29353a0b;backdrop-filter:blur(20px) saturate(1.25)}.seg .btn{width:68px;min-height:36px;padding:8px 4px;font-size:12px;z-index:1;box-shadow:none}.seg .pill{left:4px;top:4px;bottom:4px;width:68px;border-radius:9px;background:#283137;box-shadow:0 3px 8px #1b2a3126;transition:transform .25s cubic-bezier(.2,.75,.25,1)}body.m3d .seg .pill{transform:translateX(70px)}.seg .btn[data-view="2d"],body.m3d .seg .btn[data-view="3d"]{color:#fff}body.m3d .seg .btn[data-view="2d"]{color:#66757e}
@@ -233,6 +233,15 @@ html,body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC
 @media(max-width:420px){.brand b{display:none}.brand{max-width:85px;padding-top:10px}.seg .btn,.seg .pill{width:52px}.seg .btn{font-size:10px}body.m3d .seg .pill{transform:translateX(54px)}.editor-topbar{grid-template-columns:minmax(0,1fr) auto auto}.editor-bottom-dock{gap:3px}.tool-button{gap:3px;padding:8px 7px}.tool-button span{font-size:15px}#cutControls .btn,#modes3d .btn{font-size:10px;padding:7px;min-width:30px}.history-actions .btn{min-width:28px}.pane-launcher .tool-symbol{font-size:16px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.app>aside.lib,.app>aside.right{transform:none}}
 @media(prefers-reduced-transparency:reduce),(prefers-contrast:more){.editor-bottom-dock,.editor-top-actions,.seg,.pane-launcher,.editor-navigation,.editor-presentation,.editor-settings-content,.app>aside{background:#f8fafb;backdrop-filter:none;border-color:#cbd4d9}}
+
+/* Iteration 3: one product title outside the iframe; compact, consistent line tools. */
+.editor-topbar .brand{display:none!important}#viewSeg{grid-column:2;justify-self:center}.editor-top-actions{grid-column:3}
+#stage,#view3d{background:#e7ebec}
+.ui-icon{width:19px;height:19px;display:block;flex:none;pointer-events:none}
+.editor-bottom-dock .btn,.editor-navigation .btn{width:40px;height:40px;min-width:40px;min-height:40px;padding:9px;display:inline-flex;align-items:center;justify-content:center}
+.editor-bottom-dock .btn .ui-icon{width:20px;height:20px}.pane-launcher .ui-icon{width:18px;height:18px}
+.editor-settings>summary .ui-icon{width:18px;height:18px}.dock-panel-header .ui-icon{width:18px;height:18px}
+@media(max-width:420px){.editor-topbar{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}.editor-bottom-dock .btn{width:36px;min-width:36px;height:38px;min-height:38px;padding:8px}.editor-navigation .btn{width:38px;min-width:38px}}
 
 </style>
 <script type="importmap">
@@ -250,7 +259,7 @@ html,body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC
       <span class="pill" aria-hidden="true"></span><button class="btn" aria-pressed="true" data-view="2d" data-en="2D Plan">2D 平面</button><button class="btn" aria-pressed="false" data-view="3d" data-en="3D Space">3D 空间</button>
     </div>
     <div class="editor-top-actions">
-      <details class="editor-settings" id="displayMenu"><summary class="btn" title="图层、比例与显示设置"><span aria-hidden="true">☷</span><span class="settings-label">显示</span></summary>
+      <details class="editor-settings" id="displayMenu"><summary class="btn" title="图层、比例与显示设置" aria-label="图层、比例与显示设置"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 6h4m4 0h10 M3 12h10m4 0h4 M3 18h3m4 0h11"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="18" r="2"/></svg><span class="settings-label">显示</span></summary>
         <div class="editor-settings-content">
           <div class="settings-heading">显示设置</div>
           <div class="only2d"><div class="settings-caption">平面图层</div><div class="grp" id="layers">
@@ -261,13 +270,13 @@ html,body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC
           <div class="settings-caption">界面语言</div><div class="grp" id="langSel" role="group" aria-label="界面语言"><button class="btn chip" data-lang="zh">简体</button><button class="btn chip" data-lang="zht">繁體</button><button class="btn chip" data-lang="en">EN</button></div>
         </div>
       </details>
-      <button class="btn icon-button" id="fullscreen" title="全屏 (Shift+F)" aria-label="全屏">⛶</button>
-      <details class="menu"><summary class="btn icon-button" aria-label="文件和更多操作" title="文件和更多操作">···</summary><div class="menu-pop"><button class="btn" id="exportPng">导出当前图片</button><button class="btn" id="exportJson">导出编辑状态 JSON</button><button class="btn" id="importJson">导入编辑状态</button><button class="btn danger" id="clearAll">清空家具布置</button><button class="btn danger" id="reset">恢复初始方案</button></div></details>
+      <button class="btn icon-button" id="fullscreen" title="全屏 (Shift+F)" aria-label="全屏 (Shift+F)"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 3H3v5 M16 3h5v5 M3 16v5h5 M21 16v5h-5"/></svg></button>
+      <details class="menu"><summary class="btn icon-button" aria-label="文件和更多操作" title="文件和更多操作"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></summary><div class="menu-pop"><button class="btn" id="exportPng">导出当前图片</button><button class="btn" id="exportJson">导出编辑状态 JSON</button><button class="btn" id="importJson">导入编辑状态</button><button class="btn danger" id="clearAll">清空家具布置</button><button class="btn danger" id="reset">恢复初始方案</button></div></details>
       <input type="file" id="fileIn" accept=".json,application/json" hidden>
     </div>
   </header>
 
-  <aside class="lib" aria-label="家具库"><div class="dock-panel-header"><div><span>OBJECT LIBRARY</span><h2>家具与家电</h2></div><button class="btn icon-button" data-close-pane="lib" aria-label="关闭家具库">×</button></div>
+  <aside class="lib" aria-label="家具库"><div class="dock-panel-header"><div><span>OBJECT LIBRARY</span><h2>家具与家电</h2></div><button class="btn icon-button" data-close-pane="lib" title="关闭家具库" aria-label="关闭家具库"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12 M18 6 6 18"/></svg></button></div>
     <div id="lib3d" class="only3d">
       <h4 data-en="Rooms · click to fly there">房间 · 点击飞到该房间</h4>
       <div id="roomList"></div>
@@ -303,18 +312,18 @@ html,body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC
     <div class="scalebar" id="scalebar"><span id="sbText">1 m</span><div class="bar" id="sbBar"></div></div>
     <div class="modehint" id="modehint"></div>
     <div id="fab"></div>
-    <div id="paneBtns" class="editor-pane-launchers"><button class="btn pane-launcher" id="tgLib" title="打开家具库"><span class="tool-symbol" aria-hidden="true">▦</span>家具库</button><button class="btn pane-launcher" id="tgPanel" title="打开属性面板"><span class="tool-symbol" aria-hidden="true">☷</span>属性</button></div>
+    <div id="paneBtns" class="editor-pane-launchers"><button class="btn pane-launcher" id="tgLib" title="打开家具库" aria-label="打开家具库"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>家具库</button><button class="btn pane-launcher" id="tgPanel" title="打开属性面板" aria-label="打开属性面板"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 6h4m4 0h10 M3 12h10m4 0h4 M3 18h3m4 0h11"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="18" r="2"/></svg>属性</button></div>
     <div class="editor-presentation only3d" id="lightPresets" role="group" aria-label="场景灯光"><button class="btn on" data-light="studio">工作室</button><button class="btn" data-light="daylight">日光</button></div>
     <div class="editor-bottom-dock">
-      <div class="grp only2d" id="tools"><button class="btn tool-button on" data-tool="select" title="选择 / 移动 (V)"><span aria-hidden="true">↖</span>选择</button><button class="btn tool-button" data-tool="measure" title="测量 (M)"><span aria-hidden="true">↔</span>测量</button><button class="btn tool-button" data-tool="demolish" title="拆改非承重墙 (X)"><span aria-hidden="true">▥</span>拆墙</button></div>
-      <div class="grp only3d" id="modes3d"><button class="btn tool-button on" data-mode="orbit">鸟瞰</button><button class="btn tool-button" data-mode="walk">漫游</button></div>
-      <div class="grp only3d" id="cutControls"><button class="btn chip" data-cut="2.8">全高</button><button class="btn chip on" data-cut="1.2">剖切</button></div>
-      <span class="dock-separator"></span><div class="grp history-actions"><button class="btn icon-button" id="undo" title="撤销 (Ctrl+Z)" aria-label="撤销">↶</button><button class="btn icon-button" id="redo" title="重做 (Ctrl+Shift+Z)" aria-label="重做">↷</button></div>
+      <div class="grp only2d" id="tools"><button class="btn tool-button on" data-tool="select" title="选择与移动 (V)" aria-label="选择与移动 (V)" aria-pressed="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m5 3 14 8-6 2-3 6L5 3Z"/></svg></button><button class="btn tool-button" data-tool="measure" title="测量 (M)" aria-label="测量 (M)" aria-pressed="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 17 14-14 4 4L7 21l-4-4Z M14 6l4 4 M10 10l2 2 M6 14l4 4"/></svg></button><button class="btn tool-button" data-tool="demolish" title="拆改非承重墙 (X)" aria-label="拆改非承重墙 (X)" aria-pressed="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 20l8-8 M9 6l5-3 6 6-3 5-8-8Z M3 21l3-1-2-2-1 3Z"/></svg></button></div>
+      <div class="grp only3d" id="modes3d"><button class="btn tool-button on" data-mode="orbit" title="鸟瞰编辑" aria-label="鸟瞰编辑" aria-pressed="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 4 6 3.5v7L12 18l-6-3.5v-7L12 4Z M6 7.5l6 3.5 6-3.5 M12 11v7 M3 8c-3 5 4 13 12 12 M15 20l-3-2 M15 20l-3 2"/></svg></button><button class="btn tool-button" data-mode="walk" title="室内漫游" aria-label="室内漫游" aria-pressed="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="13" cy="4" r="2"/><path d="m10 10 3-3 3 5 4 1 M13 7l-2 8-4 6 M11 15l5 2 1 4 M10 10l-3 3-3-1"/></svg></button></div>
+      <div class="grp only3d" id="cutControls"><button class="btn chip" data-cut="2.8" title="显示全高墙体" aria-label="显示全高墙体" aria-pressed="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h16 M4 20h16 M12 6v12 M9 9l3-3 3 3 M9 15l3 3 3-3"/></svg></button><button class="btn chip on" data-cut="1.2" title="剖切墙体至 1.2 米" aria-label="剖切墙体至 1.2 米" aria-pressed="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 3 8 5v9l-8 4-8-4V8l8-5Z M4 8l8 5 8-5 M12 13v8 M2 12h20"/></svg></button></div>
+      <span class="dock-separator"></span><div class="grp history-actions"><button class="btn icon-button" id="undo" title="撤销 (Ctrl+Z)" aria-label="撤销 (Ctrl+Z)"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 7H3V2 M3 7a9 9 0 0 1 16 5c0 4-3 7-7 7H8"/></svg></button><button class="btn icon-button" id="redo" title="重做 (Ctrl+Shift+Z)" aria-label="重做 (Ctrl+Shift+Z)"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M16 7h5V2 M21 7a9 9 0 0 0-16 5c0 4 3 7 7 7h4"/></svg></button></div>
     </div>
-    <nav class="editor-navigation" aria-label="画布视角工具"><div class="grp only3d"><button class="btn nav-button" id="vIso" title="全屋斜视">斜视</button><button class="btn nav-button" id="vTop" title="全屋俯视">俯视</button></div><button class="btn nav-button" id="fit" title="适应画布 (F)">适应</button><div class="grp only2d"><button class="btn nav-button" id="zoomIn" title="放大" aria-label="放大">＋</button><button class="btn nav-button" id="zoomOut" title="缩小" aria-label="缩小">−</button></div></nav>
+    <nav class="editor-navigation" aria-label="画布视角工具"><div class="grp only3d"><button class="btn nav-button" id="vIso" title="全屋斜视" aria-label="全屋斜视"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 4 9-4V8 M12 13v8"/></svg></button><button class="btn nav-button" id="vTop" title="全屋俯视" aria-label="全屋俯视"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 11h16 M11 11v9 M15 4v7"/></svg></button></div><button class="btn nav-button" id="fit" title="适应画布 (F)" aria-label="适应画布 (F)"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 3H3v5 M16 3h5v5 M3 16v5h5 M21 16v5h-5"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg></button><div class="grp only2d"><button class="btn nav-button" id="zoomIn" title="放大" aria-label="放大"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14 M5 12h14"/></svg></button><button class="btn nav-button" id="zoomOut" title="缩小" aria-label="缩小"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg></button></div></nav>
   </main>
 
-  <aside class="right" aria-label="属性面板"><div class="dock-panel-header"><div><span>INSPECTOR</span><h2>属性与统计</h2></div><button class="btn icon-button" data-close-pane="panel" aria-label="关闭属性面板">×</button></div><div id="panel"></div></aside>
+  <aside class="right" aria-label="属性面板"><div class="dock-panel-header"><div><span>INSPECTOR</span><h2>属性与统计</h2></div><button class="btn icon-button" data-close-pane="panel" title="关闭属性面板" aria-label="关闭属性面板"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12 M18 6 6 18"/></svg></button></div><div id="panel"></div></aside>
 
   <footer>
     <span class="coord-status only2d">X <b id="cx">—</b></span><span class="coord-status only2d">Y <b id="cy">—</b></span>
@@ -895,7 +904,7 @@ function renderFab(){
   const fab = $('#fab'), f = ui.sel?.kind === 'furn' && getF(ui.sel.id), r = ui.sel?.kind === 'room' && ROOMS.find(r => r.id === ui.sel.id);
   if (!f && !r){ fab.classList.remove('show'); return; }
   fab.innerHTML = f
-    ? `<span class="name">${esc(nm(f.name))}</span><button class="btn" data-a="rotL">↺</button><button class="btn" data-a="rotR">↻ ${tr('旋转','Rotate')}</button>
+    ? `<span class="name">${esc(nm(f.name))}</span><button class="btn icon-button" data-a="rotL" title="逆时针旋转 90 度" aria-label="逆时针旋转 90 度"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 7H3V2 M3 7a9 9 0 0 1 16 5c0 4-3 7-7 7H8"/></svg></button><button class="btn icon-button" data-a="rotR" title="顺时针旋转 90 度" aria-label="顺时针旋转 90 度"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M16 7h5V2 M21 7a9 9 0 0 0-16 5c0 4 3 7 7 7h4"/></svg></button>
        <button class="btn" data-a="dup">${tr('复制','Duplicate')}</button><button class="btn danger" data-a="del">${tr('删除','Delete')}</button><span class="sep"></span>
        <button class="btn narrow-only" data-a="prop">${tr('属性','Properties')}</button><button class="btn" data-a="done">${tr('完成','Done')}</button>`
     : `<span class="name">${esc(nm(state.rooms[r.id].name))}</span><button class="btn narrow-only" data-a="prop">${tr('地面 / 属性','Floor / Properties')}</button><button class="btn" data-a="done">${tr('完成','Done')}</button>`;
@@ -1039,7 +1048,7 @@ function toggleWall(id){
 function setTool(t){
   ui.tool = t; ui.mA = null; ui.mCur = null;
   svg.setAttribute('class', 'tool-' + t);
-  document.querySelectorAll('#tools .btn').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+  document.querySelectorAll('#tools .btn').forEach(b => { const on=b.dataset.tool===t; b.classList.toggle('on',on); b.setAttribute('aria-pressed',String(on)); });
   syncModeHint();
   renderMeasure();
 }
@@ -1470,7 +1479,7 @@ function toggleFullscreen(){
 }
 function syncFullscreen(){
   const on = !!fsEl(), b = $('#fullscreen');
-  b.textContent = '⛶'; b.setAttribute('aria-label',on ? tr('退出全屏','Exit fullscreen') : tr('全屏','Fullscreen'));
+  b.setAttribute('aria-label',on ? tr('退出全屏','Exit fullscreen') : tr('全屏','Fullscreen'));
   b.title = (on ? tr('退出全屏', 'Exit fullscreen') : tr('全屏', 'Fullscreen')) + ' (Shift+F)';
 }
 $('#fullscreen').onclick = toggleFullscreen;
@@ -1563,7 +1572,8 @@ const SW = () => stage.clientWidth, SH = () => stage.clientHeight;
 const opt = {cut:Math.min(H,1.2), furn:true, labels:false, night:false, hour:10, mode:'orbit', lighting:'studio'};
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-let inited = false, active = false, raf = 0, anim = null, fly = null;
+let inited = false, active = false, raf = 0, anim = null, fly = null, reviewBackdrop = false;
+let groundReviewMaterial, groundShadowMaterial;
 let renderer, labelRenderer, scene, camera, orbit, walkCtl, hemi, sun, ground, glassMat, wallMat, capMat, frameMat, labResizeObserver;
 let archFloor, archUp, furnG, labelG, lampG, colliders = [], polyColliders = [], selKey = null, selHelper = null;
 let sigArch = '', sigFurn = '', sigLabels = '', grow = 1, furnGrow = 1;
@@ -1597,7 +1607,12 @@ function init(){
   Object.assign(sun.shadow.camera, {left:-11, right:11, top:11, bottom:-11, near:1, far:60});
   if (FLOORPLAN_CASE?.camera){ const r = FLOORPLAN_CASE.camera.extent*.6; Object.assign(sun.shadow.camera,{left:-r,right:r,top:r,bottom:-r}); }
   sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02;
-  ground = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), new THREE.MeshStandardMaterial({color:0xf2eee7, roughness:1}));
+  // Interactive backdrop is uniform; a transparent receiver retains physical shadows.
+  // Review captures retain the original daylight floor/background presentation.
+  groundReviewMaterial = new THREE.MeshStandardMaterial({color:0xf2eee7,roughness:1});
+  groundShadowMaterial = new THREE.ShadowMaterial({color:0x22313a,opacity:.14,depthWrite:false});
+  groundShadowMaterial.toneMapped = false;
+  ground = new THREE.Mesh(new THREE.PlaneGeometry(160,160),groundShadowMaterial);
   ground.rotation.x = -Math.PI/2; ground.position.y = -0.015; ground.receiveShadow = true;
   scene.add(hemi, sun, sun.target, ground);
 
@@ -2479,8 +2494,9 @@ function applyLight(){
     hemi.color.set(0xfff8ee); hemi.groundColor.set(0xb9a88f); hemi.intensity = opt.night ? .12 : 1.1;
   }
   sun.target.position.set(0,0,0);
-  scene.background = new THREE.Color(opt.night ? 0x1c2130 : studio ? 0xe7ebec : 0xf7f4ee);
-  ground.material.color.set(opt.night ? 0x2a2e38 : studio ? 0xe7ebec : 0xf2eee7);
+  scene.background = new THREE.Color(reviewBackdrop ? (opt.night ? 0x1c2130 : studio ? 0xe7ebec : 0xf7f4ee) : 0xe7ebec);
+  ground.material = reviewBackdrop ? groundReviewMaterial : groundShadowMaterial;
+  groundReviewMaterial.color.set(opt.night ? 0x2a2e38 : studio ? 0xe7ebec : 0xf2eee7);
   sun.shadow.radius = studio ? 4 : 2;
   lampG.children.forEach(o => { if (o.isPointLight) o.intensity = opt.night ? 6 : 0; else o.material.emissiveIntensity = opt.night ? 2 : .3; });
   renderer.toneMappingExposure = opt.night ? 1.25 : studio ? 1.02 : 1.05;
@@ -2757,8 +2773,8 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => keys[e.code] = false);
 
 /* ======================= 工具栏 ======================= */
-function syncModeBtns(){ document.querySelectorAll('#modes3d .btn').forEach(b => b.classList.toggle('on', b.dataset.mode === opt.mode)); }
-function syncCutBtns(){ document.querySelectorAll('[data-cut]').forEach(b => b.classList.toggle('on', +b.dataset.cut === opt.cut)); }
+function syncModeBtns(){ document.querySelectorAll('#modes3d .btn').forEach(b => { const on=b.dataset.mode===opt.mode; b.classList.toggle('on',on); b.setAttribute('aria-pressed',String(on)); }); }
+function syncCutBtns(){ document.querySelectorAll('[data-cut]').forEach(b => { const on=+b.dataset.cut===opt.cut; b.classList.toggle('on',on); b.setAttribute('aria-pressed',String(on)); }); }
 function syncWalkTexts(){
   const t = COARSE
     ? [tr('点击开始，从入户门进入', 'Tap to start at the front door'), tr('左下摇杆移动 · 在画面上拖动转向', 'Joystick moves · drag on screen to look'),
@@ -2864,13 +2880,13 @@ function captureSceneDataUrl(){
   const previous = {
     active,camera:camera.clone(),target:orbit.target.clone(),grow,furnGrow,orbitEnabled:orbit.enabled,
     size:renderer.getSize(new THREE.Vector2()),pixelRatio:renderer.getPixelRatio(),viewport:renderer.getViewport(new THREE.Vector4()),
-    options:{...opt},archFloor,archUp,lampG,doors:doors.slice(),colliders,polyColliders,
+    options:{...opt},reviewBackdrop,archFloor,archUp,lampG,doors:doors.slice(),colliders,polyColliders,
     floorVisible:archFloor.visible,upVisible:archUp.visible,lampVisible:lampG.visible,furnitureVisible:furnG.visible,
     selectionVisible:selHelper?.visible
   };
   let temporary = [];
   try {
-    active = true; orbit.enabled = false;
+    active = true; orbit.enabled = false; reviewBackdrop = true;
     previous.archFloor.visible = false; previous.archUp.visible = false; previous.lampG.visible = false;
     archFloor = new THREE.Group(); archUp = new THREE.Group(); lampG = new THREE.Group();
     temporary = [archFloor,archUp,lampG]; scene.add(...temporary);
@@ -2890,7 +2906,7 @@ function captureSceneDataUrl(){
     scene.remove(...temporary);
     archFloor = previous.archFloor; archUp = previous.archUp; lampG = previous.lampG;
     doors.splice(0,doors.length,...previous.doors); colliders = previous.colliders; polyColliders = previous.polyColliders;
-    Object.assign(opt,previous.options);
+    Object.assign(opt,previous.options); reviewBackdrop = previous.reviewBackdrop;
     active = previous.active; grow = previous.grow; furnGrow = previous.furnGrow;
     camera.copy(previous.camera,false); orbit.target.copy(previous.target); orbit.enabled = previous.orbitEnabled;
     archFloor.visible = previous.floorVisible; archUp.visible = previous.upVisible; lampG.visible = previous.lampVisible; furnG.visible = previous.furnitureVisible;
@@ -2915,6 +2931,7 @@ function disposeLabViewer(){
     if (o.geometry) geometries.add(o.geometry);
     for (const m of (Array.isArray(o.material) ? o.material : o.material ? [o.material] : [])) materials.add(m);
   });
+  [groundReviewMaterial,groundShadowMaterial].forEach(material => { if (material) materials.add(material); });
   materials.forEach(m => { Object.values(m).forEach(v => { if (v?.isTexture) textures.add(v); }); m.dispose(); });
   geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose());
   envTex?.dispose(); renderer?.renderLists?.dispose(); renderer?.dispose(); renderer?.forceContextLoss();

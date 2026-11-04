@@ -30,16 +30,19 @@ function load(relative, imports = {}, globals = {}) {
   return exports;
 }
 
-function fixtureHtml(width) {
+function fixtureHtml(width, view = 'editor') {
   const api = load('src/features/ai-lab/api.ts');
   const { default: Calibrator } = load('src/features/ai-lab/ScaleCalibrator.tsx', { './api': api });
   const workflowModule = load('src/features/ai-lab/WorkflowSummary.tsx');
   const { default: Workflow } = workflowModule;
   const icons = load('src/features/ai-lab/StudioIcon.tsx');
+  const thumbnail = load('src/features/ai-lab/SceneThumbnail.tsx', { './api': api, './StudioIcon': icons });
+  const gallery = load('src/features/ai-lab/ProjectsGallery.tsx', { './api': api, './StudioIcon': icons, './SceneThumbnail': thumbnail });
   const { default: Page } = load('src/features/ai-lab/AiLabPage.tsx', {
     './api': api, './ScaleCalibrator': { default: Calibrator }, './WorkflowSummary': workflowModule,
-    './StudioIcon': icons, './ai-lab.css': {},
-  }, { window: { location: { hash: '#/ai-lab?tool=floorplan3d', origin: 'http://127.0.0.1:5186' }, matchMedia() { return { matches: width <= 980 }; } } });
+    './StudioIcon': icons, './ProjectsGallery': gallery, './ai-lab.css': {},
+    './assets/ark-logo.png': { default: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="32" height="32"/%3E' },
+  }, { window: { location: { hash: view === 'gallery' ? '#/ai-lab?tool=floorplan3d' : '#/ai-lab?tool=floorplan3d&view=new', origin: 'http://127.0.0.1:5186' }, matchMedia() { return { matches: width <= 980 }; } } });
   const page = renderToStaticMarkup(React.createElement(Page));
   const image = `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="600"><rect width="1000" height="600" fill="white"/><path d="M50 50H950V550H50ZM500 50V550M50 300H500" fill="none" stroke="#333" stroke-width="8"/></svg>').toString('base64')}`;
   const asset = { id: 'layout-only', name: '布局测试平面图', width: 1000, height: 600, url: image };
@@ -49,6 +52,11 @@ function fixtureHtml(width) {
   const workflow = renderToStaticMarkup(React.createElement(Workflow, { job }));
   const baseCss = readFileSync(resolve(moduleRoot, 'src/styles.css'), 'utf8');
   const labCss = readFileSync(resolve(sourceRoot, 'src/features/ai-lab/ai-lab.css'), 'utf8');
+  if (view === 'gallery') {
+    return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${baseCss}\n${labCss}</style></head><body>
+    <div class="app-shell lab-shell"><main class="app-main lab-main" style="width:100%;max-width:none;margin:0;padding:0">${page}</main></div>
+    <pre id="layout-result" hidden></pre><script>(${galleryProbe.toString()})().then(result => { document.querySelector('#layout-result').textContent = JSON.stringify(result); }).catch(error => { document.querySelector('#layout-result').textContent = JSON.stringify({error:String(error)}); });</script></body></html>`;
+  }
   // This is the real Page SSR inside App's actual lab-only shell branch. Only
   // stress content is inserted: the real calibrator and real long workflow.
   // React event/hooks are deliberately not hydrated; those have separate tests.
@@ -56,6 +64,23 @@ function fixtureHtml(width) {
   <div class="app-shell lab-shell"><main class="app-main lab-main" style="width:100%;max-width:none;margin:0;padding:0">${page}</main></div>
   <template id="calibration-fixture">${calibration}</template><template id="workflow-fixture"><section class="lab-job has-error" aria-label="任务状态"><details class="lab-task-details" open><summary>查看原因与任务详情</summary>${workflow}</details></section></template>
   <pre id="layout-result" hidden></pre><script>(${layoutProbe.toString()})().then(result => { document.querySelector('#layout-result').textContent = JSON.stringify(result); }).catch(error => { document.querySelector('#layout-result').textContent = JSON.stringify({error:String(error)}); });</script></body></html>`;
+}
+
+async function galleryProbe() {
+  await new Promise(resolveFrame => requestAnimationFrame(() => requestAnimationFrame(resolveFrame)));
+  const root = document.querySelector('.lab-gallery-shell');
+  const grid = document.querySelector('.lab-gallery-grid');
+  if (!root || !grid) throw new Error('The tool URL must render the real gallery shell and card grid.');
+  const rect = element => { const value = element.getBoundingClientRect(); return { left: value.left, right: value.right, width: value.width, height: value.height }; };
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    pageScrollWidth: document.scrollingElement.scrollWidth,
+    root: { ...rect(root), clientWidth: root.clientWidth, scrollWidth: root.scrollWidth },
+    grid: { ...rect(grid), clientWidth: grid.clientWidth, scrollWidth: grid.scrollWidth, display: getComputedStyle(grid).display },
+    cards: [...grid.querySelectorAll('button.lab-project-card, button.lab-new-card')].map(rect),
+    newCard: Boolean(grid.querySelector('button.lab-new-card')),
+    editorCount: document.querySelectorAll('.lab-workspace').length,
+  };
 }
 
 async function layoutProbe() {
@@ -76,6 +101,18 @@ async function layoutProbe() {
     const hit = visible(element) ? document.elementFromPoint(value.left + value.width / 2, value.top + value.height / 2) : null;
     return { ...value, visible: visible(element), reachable: Boolean(hit && element.contains(hit)) };
   };
+  const appbarUncovered = () => {
+    const appbar = required('.lab-appbar'), value = rect(appbar);
+    return [1, innerWidth / 2, innerWidth - 1].every(x => appbar.contains(document.elementFromPoint(x, value.top + value.height / 2)));
+  };
+  const backdropReachable = () => {
+    const scrim = document.querySelector('.lab-drawer-scrim');
+    if (!scrim || !visible(scrim)) return false;
+    const projectsOpen = root.classList.contains('mobile-projects-open');
+    const x = projectsOpen ? (rect(sidebar).right + innerWidth) / 2 : rect(controls).left / 2;
+    const value = rect(workspace);
+    return scrim.contains(document.elementFromPoint(x, value.top + value.height / 2));
+  };
   const snapshot = () => ({
     main: rect(required('.lab-main')), app: rect(root), appbar: rect(required('.lab-appbar')), toolbar: rect(required('.lab-editor-toolbar')),
     workspace: rect(workspace), editor: rect(required('.lab-editor')), canvas: rect(canvas), image: rect(image), knownLength: rect(known),
@@ -83,6 +120,7 @@ async function layoutProbe() {
     report: { ...rect(report), clientHeight: report.clientHeight, scrollHeight: report.scrollHeight, scrollTop: report.scrollTop, overflow: getComputedStyle(report).overflowY },
     projectClose: button('[aria-label="收起项目侧栏"]'), controlsClose: button('[aria-label="收起创作侧栏"]'),
     projectToggle: button('[aria-label="切换项目侧栏"]'), controlsToggle: button('[aria-label="切换创作侧栏"]'),
+    appbarUncovered: appbarUncovered(), backdropReachable: backdropReachable(),
     page: { scrollTop: document.scrollingElement.scrollTop, scrollWidth: document.scrollingElement.scrollWidth, scrollHeight: document.scrollingElement.scrollHeight },
   });
   await frame();
@@ -189,7 +227,7 @@ async function measureInBrowser(html, profile, width, height) {
   }
 }
 
-test('real Page SSR uses edge-to-edge desktop docks and exclusive mobile drawers with local long-content scrolling', { skip: !browser ? 'No Chromium browser is installed for actual layout measurement.' : false }, async (context) => {
+test('the new-project editor route keeps edge-to-edge desktop docks and exclusive mobile drawers with local long-content scrolling', { skip: !browser ? 'No Chromium browser is installed for actual layout measurement.' : false }, async (context) => {
   const tempBase = resolve(tmpdir());
   const directory = mkdtempSync(resolve(tempBase, 'ai-lab-layout-'));
   try {
@@ -230,15 +268,46 @@ test('real Page SSR uses edge-to-edge desktop docks and exclusive mobile drawers
         assert.ok(measured.projectsOpen.sidebar.visible && !measured.projectsOpen.controls.visible, 'Projects drawer must not expose the controls drawer.');
         assert.ok(measured.controlsOpen.controls.visible && !measured.controlsOpen.sidebar.visible, 'Controls drawer must not expose the projects drawer.');
         assert.ok(!measured.mobileClosed.sidebar.visible && !measured.mobileClosed.controls.visible, 'Closing drawer CSS state must return to an unobstructed canvas.');
+        for (const snapshot of [initial, measured.mobileClosed]) {
+          assert.ok(snapshot.projectToggle.reachable && snapshot.controlsToggle.reachable, 'Hidden drawers must not intercept the controls used to open them.');
+        }
         assert.ok(initial.canvas.width >= width - 2 && measured.mobileClosed.canvas.width >= width - 2, 'Closed mobile drawers must not reserve desktop column widths.');
         for (const [snapshot, dock, close] of [[measured.projectsOpen, 'sidebar', 'projectClose'], [measured.controlsOpen, 'controls', 'controlsClose']]) {
           assert.ok(snapshot[dock].top >= snapshot.appbar.bottom - 1, 'Active drawer must begin below the app toolbar.');
           assert.ok(snapshot[close].visible && snapshot[close].reachable, 'The active drawer close button must remain visible and hit-testable.');
-          assert.ok(snapshot.projectToggle.reachable && snapshot.controlsToggle.reachable, 'Drawer overlays must not block the app toolbar toggles.');
+          assert.ok(snapshot.appbarUncovered, 'Drawer overlays must not block the actual appbar.');
+          assert.ok(snapshot.backdropReachable, 'Each open drawer must leave a hit-testable dismiss backdrop.');
           assert.ok(snapshot[dock].left >= -1 && snapshot[dock].right <= width + 1 && snapshot[dock].width < width - 8, 'Mobile drawer must fit on screen with room for a dismiss backdrop.');
           assert.deepEqual(snapshot.canvas, initial.canvas, 'Absolute drawers must not reflow or shrink the mobile canvas.');
         }
       }
+    }
+  } finally {
+    const resolved = resolve(directory);
+    assert.equal(dirname(resolved), tempBase);
+    assert.ok(resolved.startsWith(tempBase + sep) && resolved.includes('ai-lab-layout-'));
+    rmSync(resolved, { recursive: true, force: true });
+  }
+});
+
+test('the tool gallery keeps real project cards within desktop and mobile horizontal bounds', { skip: !browser ? 'No Chromium browser is installed for actual layout measurement.' : false }, async (context) => {
+  const tempBase = resolve(tmpdir());
+  const directory = mkdtempSync(resolve(tempBase, 'ai-lab-layout-'));
+  try {
+    for (const [width, height] of [[1440, 900], [390, 844]]) {
+      const html = resolve(directory, `gallery-${width}.html`);
+      writeFileSync(html, fixtureHtml(width, 'gallery'));
+      const measured = await measureInBrowser(html, resolve(directory, `profile-${width}`), width, height);
+      assert.equal(measured.error, undefined, JSON.stringify(measured));
+      assert.equal(measured.viewport.width, width);
+      assert.equal(measured.editorCount, 0, 'The tool gallery must not reserve editor dock columns.');
+      assert.equal(measured.grid.display, 'grid', 'Measurements must use the real gallery CSS rather than unstyled SSR buttons.');
+      assert.ok(measured.newCard && measured.cards.length >= 1, 'SSR must include the real new-project card before API effects run.');
+      assert.ok(measured.pageScrollWidth <= width + 1 && measured.root.scrollWidth <= measured.root.clientWidth + 1 && measured.grid.scrollWidth <= measured.grid.clientWidth + 1, 'Gallery and card grid must not overflow horizontally.');
+      for (const card of measured.cards) {
+        assert.ok(card.width > 0 && card.height > 0 && card.left >= -1 && card.right <= width + 1, 'Every rendered project card must fit within the viewport.');
+      }
+      context.diagnostic(JSON.stringify({ galleryViewport: measured.viewport, gridWidth: measured.grid.width, cardWidths: measured.cards.map(card => card.width) }));
     }
   } finally {
     const resolved = resolve(directory);

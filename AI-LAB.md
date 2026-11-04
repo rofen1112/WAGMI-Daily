@@ -14,6 +14,8 @@ powershell -NoProfile -File scripts/start-ai-lab-dev.ps1
 
 浏览器入口 `http://127.0.0.1:5186/#/ai-lab?tool=floorplan3d`。API 仅监听 `127.0.0.1:8786`，通过 Vite 同源代理访问 `/api/ai-lab/v1`。进程日志位于 `.local-ai-lab/runtime/`。构建使用 `npm run build:lab`，输出 `dist/ai-lab/`，不执行原项目的数据同步、管理写入或发布插件。停止实验室使用 `scripts/stop-ai-lab-dev.ps1`，不会删除方案或图片。
 
+界面现名为 **Floorplan-Editor**。`#/ai-lab`为应用目录，选择应用后进入上述项目管理页；选择项目或新建才进入编辑器。原projectId深链接继续可用。开发版`#/today`导航已增加AI实验室入口，只读读取本机8080公开JSON用于入口演示；正式站接入仍由主项目审核。[入口与项目管理说明](docs/ai-lab-floorplan-editor.md)。
+
 **日常实验室开发仅使用 `dev:lab` / `build:lab` 或上述启动脚本。** 原项目 `npm run build`、日报、通知与发布脚本不属于本分支工作流。
 
 ## 模型与数据
