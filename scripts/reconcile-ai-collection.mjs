@@ -31,6 +31,12 @@ export async function inspectOptionalMemene(memene, date, fetchImpl = fetch, che
     status: 'stale', sourceDate: memene?.target?.date ?? memene?.fallback?.date ?? memene?.history?.[0]?.date ?? null,
     expectedNoUpdate: [0, 6].includes(new Date(date + 'T12:00:00+08:00').getUTCDay()),
     message: '可选发现源无当日记录；继续使用其他原始来源，不阻断日报。' };
+  if (memene?.asOf === date && ['failed', 'unavailable', 'blocked'].includes(memene.run?.status)) {
+    const error = memene.run.error ?? memene.error ?? memene.run.message ?? 'Unknown collection failure';
+    return { ...source, checkedAt: memene.generatedAt ?? checkedAt, status: memene.run.status,
+      stage: memene.run.stage ?? null, expectedNoUpdate: false, error,
+      message: `可选发现源本次检查失败（${memene.run.stage ?? 'collection'}）：${error}；不能据此判断没有更新，继续其他独立来源。` };
+  }
   if (!primaryMemeneReady(memene, date)) return source;
   try {
     const page = await fetchImpl(`https://memene.cn/daily/${memene.target.id}?ref=website`, { signal: AbortSignal.timeout(20000) });

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "updatedAt": "2026-10-30",
+  "updatedAt": "2026-11-05",
   "policy": {
     "heatRequired": false,
     "requiredDecisionFields": [
@@ -4216,6 +4216,59 @@
         "method": "Actual official LICENSE read; API NOASSERTION is retained as original metadata evidence.",
         "evidence": "data/dev/source-archives/audit-0900-2026-10-30/github-new-licenses.json"
       }
+    },
+    {
+      "repo": "MiniMax-AI/mcode-agent-table",
+      "name": "MiniMax BYOB Agent Table",
+      "category": "Agent 协作协议",
+      "level": "B",
+      "priorityDomains": [
+        "agents"
+      ],
+      "summary": "MiniMax Code团队的BYOB桌面协议v0.1与TypeScript参考实现：以共享账本、席位、主人签名与任务回执协作，MCP接入各自的Agent。",
+      "riskNote": "单主机早期参考实现；联邦、多主人提案、每条发言签名与缓存效果测量仍在路线图，未安装或复现。",
+      "industryFit": "high",
+      "originality": "官方非fork协议与实现，包含SPEC、schemas、Table Core、HTTP/SSE及MCP桥；非资源列表或薄包装。",
+      "maintenanceEvidence": "官方当前commit=3cbb1bed00a207589ff50da1510c2df9b5039e99; PR=3; 当前无Release。",
+      "intakeDecision": "approved",
+      "decisionReason": "主人签名与执行/核验回执为跨人员Agent协作提供可检查实现；适合原型评估并保留单机和未复现实测限制。",
+      "reviewedAt": "2026-11-04T04:12:34.639Z"
+    },
+    {
+      "repo": "earakely-scale/agentenv-genesis-plugin",
+      "name": "GenesisWorkbenchEnv",
+      "category": "3D物理资产修复 / Agent",
+      "level": "B",
+      "industryFit": "high",
+      "priorityDomains": [
+        "physical-ai",
+        "3d-generation",
+        "agents"
+      ],
+      "summary": "AgentEnv物理资产修复原型：通过MCP编辑质量、材料、碰撞和关节，MuJoCo检查MJCF/OBJ，Genesis提供第二意见，结合人类贡献者补充真实尺寸。",
+      "riskNote": "早期个人原型；示例容差不是现实物理保证，部分ReplicaCAD关节资产仍在Genesis判分，两个引擎近摩擦边界可不一致；未安装或复现实验。",
+      "originality": "非fork原创插件，包含src、任务、隐藏探测检查、交互贡献者界面和导出器，不是教程或资源清单。",
+      "maintenanceEvidence": "当前commit=ab24768f1fba0f1690331e92d2a5863b6515267b；当前Issue/PR/Release实际列表已读，0 Stars，0 Forks，Apache-2.0。",
+      "intakeDecision": "approved",
+      "decisionReason": "面向VLM-to-CAD和扫描模型的物理错误修复、真实尺度反馈与多引擎检查，符合3D/物理AI及生成资产验收方向；仅作为待复现原型跟踪。",
+      "reviewedAt": "2026-11-05T01:15:55.825Z"
+    },
+    {
+      "repo": "bytedance/axion1_0",
+      "name": "Axion 1.0",
+      "category": "开放Agent训练配方",
+      "level": "B",
+      "industryFit": "high",
+      "priorityDomains": [
+        "agents"
+      ],
+      "summary": "字节官方开放科学推理与工具Agent训练、数据构造及评测配方，两阶段SFT加异步RL；链接35B社区复现而非官方检查点。",
+      "riskNote": "依赖多GPU、工具执行与数据服务；性能为作者报告，社区检查点与论文结果不同，未安装、训练或复现。",
+      "originality": "官方非fork原创代码，包含datagen、training、evaluation和tests；复用Swift/verl后端不等于资源列表或空壳。",
+      "maintenanceEvidence": "实际读metadata/README/root/commit/Issue/PR/Release；commit=265a23a4a59e90cc55986596f95fb13888fc6237；47Stars/3Forks；Release空列表。",
+      "intakeDecision": "approved",
+      "decisionReason": "可检查的数据构造、验证答案与完整训练/评测工程符合Agent基础设施方向；代码与社区权重身份分别保留。",
+      "reviewedAt": "2026-11-05T04:10:29.515Z"
     }
   ]
 }

@@ -117,6 +117,7 @@ test('a genuine current optional failure remains a notice without inventing succ
   input.media.candidates = []; input.review.media.items = [];
   const result = evaluateAiDiscoveryReview(input);
   assert.equal(result.ready, true); assert.ok(result.notices.some(notice => /Memene/.test(notice)));
+  assert.ok(result.notices.some(notice => /Memene collection failed.*503.*does not establish no update/.test(notice)));
   assert.ok(result.notices.some(notice => /403/.test(notice)));
   input.memene.generatedAt = '2026-10-28T01:00:00Z';
   assert.equal(evaluateAiDiscoveryReview(input).ready, false);

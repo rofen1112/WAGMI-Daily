@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "updatedAt": "2026-10-17",
+  "updatedAt": "2026-11-05",
   "policy": {
     "scope": "跟踪与建筑、空间、设计、3D、视频、世界模型和物理 AI 相关的生成式模型及其官方或关键社区衍生版本。",
     "sourcePriority": [
@@ -307,6 +307,144 @@
       "intakeDecision": "approved",
       "decisionReason": "发布方原文、模型卡、Apache-2.0与公开权重入口均可核验；纳入自托管Agent模型观察。",
       "metadataFetchedAt": "2026-10-17T01:03:21.408Z"
+    },
+    {
+      "id": "kimi-k31-pro-public",
+      "name": "Kimi-K3.1-Pro",
+      "modelId": "moonshotai/Kimi-K3.1-Pro",
+      "source": "huggingface",
+      "url": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro",
+      "publisher": "moonshotai",
+      "level": "B",
+      "relationship": "official-base-model",
+      "releaseType": "open-weight",
+      "access": "public",
+      "license": "Kimi K3.1-Pro License",
+      "modalities": [
+        "text",
+        "image"
+      ],
+      "tasks": [
+        "Agent工作流与模型能力评估"
+      ],
+      "priorityDomains": [
+        "agents"
+      ],
+      "summaryZh": "本次实际核对官方Hugging Face模型卡、API和许可证：仓库public且未gated，2.8T总参数、104B激活、约1M上下文。仓库元数据为11月2日，不据此推断对外官宣时刻；11月5日为本次可访问核验。许可证包含MaaS经营收入门槛及特定商业规模的名称展示要求，不能标为无限制开源。",
+      "valueZh": "设计、CAD和长程Agent候选从托管API扩展到可访问权重，但许可与资源需求会影响使用方案。",
+      "riskNoteZh": "按官方许可原文核对具体用途；本次未下载、部署或测量模型，不把仓库时间当公告时间。",
+      "relatedRepositories": [],
+      "reviewedAt": "2026-11-05",
+      "intakeDecision": "approved",
+      "metadataFetchedAt": "2026-11-05T01:04:33.074Z",
+      "decisionReason": "官方模型卡、访问状态和许可可核验，符合Agent与多模态工程跟踪方向；仅纳入研究候选，未安装运行或承诺基准复现。",
+      "upstreamModels": [
+        "moonshotai/Kimi-K3"
+      ]
+    },
+    {
+      "id": "ripple65b-preview",
+      "name": "Ripple-65B-Preview",
+      "modelId": "ricursiveAI/Ripple-65B-Preview",
+      "source": "huggingface",
+      "url": "https://huggingface.co/ricursiveAI/Ripple-65B-Preview",
+      "publisher": "ricursiveAI",
+      "level": "B",
+      "relationship": "official-base-model",
+      "releaseType": "open-weight",
+      "access": "public",
+      "license": "Apache-2.0",
+      "modalities": [
+        "text"
+      ],
+      "tasks": [
+        "Agent工作流与模型能力评估"
+      ],
+      "priorityDomains": [
+        "agents"
+      ],
+      "summaryZh": "官方模型卡公开65B稠密模型、Apache-2.0标注及BF16/NVFP4等版本，称预训练使用12T tokens、支持最高1M上下文。Terminal-Bench约80.5为发布方自报；对照模型来源、脚手架与上下文不同，不能直接推广成所有编程任务领先。",
+      "valueZh": "提供较小稠密编程模型和本地推理研究候选，可比较完整任务成本与上下文负担。",
+      "riskNoteZh": "保留预览状态，先审查模型卡、许可和资源需求；未下载权重、安装或复现性能。",
+      "relatedRepositories": [],
+      "reviewedAt": "2026-11-05",
+      "intakeDecision": "approved",
+      "metadataFetchedAt": "2026-11-05T01:04:53.281Z",
+      "decisionReason": "官方模型卡、访问状态和许可可核验，符合Agent与多模态工程跟踪方向；仅纳入研究候选，未安装运行或承诺基准复现。",
+      "upstreamModels": []
+    },
+    {
+      "id": "mage-vl-cowork",
+      "name": "Mage-VL-Cowork",
+      "modelId": "microsoft/Mage-VL-Cowork",
+      "source": "huggingface",
+      "url": "https://huggingface.co/microsoft/Mage-VL-Cowork",
+      "publisher": "microsoft",
+      "level": "B",
+      "relationship": "official-base-model",
+      "releaseType": "open-weight",
+      "access": "public",
+      "license": "Apache-2.0",
+      "modalities": [
+        "text",
+        "image"
+      ],
+      "tasks": [
+        "Agent工作流与模型能力评估"
+      ],
+      "priorityDomains": [
+        "agents"
+      ],
+      "summaryZh": "官方模型卡给出约4B级混合电脑操作模型、Apache-2.0及公开检查点；GUI与bash由同一策略选择。66.0% OSWorld-Verified为作者在50步预算下的结果，活跃训练/推理窗口32768 tokens；架构支持更长窗口不等于同样测试范围。仓库元数据为10月30日，本次补充发现保留旧日期。",
+      "valueZh": "为本地桌面Agent提供可检查的小模型路线，尤其适合比较视觉交互与程序化文件操作的分工。",
+      "riskNoteZh": "先审阅自定义架构和沙箱要求；本次未加载远程代码或运行模型。",
+      "relatedRepositories": [],
+      "reviewedAt": "2026-11-05",
+      "intakeDecision": "approved",
+      "metadataFetchedAt": "2026-11-05T01:04:53.282Z",
+      "decisionReason": "官方模型卡、访问状态和许可可核验，符合Agent与多模态工程跟踪方向；仅纳入研究候选，未安装运行或承诺基准复现。",
+      "upstreamModels": [
+        "microsoft/Mage-VL"
+      ]
+    },
+    {
+      "id": "axion-35b-community-reproduction",
+      "name": "Axion1.0-35B社区复现",
+      "modelId": "Axion1-0/Axion-1.0-35B",
+      "source": "huggingface",
+      "url": "https://huggingface.co/Axion1-0/Axion-1.0-35B",
+      "publisher": "Axion1-0（社区复现发布者）",
+      "level": "B",
+      "relationship": "community-finetune",
+      "releaseType": "open-weight",
+      "access": "public",
+      "license": "Apache-2.0",
+      "modalities": [
+        "text"
+      ],
+      "tasks": [
+        "科学推理与工具Agent复现"
+      ],
+      "priorityDomains": [
+        "agents"
+      ],
+      "summaryZh": "官方代码仓库链接的35B/3B激活社区复现检查点，约18K轨迹和两段SFT加RL；不是字节官方Axion权重。",
+      "valueZh": "可比较开放训练配方、工具依赖及论文与社区复现差异。",
+      "riskNoteZh": "上游Qwen3.6-35B-A3B；社区复现与论文成绩不完全一致；HF仓库创建2026-10-16不是模型首发证据；未下载或运行权重。",
+      "upstreamModels": [
+        "Qwen3.6-35B-A3B"
+      ],
+      "relatedRepositories": [
+        {
+          "repo": "bytedance/axion1_0",
+          "url": "https://github.com/bytedance/axion1_0",
+          "roleZh": "原始训练配方仓库；官方README明确区分社区权重"
+        }
+      ],
+      "intakeDecision": "approved",
+      "decisionReason": "原始模型卡、代码README明确社区身份，权重列表、Apache2.0和推理指导可查；非简单重命名，保留独立复现身份与限制。",
+      "reviewedAt": "2026-11-05",
+      "metadataFetchedAt": "2026-11-05T04:12:29.974Z"
     }
   ]
 }

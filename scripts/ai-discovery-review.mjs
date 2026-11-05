@@ -127,7 +127,9 @@ export function evaluateAiDiscoveryReview({ date, memene, media, mediaConfig, re
     const message = memene.run?.error ?? memene.run?.message ?? memene.error;
     if (!shortReason(message)) blockers.push('Memene unavailable/no-update observation has no actual result');
     if (review?.memene?.recordId != null || review?.memene?.sourceDate != null) blockers.push('Memene no-update review incorrectly references an older record');
-    notices.push('Memene has no usable same-day record; retain its real source date and continue independent sources.');
+    notices.push(['failed', 'unavailable', 'blocked'].includes(memene.run?.status)
+      ? `Memene collection ${memene.run.status}${memene.run.stage ? ' at ' + memene.run.stage : ''}: ${message}; this does not establish no update. Continue independent sources.`
+      : 'Memene has no usable same-day record; retain its real source date and continue independent sources.');
   }
   if (media?.asOf !== date || shanghaiDate(media?.generatedAt) !== date) blockers.push('Chinese media discovery has no actual current-day observation');
   if (!configured.length) blockers.push('Chinese media checklist is empty or missing');
