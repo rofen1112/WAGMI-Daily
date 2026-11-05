@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { API, LabApiError, calibratedScale, draftStatusCopy, errorMessage, generationInputSnapshot, generationScalePayload, isActiveJob, jobError, jobUsageLabel, jobValidationIssues, post, projectPath, projectStatusLabel, readImage, readViewerCaptures, readViewerState, request, safeDraftViewerUrl, sceneSourceLabel, type LabAsset, type LabBaseline, type LabDraft, type LabHealth, type LabJob, type LabProject, type LabScaleProvenance, type LabScene, type LabViewerContext, type LabViewerState, type PixelPoint, type ScaleMode } from './api';
+import { API, LabApiError, calibratedScale, draftStatusCopy, defaultExecutionMode, errorMessage, generationAvailable, generationInputSnapshot, generationScalePayload, isActiveJob, jobExecutionMode, knownJobExecutionMode, jobError, jobUsageLabel, jobValidationIssues, post, projectPath, projectStatusLabel, readImage, readViewerCaptures, readViewerState, request, safeDraftViewerUrl, sceneSourceLabel, type ExecutionMode, type LabAsset, type LabBaseline, type LabDraft, type LabHealth, type LabJob, type LabProject, type LabScaleProvenance, type LabScene, type LabViewerContext, type LabViewerState, type PixelPoint, type ScaleMode } from './api';
 import ScaleCalibrator from './ScaleCalibrator';
 import WorkflowSummary, { workflowStageLabels } from './WorkflowSummary';
 import StudioIcon from './StudioIcon';
@@ -60,6 +60,8 @@ export default function AiLabPage() {
   const [projects, setProjects] = useState<LabProject[]>([]);
   const [baselines, setBaselines] = useState<LabBaseline[]>([]);
   const [health, setHealth] = useState<LabHealth | null>(null);
+  const [executionMode, setExecutionMode] = useState<ExecutionMode>('codex_handoff');
+  const executionModeChosen = useRef(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [scene, setScene] = useState<LabScene | null>(null);
   const [job, setJob] = useState<LabJob | null>(null);
@@ -131,7 +133,7 @@ export default function AiLabPage() {
     const results = await Promise.allSettled([
       request<LabHealth>('/health'), refreshProjects(), request<{ baselines: LabBaseline[] }>('/baselines'),
     ]);
-    if (results[0].status === 'fulfilled') setHealth(results[0].value);
+    if (results[0].status === 'fulfilled') { setHealth(results[0].value); if (!executionModeChosen.current) setExecutionMode(defaultExecutionMode(results[0].value)); }
     if (results[2].status === 'fulfilled') setBaselines(results[2].value.baselines || []);
     const failure = results.find((result) => result.status === 'rejected');
     if (failure?.status === 'rejected') setError(errorMessage(failure.reason));
@@ -153,6 +155,8 @@ export default function AiLabPage() {
     selectedIdRef.current = project.id;
     workspaceViewRef.current = 'editor'; setWorkspaceView('editor');
     syncProjectLocation(project.id, 'gallery', recordHistory);
+    const recordedMode = knownJobExecutionMode(project.latestJob);
+    if (recordedMode) { executionModeChosen.current = true; setExecutionMode(recordedMode); }
     setSelectedId(project.id); setScene(null); setJob(project.latestJob || null); setAsset(input.sourceAsset || null); setImagePreview('');
     setDraft(null); setDraftLoading(false); setDraftError(''); setCaptureError(''); setCaptureStatus('idle'); setPreviewKind('candidate');
     setScale(input.mmPerPixel !== undefined ? String(input.mmPerPixel) : ''); setScaleMode(input.scaleMode || 'auto'); setPrompt(input.prompt ?? defaultPrompt);
@@ -303,7 +307,8 @@ export default function AiLabPage() {
     setSelectedId(null); setScene(null); setAsset(null); setImagePreview(''); setJob(null); setTitle(''); setError(''); setNotice(''); setViewerReady(false); setTab('space'); setProjectMenu(false); setControlsMenu(false);
     setScale(''); setScaleMode('auto'); setCalibrationPoints([]); setKnownLength(''); setDraft(null); setDraftLoading(false); setDraftError(''); setCaptureError(''); setCaptureStatus('idle');
     setPrompt(defaultPrompt); setBusy(null); setSavedAgentOpen(false); setScaleOpen(false); setContextPanel('projects'); setRightDockOpen(true);
-  }, []);
+    executionModeChosen.current = false; setExecutionMode(defaultExecutionMode(health));
+  }, [health]);
 
   const showGallery = useCallback((changeUrl: boolean) => {
     ++selectionToken.current;
@@ -388,6 +393,7 @@ export default function AiLabPage() {
   const generate = async () => {
     if (scene || active) return;
     setError(''); setNotice('');
+    if (!generationAvailable(health, executionMode)) { setError('所选执行方式暂不可用，请切换或稍后重试。'); return; }
     if (!asset) { setError('请先上传一张平面图。'); return; }
     if (!prompt.trim()) { setError('请写下这次生成的要求。'); return; }
     let scalePayload;
@@ -397,7 +403,7 @@ export default function AiLabPage() {
     setBusy('generate');
     try {
       const id = await ensureProject();
-      const result = await post<{ job: LabJob }>(`${projectPath(id)}/jobs`, { assetId: asset.id, ...scalePayload, pipelineVersion: 'codex-handoff-v1', prompt: prompt.trim(), action: 'generate', baseVersion: 0 });
+      const result = await post<{ job: LabJob }>(`${projectPath(id)}/jobs`, { assetId: asset.id, ...scalePayload, executionMode, pipelineVersion: executionMode === 'api' ? 'codex-workflow-v1' : 'codex-handoff-v1', prompt: prompt.trim(), action: 'generate', baseVersion: 0 });
       if (token !== selectionToken.current || selectedIdRef.current !== id) return;
       setDraft(null); setDraftLoading(false); setDraftError(''); setCaptureError(''); setCaptureStatus('idle'); setPreviewKind('candidate');
       setJob(result.job); setTab('space');
@@ -469,14 +475,15 @@ export default function AiLabPage() {
     let payload;
     try { payload = generationScalePayload(scaleMode, scale, calibrationPoints, knownLength, asset); }
     catch (reason) { setError(errorMessage(reason)); return; }
-    if (!waitingForInput || !job?.handoff) { setNotice('比例依据已设置，将随建模任务一起提交。'); setScaleOpen(false); return; }
+    const inputContext = job?.inputContext || job?.handoff;
+    if (!waitingForInput || !job || !inputContext) { setNotice('比例依据已设置，将随建模任务一起提交。'); setScaleOpen(false); return; }
     const token = selectionToken.current;
     setBusy('input');
     try {
-      const result = await post<{ job: LabJob }>(`/jobs/${encodeURIComponent(job.id)}/input`, { ...payload, requestId: job.handoff.requestId, revision: job.handoff.revision, submissionId: crypto.randomUUID().replace(/-/g, '') });
+      const result = await post<{ job: LabJob }>(`/jobs/${encodeURIComponent(job.id)}/input`, { ...payload, requestId: inputContext.requestId, revision: inputContext.revision, submissionId: crypto.randomUUID().replace(/-/g, '') });
       if (token !== selectionToken.current) return;
       setJob(result.job); setScaleOpen(false);
-      setNotice(result.job.status === 'awaiting_codex' ? '比例依据已提交，等待当前 Codex 聊天继续接力。' : result.job.message || '信息已提交，请查看任务反馈。');
+      setNotice(result.job.status === 'awaiting_codex' && jobExecutionMode(result.job) === 'codex_handoff' ? '比例依据已提交，等待当前 Codex 聊天继续接力。' : result.job.message || '信息已提交，请查看任务反馈。');
     } catch (reason) { if (token === selectionToken.current) setError(errorMessage(reason)); }
     finally { if (token === selectionToken.current) setBusy(null); }
   };
@@ -496,6 +503,9 @@ export default function AiLabPage() {
   const failedValidation = job?.status === 'failed' && jobValidationIssues(job).length > 0;
   const showImage = tab === 'image' && (imagePreview || asset?.url);
   const visibleProjects = projects.filter((project) => !projectQuery.trim() || (project.title || '').toLocaleLowerCase().includes(projectQuery.trim().toLocaleLowerCase()));
+  const knownJobMode = knownJobExecutionMode(job);
+  const currentExecutionMode = jobExecutionMode(job, executionMode);
+  const changeExecutionMode = (mode: ExecutionMode) => { if (active || busy || opening || !generationAvailable(health, mode)) return; executionModeChosen.current = true; setExecutionMode(mode); };
   const focusMode = !leftDockOpen && (!showAgentPanel || !rightDockOpen);
   const isNarrow = () => typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 980px)').matches;
   const toggleControls = () => {
@@ -569,13 +579,13 @@ export default function AiLabPage() {
         {draft && tab === 'space' && <div className="lab-draft-bar"><div><button type="button" aria-pressed={previewKind === 'candidate'} onClick={() => { setPreviewKind('candidate'); setTab('space'); }}>候选方案</button>{scene && <button type="button" aria-pressed={previewKind === 'saved'} onClick={() => { setPreviewKind('saved'); setTab('space'); }}>已保存版本 {scene.version}</button>}</div><span>{displayingDraft ? '尚未提交为项目版本' : '正在查看已保存版本'}</span></div>}
         {draftError && <div className="lab-alert lab-error lab-canvas-alert" role="alert">{draftError} <button className="lab-button" type="button" onClick={() => setDraftRetry((value) => value + 1)}>重新打开候选</button></div>}
         <div className={'lab-canvas' + (viewerSrc && tab === 'space' ? ' has-scene' : '')}>
-          {opening || (draftLoading && !viewerSrc) ? <div className="lab-canvas-empty"><span className="lab-spinner"/><p>正在打开空间方案…</p></div> : showImage && asset ? scaleMode === 'calibrated' && !scene ? <ScaleCalibrator compact asset={asset} imageUrl={imagePreview || asset.url} points={calibrationPoints} lengthMm={knownLength} disabled={working} onPoints={setCalibrationPoints} onLength={setKnownLength}/> : <div className="lab-source-image"><img src={imagePreview || asset.url} alt={'原始平面图：' + asset.name}/><span>{asset.name}<i/>{asset.width} × {asset.height} px</span></div> : viewerSrc ? <iframe key={viewerKey} ref={frameRef} className={'lab-viewer' + (displayingDraft ? ' is-draft' : '')} tabIndex={displayingDraft ? -1 : 0} title={displayingDraft ? draftCopy.title : '空间方案 2D / 3D 编辑器'} src={viewerSrc} sandbox="allow-scripts allow-same-origin allow-downloads"/> : <div className="lab-canvas-empty"><div className="lab-plan-icon"><PlanIcon/></div><span className="lab-canvas-kicker">FLOORPLAN-EDITOR</span><h2>{active ? waitingForInput ? '补充一个已知尺寸' : job?.status === 'awaiting_codex' ? '等待当前聊天接力' : '正在构建空间' : finishedWithoutScene ? failedValidation ? '生成未通过检查' : '本次未生成可保存的方案' : '从一张平面图开始'}</h2><p>{active ? waitingForInput ? '点击左下角比例尺补充依据，再交回当前 Codex 聊天继续。' : '右侧仅显示真实任务记录。请在当前 Codex 聊天中接力推进任务。' : finishedWithoutScene ? '可保留原图和要求，重新发起当前聊天接力。' : '导入 PNG / JPG 平面图，在右侧提交空间要求。'}</p>{!active && <button type="button" className="lab-button" onClick={() => fileRef.current?.click()} disabled={working}>选择平面图<StudioIcon name="upload" size={15}/></button>}</div>}
+          {opening || (draftLoading && !viewerSrc) ? <div className="lab-canvas-empty"><span className="lab-spinner"/><p>正在打开空间方案…</p></div> : showImage && asset ? scaleMode === 'calibrated' && !scene ? <ScaleCalibrator compact asset={asset} imageUrl={imagePreview || asset.url} points={calibrationPoints} lengthMm={knownLength} disabled={working} onPoints={setCalibrationPoints} onLength={setKnownLength}/> : <div className="lab-source-image"><img src={imagePreview || asset.url} alt={'原始平面图：' + asset.name}/><span>{asset.name}<i/>{asset.width} × {asset.height} px</span></div> : viewerSrc ? <iframe key={viewerKey} ref={frameRef} className={'lab-viewer' + (displayingDraft ? ' is-draft' : '')} tabIndex={displayingDraft ? -1 : 0} title={displayingDraft ? draftCopy.title : '空间方案 2D / 3D 编辑器'} src={viewerSrc} sandbox="allow-scripts allow-same-origin allow-downloads"/> : <div className="lab-canvas-empty"><div className="lab-plan-icon"><PlanIcon/></div><span className="lab-canvas-kicker">FLOORPLAN-EDITOR</span><h2>{active ? waitingForInput ? '补充一个已知尺寸' : job?.status === 'awaiting_codex' && currentExecutionMode === 'codex_handoff' ? '等待当前聊天接力' : '正在构建空间' : finishedWithoutScene ? failedValidation ? '生成未通过检查' : '本次未生成可保存的方案' : '从一张平面图开始'}</h2><p>{active ? waitingForInput ? '在原图比例尺补充可靠尺寸依据，确认后继续本次任务。' : job && !knownJobMode ? '右侧显示这项历史任务的实际记录，执行方式以服务保存的信息为准。' : currentExecutionMode === 'api' ? 'API 将自动按阶段执行。候选就绪后，请保持预览打开，以提交实际 2D / 3D 截图复核。' : '右侧仅显示真实任务记录。请在当前 Codex 聊天中接力推进任务。' : finishedWithoutScene ? '可保留原图和要求，选择执行方式后重新发起任务。' : '导入 PNG / JPG 平面图，在右侧提交空间要求。'}</p>{!active && <button type="button" className="lab-button" onClick={() => fileRef.current?.click()} disabled={working}>选择平面图<StudioIcon name="upload" size={15}/></button>}</div>}
           {showScaleCalibration && <button className={'lab-scale-trigger' + (scaleOpen ? ' is-active' : '')} type="button" aria-label="比例尺与尺寸校准" aria-expanded={scaleOpen} title="比例尺与尺寸校准" onClick={openScale}><StudioIcon name="ruler" size={19}/><span>比例尺</span></button>}
-          {showScaleCalibration && scaleOpen && <section className="lab-scale-popover" aria-label="比例尺校准"><div className="lab-scale-popover-heading"><strong>尺寸与比例</strong><button className="lab-icon-button" type="button" aria-label="关闭比例尺" onClick={() => setScaleOpen(false)}><StudioIcon name="close" size={15}/></button></div>{scene ? <><p>当前方案比例</p><strong>{Number(scale) > 0 ? scale + ' mm / px' : '历史方案未提供比例'}</strong><p>比例依据供查看，未经现场实测核验。</p></> : <><label className="lab-field-label" htmlFor="lab-scale-mode">比例依据</label><select id="lab-scale-mode" className="lab-input" value={scaleMode} disabled={working} onChange={(event) => { const mode = event.target.value as ScaleMode; setScaleMode(mode); if (asset && mode === 'calibrated') setTab('image'); }}><option value="auto">自动核对图纸尺寸</option><option value="calibrated">已知长度校准</option><option value="manual">手动毫米 / 像素</option></select>{scaleMode === 'manual' ? <><label className="lab-field-label" htmlFor="lab-scale">手动比例 · mm / px</label><input id="lab-scale" className="lab-input" type="number" min="0.001" step="any" inputMode="decimal" value={scale} placeholder="例如 10" disabled={working} onChange={(event) => setScale(event.target.value)}/></> : scaleMode === 'calibrated' ? <><p>已选 {calibrationPoints.length}/2 个点。请在原图上选择已知长度的两个端点。</p><label className="lab-field-label" htmlFor="lab-scale-known-length">两点间已知长度 <span>mm</span></label><input id="lab-scale-known-length" className="lab-input" type="number" min="0.001" step="any" inputMode="decimal" placeholder="例如 3000" value={knownLength} disabled={working} onChange={(event) => setKnownLength(event.target.value)}/>{calibrationRatio !== null && <p className="lab-scale-ratio">当前换算：{Number(calibrationRatio.toPrecision(5))} mm / px</p>}<button className="lab-button" type="button" disabled={!asset || working} onClick={() => setTab('image')}>打开原图选点 · {calibrationPoints.length}/2</button></> : <p>先核对图纸上的尺寸依据。缺少可靠依据时，任务会等待补充，不会伪称实测。</p>}<button className="lab-button lab-primary lab-scale-apply" type="button" disabled={!asset || working} onClick={() => void applyScale()}>{busy === 'input' ? '提交中…' : waitingForInput ? '提交尺寸并继续接力' : '使用此比例依据'}</button></>}</section>}
+          {showScaleCalibration && scaleOpen && <section className="lab-scale-popover" aria-label="比例尺校准"><div className="lab-scale-popover-heading"><strong>尺寸与比例</strong><button className="lab-icon-button" type="button" aria-label="关闭比例尺" onClick={() => setScaleOpen(false)}><StudioIcon name="close" size={15}/></button></div>{scene ? <><p>当前方案比例</p><strong>{Number(scale) > 0 ? scale + ' mm / px' : '历史方案未提供比例'}</strong><p>比例依据供查看，未经现场实测核验。</p></> : <><label className="lab-field-label" htmlFor="lab-scale-mode">比例依据</label><select id="lab-scale-mode" className="lab-input" value={scaleMode} disabled={working} onChange={(event) => { const mode = event.target.value as ScaleMode; setScaleMode(mode); if (asset && mode === 'calibrated') setTab('image'); }}><option value="auto">自动核对图纸尺寸</option><option value="calibrated">已知长度校准</option><option value="manual">手动毫米 / 像素</option></select>{scaleMode === 'manual' ? <><label className="lab-field-label" htmlFor="lab-scale">手动比例 · mm / px</label><input id="lab-scale" className="lab-input" type="number" min="0.001" step="any" inputMode="decimal" value={scale} placeholder="例如 10" disabled={working} onChange={(event) => setScale(event.target.value)}/></> : scaleMode === 'calibrated' ? <><p>已选 {calibrationPoints.length}/2 个点。请在原图上选择已知长度的两个端点。</p><label className="lab-field-label" htmlFor="lab-scale-known-length">两点间已知长度 <span>mm</span></label><input id="lab-scale-known-length" className="lab-input" type="number" min="0.001" step="any" inputMode="decimal" placeholder="例如 3000" value={knownLength} disabled={working} onChange={(event) => setKnownLength(event.target.value)}/>{calibrationRatio !== null && <p className="lab-scale-ratio">当前换算：{Number(calibrationRatio.toPrecision(5))} mm / px</p>}<button className="lab-button" type="button" disabled={!asset || working} onClick={() => setTab('image')}>打开原图选点 · {calibrationPoints.length}/2</button></> : <p>先核对图纸上的尺寸依据。缺少可靠依据时，任务会等待补充，不会伪称实测。</p>}<button className="lab-button lab-primary lab-scale-apply" type="button" disabled={!asset || working} onClick={() => void applyScale()}>{busy === 'input' ? '提交中…' : waitingForInput ? currentExecutionMode === 'api' ? '提交尺寸并继续' : '提交尺寸并继续接力' : '使用此比例依据'}</button></>}</section>}
         </div>
         <div className="lab-canvas-footer"><span><span className={'lab-footer-dot' + (active ? ' is-active' : '')}/>{showImage ? '原始图纸 · ' + (asset?.name || '平面图') : displayingDraft ? '候选方案 · 尚未保存' : scene ? (selected?.title || title || '空间方案') + ' · 版本 ' + scene.version : selected ? projectStatusLabel(selected) : job ? statusLabels[job.status] || '方案尚未就绪' : '准备就绪'}</span><span>{showImage ? scaleMode === 'calibrated' ? '比例校准 · 原始像素' : '原始图纸' : displayingDraft ? draftCopy.footer : scene ? sceneSourceLabel(scene.source) : '尺寸依据需核对'}</span></div>
       </div>
-      {showAgentPanel && <aside className="lab-controls" aria-label={scene ? 'Agent 任务记录' : '新建空间 Agent'} aria-hidden={isNarrow() ? !controlsMenu : !rightDockOpen}><div className="lab-dock-heading"><div><span className="lab-section-label">SPACE AGENT</span><h2>{scene ? '任务记录' : '新建空间'}<span>Codex 接力</span></h2></div><button className="lab-icon-button" type="button" aria-label="收起 Agent 侧栏" onClick={() => { setRightDockOpen(false); setControlsMenu(false); }}><StudioIcon name="close" size={16}/></button></div><AgentPanel job={job} health={health} asset={asset} title={title} prompt={prompt} busy={busy} working={working} readOnly={Boolean(scene)} onTitle={setTitle} onPrompt={setPrompt} onUpload={() => fileRef.current?.click()} onSubmit={() => void generate()} onCancel={() => void cancel()} onScale={requestScale}>
+      {showAgentPanel && <aside className="lab-controls" aria-label={scene ? 'Agent 任务记录' : '新建空间 Agent'} aria-hidden={isNarrow() ? !controlsMenu : !rightDockOpen}><div className="lab-dock-heading"><div><span className="lab-section-label">SPACE AGENT</span><h2>{scene ? '任务记录' : '新建空间'}<span>{job && !knownJobMode ? '历史任务' : currentExecutionMode === 'api' ? 'API 自动' : 'Codex 接力'}</span></h2></div><button className="lab-icon-button" type="button" aria-label="收起 Agent 侧栏" onClick={() => { setRightDockOpen(false); setControlsMenu(false); }}><StudioIcon name="close" size={16}/></button></div><AgentPanel executionMode={executionMode} onExecutionMode={changeExecutionMode} job={job} health={health} asset={asset} title={title} prompt={prompt} busy={busy} working={working} readOnly={Boolean(scene)} onTitle={setTitle} onPrompt={setPrompt} onUpload={() => fileRef.current?.click()} onSubmit={() => void generate()} onCancel={() => void cancel()} onScale={requestScale}>
         {job && <section className={'lab-job' + (['failed', 'needs_input'].includes(job.status) ? ' has-error' : '')} aria-label="任务状态">{active && progress !== null && <div className="lab-progress-line"><progress max={100} value={progress} aria-label="任务进度"/><small>{Math.round(progress)}%</small></div>}{job.status === 'awaiting_review_images' && <div className="lab-capture-status"><p>{captureStatus === 'capturing' ? '正在获取实际 2D / 3D 视图…' : captureStatus === 'uploading' ? '正在提交预览视图…' : captureStatus === 'submitted' ? '视图已提交，等待复核。' : '保持空间预览打开，以提交实际视图。'}</p>{captureError && <p className="lab-job-error" role="alert">{captureError}</p>}<button className="lab-button" type="button" disabled={captureStatus === 'capturing' || captureStatus === 'uploading' || captureStatus === 'submitted'} onClick={() => { if (job.draft) captureAttempts.current.delete(job.id + ':' + job.draft.id); setCaptureError(''); setCaptureStatus('idle'); setPreviewKind('candidate'); setTab('space'); setCaptureRetry((value) => value + 1); }}>重试提交视图</button></div>}<details className="lab-task-details" open={['failed', 'needs_input'].includes(job.status)}><summary>{['failed', 'needs_input'].includes(job.status) ? '查看具体原因' : '任务详情与复核'}</summary><JobFeedback job={job}/><WorkflowSummary job={job} provenance={displayingDraft ? draft?.scaleProvenance : undefined}/>{(job.usage || !active) && <div className="lab-usage"><small>{jobUsageLabel(job.usage, job)}</small><small>费用未报价</small></div>}</details></section>}
       </AgentPanel></aside>}
     </div>

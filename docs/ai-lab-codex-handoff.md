@@ -1,5 +1,7 @@
 # 当前 Codex 聊天接力
 
+2026-11-05 增加可选的 `api` 执行方式，见 [API 完整工作流](ai-lab-api-workflow.md)。本文件描述 `codex_handoff` 任务的合同；它不再表示所有新任务必须采用手动接力。未配置默认方式时仍选 handoff，显式 API 任务使用单独的设置快照和完整自动工作流，不能走本文件的手动 finalize。已有任务和已保存版本保留原执行来源。
+
 默认执行方式是 `codex_handoff`，执行标签为 `codex-current-session`。这不是具体模型型号，也不代表网页已获得自动推理能力。生成按钮只创建本机任务；需当前聊天显式读取原图、分析、提交候选和复核。没有 SDK/CLI、自动模型请求或旧网关 fallback。旧私有 Key、历史 jobs/usage/versions 均保留，旧结果不改写。
 
 新接力截图入口明确依赖 `ai-lab/server/requirements.txt` 中的 `Pillow==12.2.0`（本机已有；程序不会自动安装）。部署前显式安装该 requirements。缺失时返回结构化 `capture_decoder_unavailable`，不退回只检查图片头。这里只对新 handoff captures 使用该依赖，不改既有 upload 的实现。

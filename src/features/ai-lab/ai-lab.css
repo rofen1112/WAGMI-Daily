@@ -195,6 +195,11 @@
 .lab-agent-status { display: flex; align-items: center; gap: 5px; flex-shrink: 0; padding: 9px 15px; border-top: 1px solid #eee; color: #888; font-size: 10px; }
 .lab-agent-status > span:nth-child(2) { flex: 1; }
 .lab-agent-composer { flex-shrink: 0; padding: 13px 14px 14px; border-top: 1px solid #eee; background: #fff; }
+.lab-execution-choice { display: flex; align-items: center; gap: 9px; min-width: 0; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid #f0f0f0; color: #777; font-size: 10px; }
+.lab-execution-choice > span { flex-shrink: 0; }
+.lab-execution-choice small { margin-left: 3px; color: #aaa; font-size: 9px; }
+.lab-execution-choice select { flex: 1; min-width: 0; max-width: 100%; min-height: 28px; padding: 4px 5px; border: 1px solid #e5e5e5; border-radius: 5px; background: #fff; color: #555; font-size: 10px; }
+.lab-execution-choice select:disabled, .lab-execution-choice option:disabled { color: #999; }
 .lab-composer-title { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #999; margin-bottom: 9px; }
 .lab-composer-title input { flex: 1; min-width: 0; border: 0; outline: none; padding: 2px 0; background: transparent; color: #666; font-size: 11px; }
 .lab-attachment-chip { display: flex; align-items: center; gap: 8px; max-width: 100%; padding: 7px 9px; margin-bottom: 10px; border: 1px solid #e5e5e5; border-radius: 7px; background: #fafafa; color: #777; text-align: left; cursor: pointer; }

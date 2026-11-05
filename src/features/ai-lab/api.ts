@@ -12,6 +12,8 @@ export interface LabJob {
   sourceAsset?: LabAsset | null; input?: { scaleMode?: ScaleMode; mmPerPixel?: number; calibration?: { p1: PixelPoint; p2: PixelPoint; lengthMm: number }; prompt?: string } | null;
   usageAccounting?: string;
   handoff?: { requestId: string; revision: number; phase: string } | null;
+  executionMode?: ExecutionMode; model?: string; providerSettings?: Record<string, unknown> | null;
+  inputContext?: { requestId: string; revision: number } | null;
 }
 export interface LabJobEvent { id: string | number; at?: string; type: 'stage' | 'agent_message' | 'status'; stage?: string; message: string }
 export interface LabJobEvents { events: LabJobEvent[]; cursor: string | number; hasMore: boolean; terminal: boolean }
@@ -23,7 +25,9 @@ export interface LabScaleProvenance { mode: 'manual' | 'measured' | 'estimated';
 export interface LabDraft { draftId: string; scene: Record<string, unknown>; state: Record<string, unknown> | null; validation?: LabValidation; sourceAsset?: LabAsset | null; scaleProvenance?: LabScaleProvenance | null }
 export interface LabValidation { errors?: Array<unknown>; warnings?: Array<unknown>; counts?: Record<string, number> }
 export interface LabScene { scene: Record<string, unknown>; state: Record<string, unknown> | null; version: number; validation?: LabValidation; source?: string; sourceAsset?: LabAsset | null }
-export interface LabHealth { status: string; model?: string; executionMode?: string; providerConfigured: boolean; capabilities?: Record<string, unknown> }
+export type ExecutionMode = 'api' | 'codex_handoff';
+export interface LabExecutionMode { configured: boolean; available: boolean; model?: string; providerSettings?: Record<string, unknown> | null }
+export interface LabHealth { status: string; model?: string; executionMode?: string; executionModes?: Partial<Record<ExecutionMode, LabExecutionMode>>; providerConfigured: boolean; capabilities?: Record<string, unknown> }
 export interface LabBaseline { id: string; title: string; description?: string }
 
 export class LabApiError extends Error {
@@ -47,7 +51,20 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
 export const post = <T>(path: string, body: unknown = {}): Promise<T> => request<T>(path, { method: 'POST', body: JSON.stringify(body) });
 export const projectPath = (id: string) => `/projects/${encodeURIComponent(id)}`;
 export const isActiveJob = (job: LabJob | null | undefined) => Boolean(job && ['queued', 'running', 'awaiting_codex', 'awaiting_input', 'awaiting_review_images'].includes(job.status));
-export const generationAvailable = (health: LabHealth | null) => Boolean(health && (health.executionMode === 'codex_handoff' ? health.capabilities?.generation === true : health.providerConfigured));
+export const defaultExecutionMode = (health: LabHealth | null): ExecutionMode => health?.executionMode === 'api' || health?.executionMode === 'codex_handoff' ? health.executionMode : health?.providerConfigured ? 'api' : 'codex_handoff';
+export function knownJobExecutionMode(job: LabJob | null | undefined): ExecutionMode | null {
+  if (!job) return null;
+  if (job.executionMode === 'api' || job.executionMode === 'codex_handoff') return job.executionMode;
+  if (job.pipelineVersion?.startsWith('codex-handoff') || job.handoff || job.status === 'awaiting_codex' || job.model === 'codex-current-session' || job.usageAccounting === 'current_session_unreported') return 'codex_handoff';
+  return job.pipelineVersion || job.model || job.inputContext ? 'api' : null;
+}
+export const jobExecutionMode = (job: LabJob | null | undefined, fallback: ExecutionMode = 'codex_handoff'): ExecutionMode => knownJobExecutionMode(job) || fallback;
+export const executionModeLabel = (mode: ExecutionMode) => mode === 'api' ? 'GPT-6.1 Sol · API' : '当前 Codex 聊天接力';
+export function generationAvailable(health: LabHealth | null, mode = defaultExecutionMode(health)) {
+  if (!health) return false;
+  if (health.executionModes) return health.executionModes[mode]?.configured === true && health.executionModes[mode]?.available === true;
+  return mode === 'codex_handoff' ? health.executionMode === 'codex_handoff' && health.capabilities?.generation === true : Boolean(health.providerConfigured && health.capabilities?.generation !== false);
+}
 export const errorMessage = (error: unknown) => error instanceof Error ? error.message : '操作未完成，请重试。';
 export const jobError = (job: LabJob) => typeof job.error === 'string' ? job.error : job.error?.message || job.message || '';
 
@@ -55,7 +72,7 @@ export function projectStatusLabel(project: LabProject) {
   const version = Number.isFinite(project.sceneVersion) && project.sceneVersion > 0 ? `版本 ${project.sceneVersion} · ` : '';
   const status = project.latestJob?.status;
   const modified = ['modified', 'baseline_reference_modified'].includes(project.latestJob?.source || '');
-  const labels: Record<string, string> = { queued: '排队中', running: '生成中', awaiting_codex: '等待当前聊天接力', awaiting_input: '需补充尺寸', awaiting_review_images: '等待预览复核', failed: modified ? '修改失败' : '生成失败', cancelled: '已取消', canceled: '已取消', needs_input: '需补信息' };
+  const labels: Record<string, string> = { queued: '排队中', running: '生成中', awaiting_codex: jobExecutionMode(project.latestJob) === 'api' ? '等待服务继续处理' : '等待当前聊天接力', awaiting_input: '需补充尺寸', awaiting_review_images: '等待预览复核', failed: modified ? '修改失败' : '生成失败', cancelled: '已取消', canceled: '已取消', needs_input: '需补信息' };
   if (status && labels[status]) return `${version}${labels[status]}`;
   if (version && (!status || status === 'succeeded')) return `${version}已保存`;
   if (status === 'succeeded') return '任务已完成';
@@ -128,7 +145,7 @@ export function sceneSourceLabel(source: string | undefined) {
 }
 
 export function draftStatusCopy(job: LabJob | null) {
-  if (job?.status === 'awaiting_codex') return { title: job.stage === 'visual_review' ? '等待当前聊天复核的候选空间' : '等待当前聊天接力的候选空间', footer: '等待当前 Codex 聊天接力', help: '候选尚未保存。请在当前 Codex 聊天中继续查看与核对，网页不会自动完成推理或验收。' };
+  if (job?.status === 'awaiting_codex' && jobExecutionMode(job) === 'codex_handoff') return { title: job.stage === 'visual_review' ? '等待当前聊天复核的候选空间' : '等待当前聊天接力的候选空间', footer: '等待当前 Codex 聊天接力', help: '候选尚未保存。请在当前 Codex 聊天中继续查看与核对，网页不会自动完成推理或验收。' };
   if (job?.status === 'awaiting_review_images') return { title: '待视觉复核的候选空间', footer: '等待实际视图复核', help: '这是待复核候选。请保持空间预览打开，系统会提交实际 2D / 3D 视图；复核通过后才保存为项目版本。' };
   if (job?.status === 'failed') return { title: '未通过检查的候选空间', footer: '候选未通过 · 未保存', help: '本次任务已停止，候选未保存。可查看现有候选和右侧具体原因，核对原图或补充要求后重新提交。' };
   if (job?.status === 'cancelled' || job?.status === 'canceled') return { title: '已取消任务的候选空间', footer: '任务已取消 · 未保存', help: '本次任务已取消，现有候选仅供查看，不会继续自动复核或保存。' };

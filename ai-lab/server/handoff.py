@@ -24,7 +24,7 @@ def verified_capture(raw, expected_mime):
     try:
         from PIL import Image, ImageFile
     except ImportError:
-        raise LabError("capture_decoder_unavailable", "接力截图校验依赖Pillow，请按server/requirements.txt安装后重试。", 503) from None
+        raise LabError("capture_decoder_unavailable", "截图校验依赖Pillow，请按server/requirements.txt安装后重试。", 503) from None
     if ImageFile.LOAD_TRUNCATED_IMAGES:
         raise LabError("capture_decoder_config_invalid", "截图解码器不允许容忍截断图片。", 503)
     if len(raw) > 4 * 1024 * 1024:
@@ -88,7 +88,7 @@ class HandoffRunner:
                 if hashlib.sha256(path.read_bytes()).hexdigest() != item["sha256"]:
                     raise LabError("capture_changed", "复核截图哈希不一致。", 409)
                 captures.append({"view": view, "path": str(path), **{key: item[key] for key in ("sha256", "mime", "width", "height")}})
-            return {"jobId": job_id, **self.public_context(job, db), "status": job["record"]["status"], "pipelineVersion": PIPELINE, "promptVersion": WORKFLOW_PROMPT_VERSION, "model": MODEL, "sourceHash": state["sourceHash"], "sourceAsset": {**{key: asset[key] for key in ("id", "name", "mime", "width", "height")}, "path": str(source)}, "input": {key: job["payload"][key] for key in ("prompt", "scaleMode", "mmPerPixel", "calibration", "baseVersion") if key in job["payload"]}, "analysis": state.get("analysis"), "scaleProvenance": state.get("scaleProvenance"), "pixelScene": state.get("candidateIR"), "validation": state.get("validation"), "draftId": state.get("draftId"), "captures": captures, "visualReview": state.get("review"), "limits": state["limits"], "usage": None, "instructions": "由当前Codex查看原图，先提交analysis及尺度依据，再提交完整原图像素candidate；网页提交真实2D/3D截图后对照原图提交review，最后finalize。仅提交数据，不提交代码或路径；当前聊天用量未接入本地账单。"}
+            return {"jobId": job_id, **self.public_context(job, db), "status": job["record"]["status"], "pipelineVersion": PIPELINE, "promptVersion": job["record"].get("promptVersion", WORKFLOW_PROMPT_VERSION), "model": MODEL, "sourceHash": state["sourceHash"], "sourceAsset": {**{key: asset[key] for key in ("id", "name", "mime", "width", "height")}, "path": str(source)}, "input": {key: job["payload"][key] for key in ("prompt", "scaleMode", "mmPerPixel", "calibration", "baseVersion") if key in job["payload"]}, "analysis": state.get("analysis"), "scaleProvenance": state.get("scaleProvenance"), "pixelScene": state.get("candidateIR"), "validation": state.get("validation"), "draftId": state.get("draftId"), "captures": captures, "visualReview": state.get("review"), "limits": state["limits"], "usage": None, "instructions": "由当前Codex查看原图，先提交analysis及尺度依据，再提交完整原图像素candidate；网页提交真实2D/3D截图后对照原图提交review，最后finalize。仅提交数据，不提交代码或路径；当前聊天用量未接入本地账单。"}
 
     def _guard(self, job, state, body, kind, db):
         if not isinstance(body, dict):
@@ -297,7 +297,7 @@ class HandoffRunner:
         if state["phase"] != "finalize" or body.get("draftId") != state.get("draftId") or state.get("reviewDraftId") != state.get("draftId") or not state.get("review", {}).get("pass"):
             raise LabError("review_required", "必须先对当前截图候选完成通过复核。", 409)
         scene, editor_state = copy.deepcopy(state["scene"]), copy.deepcopy(state["editorState"])
-        scene.setdefault("metadata", {})["generation"] = {"pipelineVersion": PIPELINE, "promptVersion": WORKFLOW_PROMPT_VERSION, "model": MODEL, "jobId": job["id"], "sourceSha256": state["sourceHash"], "settings": {"executionMode": "codex_handoff"}, "limits": state["limits"], "reviewAppliesTo": "initial_generated_scene", "modelVisualReview": state["review"], "usageAccounting": "current_session_unreported"}
+        scene.setdefault("metadata", {})["generation"] = {"pipelineVersion": PIPELINE, "promptVersion": job["record"].get("promptVersion", WORKFLOW_PROMPT_VERSION), "model": MODEL, "jobId": job["id"], "sourceSha256": state["sourceHash"], "settings": {"executionMode": "codex_handoff"}, "limits": state["limits"], "reviewAppliesTo": "initial_generated_scene", "modelVisualReview": state["review"], "usageAccounting": "current_session_unreported"}
         validation = self.lab.engine.validate_scene(scene)
         validation["errors"].extend(self.lab.engine.validate_state(scene, editor_state).get("errors", []))
         if validation.get("errors"):

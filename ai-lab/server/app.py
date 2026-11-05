@@ -19,6 +19,7 @@ from pathlib import Path
 
 from .prompts import PROMPT_VERSION, generation_messages, parse_json, repair_messages
 from .provider import ProviderError, create_default_provider, normalize_usage, read_private_config
+from . import provider as provider_module
 from .store import LabError, Store, dump, now, uid
 from .workflow import WorkflowRunner, PIPELINE_VERSION, LEGACY_PIPELINE, settings as provider_settings, parse_workflow_limits
 from .workflow_prompts import WORKFLOW_PROMPT_VERSION
@@ -30,6 +31,23 @@ PREFIX = "/api/ai-lab/v1"
 MAX_BODY = 18 * 1024 * 1024
 TERMINAL = {"succeeded", "failed", "cancelled", "needs_input"}
 HANDOFF_PIPELINE = "codex-handoff-v1"
+
+
+def runtime_snapshot(provider):
+    """Comparable public settings, with endpoint identity but no credentials/URL."""
+    result = provider_settings(provider)
+    result.update(executionMode=getattr(provider, "execution_mode", "injected_provider"), providerId=getattr(provider, "provider_id", type(provider).__name__))
+    result["transportStream"] = bool(getattr(provider, "stream", False))
+    endpoint = getattr(provider, "endpoint", None)
+    if isinstance(endpoint, str):
+        result["endpointSha256"] = hashlib.sha256(endpoint.encode()).hexdigest()
+    if getattr(provider, "image_detail", None) is not None:
+        result["imageDetail"] = provider.image_detail
+    return result
+
+
+def api_available(provider):
+    return bool(provider and provider.configured and provider.supports_images and getattr(provider, "_config_valid", True))
 
 
 def initial_state(scene):
@@ -111,6 +129,8 @@ class Lab:
         self.store = Store(data_dir or self.root / ".local-ai-lab")
         self.provider = provider if provider is not None else create_default_provider(config)
         self.execution_mode = getattr(self.provider, "execution_mode", "injected_provider")
+        self.handoff_provider = provider_module.CodexHandoffProvider()
+        self.api_provider = self.provider if self.execution_mode == "api" else (provider_module.create_api_provider(config) if provider is None else None)
         self._engine = engine
         self.pending = queue.Queue()
         self.stop_event = threading.Event()
@@ -118,8 +138,9 @@ class Lab:
         self.workflow = WorkflowRunner(self)
         self.handoff = HandoffRunner(self)
         with self.store.transaction() as db:
-            for row in db.execute("SELECT id,record FROM jobs ORDER BY created"):
-                if self.execution_mode != "codex_handoff" and json.loads(row["record"])["status"] == "queued":
+            for row in db.execute("SELECT id,payload,record FROM jobs ORDER BY created"):
+                payload = json.loads(row["payload"])
+                if json.loads(row["record"])["status"] == "queued" and self._worker_job(payload):
                     self.pending.put(row["id"])
         if start_worker:
             self.worker = threading.Thread(target=self._work, name="ai-lab-single-worker", daemon=True)
@@ -139,7 +160,39 @@ class Lab:
 
     def health(self):
         handoff = self.execution_mode == "codex_handoff"
-        return {"status": "ok", "model": getattr(self.provider, "model", None), "executionMode": self.execution_mode, "providerConfigured": bool(self.provider.configured), "message": "生成任务需由当前 Codex 聊天接力，网页不会自动调用模型。" if handoff else None, "capabilities": {"imageInputVerified": bool(self.provider.supports_images), "generation": handoff or bool(self.provider.configured and self.provider.supports_images), "modify": True, "cancel": True, "export": True, "baselineReference": True, "concurrency": 1, "maxRepairCalls": 1, "usageAccounting": "current_session_unreported" if handoff else "vendor_only", "promptVersion": PROMPT_VERSION, "pipelineVersions": [HANDOFF_PIPELINE, LEGACY_PIPELINE, PIPELINE_VERSION] if handoff else [LEGACY_PIPELINE, PIPELINE_VERSION], "workflowPromptVersion": WORKFLOW_PROMPT_VERSION, "workflowBudget": copy.deepcopy(self.workflow_limits), "browserReviewCapture": True}}
+        api = self.api_provider
+        modes = {"api": {"configured": bool(api and api.configured), "available": api_available(api), "model": getattr(api, "model", None), "providerSettings": runtime_snapshot(api) if api else None}, "codex_handoff": {"configured": True, "available": True, "model": self.handoff_provider.model, "providerSettings": runtime_snapshot(self.handoff_provider)}}
+        return {"status": "ok", "model": getattr(self.provider, "model", None), "executionMode": self.execution_mode, "executionModes": modes, "providerConfigured": bool(self.provider.configured), "message": "生成任务需由当前 Codex 聊天接力，网页不会自动调用模型。" if handoff else None, "capabilities": {"imageInputVerified": bool(self.provider.supports_images), "generation": True, "modify": True, "cancel": True, "export": True, "baselineReference": True, "concurrency": 1, "maxRepairCalls": 1, "usageAccounting": "current_session_unreported" if handoff else "vendor_only", "promptVersion": PROMPT_VERSION, "pipelineVersions": [HANDOFF_PIPELINE, PIPELINE_VERSION], "workflowPromptVersion": WORKFLOW_PROMPT_VERSION, "workflowBudget": copy.deepcopy(self.workflow_limits), "browserReviewCapture": True}}
+
+    def _worker_job(self, payload):
+        if payload.get("pipelineVersion") == HANDOFF_PIPELINE:
+            return False
+        if payload.get("action") == "modify" and payload.get("executionMode") == "codex_handoff":
+            return True  # Existing deterministic local edits require no provider.
+        if payload.get("executionMode") == "api":
+            return payload.get("pipelineVersion") == PIPELINE_VERSION and bool(payload.get("runtimeSnapshot"))
+        # Unlabelled historical production jobs are never adopted by a new API.
+        return self.execution_mode == "injected_provider"
+
+    def provider_for_job(self, job, state=None):
+        if isinstance(job, str):
+            job = self.store.job(job)
+        payload = job["payload"]
+        if payload.get("executionMode") != "api":
+            if self.execution_mode != "injected_provider":
+                raise LabError("api_runtime_snapshot_missing", "历史任务没有可验证的API配置快照；未自动重放。", 409)
+            return self.provider
+        expected = payload.get("runtimeSnapshot")
+        provider = self.api_provider
+        if payload.get("pipelineVersion") != PIPELINE_VERSION or not expected or not provider or runtime_snapshot(provider) != expected or (state is not None and state.get("settings") != expected):
+            raise LabError("api_runtime_changed", "API供应商、模型或设置已变化；旧任务不会用新配置继续，请重新创建任务。", 409)
+        if not provider.configured:
+            raise LabError("api_not_configured", "所选API尚未配置，未发出请求。", 422)
+        if not getattr(provider, "_config_valid", True):
+            raise LabError("api_config_invalid", "所选API配置无效，未发出请求。", 422)
+        if not provider.supports_images:
+            raise LabError("api_image_support_unverified", "所选API图像能力尚未验证，未发出请求。", 422)
+        return provider
 
     def job_events(self, job_id, after=0, limit=100):
         return event_page(self.store.job(job_id)["record"], after, limit)
@@ -166,6 +219,9 @@ class Lab:
                     result["handoff"] = self.handoff.public_context(job, connection)
             else:
                 result["handoff"] = self.handoff.public_context(job, db)
+        elif job["payload"].get("executionMode") == "api":
+            state = self.store.workflow(job_id, db) or {}
+            result["inputContext"] = {"requestId": job_id, "revision": state.get("inputRevision", 0)}
         payload = job["payload"]
         if payload.get("action", "generate") != "generate":
             result.pop("input", None)
@@ -217,12 +273,22 @@ class Lab:
     def create_job(self, project_id, body, idempotency_key=None):
         if body.get("action", "generate") not in ("generate", "modify"):
             raise LabError("invalid_action", "仅支持 generate 或 modify。")
-        payload = {k: v for k, v in body.items() if k in ("action", "assetId", "mmPerPixel", "prompt", "baseVersion", "patch", "pipelineVersion", "scaleMode", "calibration")}
+        payload = {k: v for k, v in body.items() if k in ("action", "assetId", "mmPerPixel", "prompt", "baseVersion", "patch", "pipelineVersion", "scaleMode", "calibration", "executionMode")}
         payload.setdefault("action", "generate")
         payload.setdefault("prompt", "")
         payload.setdefault("pipelineVersion", LEGACY_PIPELINE)
-        if self.execution_mode == "codex_handoff" and payload["action"] == "generate":
-            payload["pipelineVersion"] = HANDOFF_PIPELINE
+        mode = payload.get("executionMode", self.execution_mode)
+        if mode not in ("api", "codex_handoff", "injected_provider") or (mode == "injected_provider" and self.execution_mode != "injected_provider"):
+            raise LabError("invalid_execution_mode", "executionMode仅支持api或codex_handoff。")
+        selected_provider = self.provider
+        if mode in ("api", "codex_handoff"):
+            if mode == "api" and payload["action"] != "generate":
+                raise LabError("api_generation_only", "API执行方式仅支持完整生成工作流。")
+            selected_provider = self.api_provider if mode == "api" else self.handoff_provider
+            payload["executionMode"] = mode
+            if payload["action"] == "generate":
+                payload["pipelineVersion"] = PIPELINE_VERSION if mode == "api" else HANDOFF_PIPELINE
+        snapshot = runtime_snapshot(selected_provider) if selected_provider else None
         if payload["pipelineVersion"] not in (LEGACY_PIPELINE, PIPELINE_VERSION, HANDOFF_PIPELINE) or (payload["pipelineVersion"] in (PIPELINE_VERSION, HANDOFF_PIPELINE) and payload["action"] != "generate"):
             raise LabError("invalid_pipeline", "分阶段工作流仅用于生成；请选择支持的pipelineVersion。")
         if payload["pipelineVersion"] in (PIPELINE_VERSION, HANDOFF_PIPELINE):
@@ -240,6 +306,9 @@ class Lab:
                     if prior["request_hash"] != request_hash:
                         raise LabError("idempotency_conflict", "同一幂等键已用于不同请求。", 409)
                     return {"job": self.public_job(prior["id"], db)}
+            if mode == "api" and not api_available(selected_provider):
+                code = "api_not_configured" if not selected_provider or not selected_provider.configured else "api_config_invalid" if not getattr(selected_provider, "_config_valid", True) else "api_image_support_unverified"
+                raise LabError(code, "所选API未配置或图像能力尚未验证，未创建模型任务。", 422)
             base_version = payload.get("baseVersion", project["version"])
             if not isinstance(base_version, int) or isinstance(base_version, bool):
                 raise LabError("invalid_version", "baseVersion 必须为整数。")
@@ -258,8 +327,10 @@ class Lab:
                 raise LabError("scene_not_found", "请先生成或载入参考场景。", 404)
             if payload["pipelineVersion"] in (PIPELINE_VERSION, HANDOFF_PIPELINE):
                 payload["workflowLimits"] = copy.deepcopy(self.workflow_limits)
+            if mode in ("api", "codex_handoff"):
+                payload["runtimeSnapshot"] = copy.deepcopy(snapshot)
             job_id = uid()
-            record = {"id": job_id, "projectId": project_id, "status": "queued", "stage": "queued", "progress": 0, "message": "等待处理。", "events": [{"at": now(), "stage": "queued", "message": "等待处理。"}], "usage": None, "timings": {}, "model": getattr(self.provider, "model", None) if payload["action"] == "generate" else None, "executionMode": self.execution_mode, "pipelineVersion": payload["pipelineVersion"], "promptVersion": WORKFLOW_PROMPT_VERSION if payload["pipelineVersion"] in (PIPELINE_VERSION, HANDOFF_PIPELINE) else PROMPT_VERSION, "providerSettings": provider_settings(self.provider), "source": "generated" if payload["action"] == "generate" else "modified"}
+            record = {"id": job_id, "projectId": project_id, "status": "queued", "stage": "queued", "progress": 0, "message": "等待处理。", "events": [{"at": now(), "stage": "queued", "message": "等待处理。"}], "usage": None, "timings": {}, "model": getattr(selected_provider, "model", None) if payload["action"] == "generate" else None, "executionMode": mode, "pipelineVersion": payload["pipelineVersion"], "promptVersion": WORKFLOW_PROMPT_VERSION if payload["pipelineVersion"] in (PIPELINE_VERSION, HANDOFF_PIPELINE) else PROMPT_VERSION, "providerSettings": copy.deepcopy(snapshot) if mode in ("api", "codex_handoff") else provider_settings(selected_provider), "source": "generated" if payload["action"] == "generate" else "modified"}
             if payload["pipelineVersion"] == HANDOFF_PIPELINE:
                 record.update(status="awaiting_codex", stage="awaiting_codex", usageAccounting="current_session_unreported", message="等待当前 Codex 聊天接力；网页不会自动执行推理。", events=[{"at": now(), "stage": "awaiting_codex", "message": "已创建接力任务，等待当前 Codex 聊天读取原图与要求。"}])
             if payload["pipelineVersion"] == PIPELINE_VERSION:
@@ -268,7 +339,7 @@ class Lab:
                 record["sourceAsset"] = public_asset(asset)
                 record["input"] = generation_input(body)
             db.execute("INSERT INTO jobs VALUES(?,?,?,?,?,?,?)", (job_id, project_id, dump(payload), dump(record), idempotency_key, request_hash, now()))
-        if record["status"] == "queued":
+        if record["status"] == "queued" and self._worker_job(payload):
             self.pending.put(job_id)
         return {"job": self.public_job(job_id)}
 
@@ -295,8 +366,8 @@ class Lab:
     def run_job(self, job_id):
         started = time.monotonic()
         job = self.store.job(job_id)
-        if self.execution_mode == "codex_handoff" and job["payload"].get("pipelineVersion") in (PIPELINE_VERSION, HANDOFF_PIPELINE):
-            return  # Historical checkpoints are readable, never automatically replayed.
+        if not self._worker_job(job["payload"]):
+            return  # Handoff and historical unsnapshotted jobs are never adopted.
         if job["record"]["status"] != "queued":
             return
         if job["payload"].get("pipelineVersion") == PIPELINE_VERSION:
@@ -324,7 +395,7 @@ class Lab:
                 try:
                     patch = self._parse_patch(payload, effective)
                 except LabError as exc:
-                    if exc.code != "unsupported_modification" or not self.provider.configured:
+                    if exc.code != "unsupported_modification" or self.execution_mode != "injected_provider" or not self.provider.configured:
                         raise
                     if self._cancelled(job_id):
                         return
@@ -665,7 +736,9 @@ class Handler(BaseHTTPRequestHandler):
                 elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/handoff/(analysis|candidate|review|finalize)", route):
                     self._handoff_only()
                     result = lab.handoff.submit(match[1], match[2], body)
-                elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/input", route): result = lab.handoff.submit(match[1], "input", body)
+                elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/input", route):
+                    job = lab.store.job(match[1])
+                    result = lab.workflow.input(match[1], body) if job["payload"].get("executionMode") == "api" else lab.handoff.submit(match[1], "input", body)
                 elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/review-images", route):
                     runner = lab.handoff if lab.store.job(match[1])["payload"].get("pipelineVersion") == HANDOFF_PIPELINE else lab.workflow
                     result, status = runner.review_images(match[1], body), 202

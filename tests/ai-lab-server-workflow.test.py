@@ -60,6 +60,11 @@ class ScriptedProvider:
 
 class WorkflowTests(unittest.TestCase):
     def setUp(self):
+        # This suite asserts the historical v4 budgets/loop. v5 decision-memory
+        # and cycle behavior is covered independently by api-memory tests.
+        prompt_patch = mock.patch("server.app.WORKFLOW_PROMPT_VERSION", workflow_prompts.V4_WORKFLOW_PROMPT_VERSION)
+        prompt_patch.start()
+        self.addCleanup(prompt_patch.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         self.provider = ScriptedProvider([ANALYSIS, STRUCTURE, FURNISH, PASS])
@@ -93,7 +98,7 @@ class WorkflowTests(unittest.TestCase):
         waiting = self.start()
         self.assertEqual(waiting["status"], "awaiting_review_images", waiting)
         self.assertEqual(waiting["pipelineVersion"], PIPELINE_VERSION)
-        self.assertEqual(waiting["promptVersion"], "codex-workflow-prompts-v3")
+        self.assertEqual(waiting["promptVersion"], workflow_prompts.V4_WORKFLOW_PROMPT_VERSION)
         self.assertEqual(waiting["scaleProvenance"]["mode"], "measured")
         self.assertEqual(waiting["scaleProvenance"]["mmPerPixel"], 10)
         self.assertEqual(self.lab.store.project(self.project_id)["version"], 0)
@@ -118,7 +123,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(generation["model"], self.provider.model)
         self.assertEqual(generation["jobId"], waiting["id"])
         self.assertEqual(generation["sourceSha256"], self.lab.store.asset(self.asset["id"])["sha256"])
-        self.assertEqual(generation["promptVersion"], "codex-workflow-prompts-v3")
+        self.assertEqual(generation["promptVersion"], workflow_prompts.V4_WORKFLOW_PROMPT_VERSION)
         self.assertEqual(generation["pipelineVersion"], PIPELINE_VERSION)
         self.assertEqual(generation["limits"], DEFAULT_LIMITS)
         self.assertEqual(generation["reviewAppliesTo"], "initial_generated_scene")
