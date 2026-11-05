@@ -134,11 +134,10 @@ async function savedLayoutProbe() {
   const snapshot = () => ({ canvas: rect(canvas), iframe: rect(iframe), sidebarVisible: visible(sidebar), pageScrollWidth: document.scrollingElement.scrollWidth, pageScrollTop: document.scrollingElement.scrollTop, sameIframe: document.querySelector('iframe.lab-viewer') === iframe });
   await frame();
   const initial = snapshot();
-  root.classList.add('has-viewer-dock'); await frame(); const dockScaleHidden = !visible(required('.lab-scale-trigger'));
-  root.classList.remove('has-viewer-dock'); await frame(); const dockScaleRestored = visible(required('.lab-scale-trigger'));
+  const spaceScaleCount = root.querySelectorAll('.lab-scale-trigger, .lab-scale-popover').length;
   root.classList.add('is-walking'); await frame();
   const exit = required('.lab-walk-exit'), exitRect = rect(exit), exitHit = document.elementFromPoint(exitRect.left + exitRect.width / 2, exitRect.top + exitRect.height / 2);
-  const walking = { ...snapshot(), exitReachable: Boolean(exitHit && exit.contains(exitHit)), hiddenUi: ['.lab-appbar', '.lab-tool-rail', '.lab-sidebar', '.lab-scale-trigger', '.lab-canvas-footer'].every(selector => !visible(required(selector))) };
+  const walking = { ...snapshot(), exitReachable: Boolean(exitHit && exit.contains(exitHit)), hiddenUi: ['.lab-appbar', '.lab-tool-rail', '.lab-sidebar', '.lab-canvas-footer'].every(selector => !visible(required(selector))) };
   root.classList.remove('is-walking'); await frame(); const restoredAfterWalk = snapshot();
   let focused, projectsOpen, closed;
   if (innerWidth > 980) {
@@ -158,7 +157,7 @@ async function savedLayoutProbe() {
     root.classList.remove('mobile-projects-open'); sidebar.setAttribute('aria-hidden', 'true'); scrim.remove();
     await frame(); closed = snapshot();
   }
-  return { viewport: { width: innerWidth, height: innerHeight }, controlsCount: root.querySelectorAll('aside.lab-controls').length, rightToggleCount: root.querySelectorAll('[aria-label="切换 Agent 侧栏"]').length, notesCount: root.querySelectorAll('.lab-canvas-notes, #lab-chat, #lab-prompt').length, modelTextVisible: /layout-model-marker|retained-model-warning-marker/.test(root.textContent), localButtons: ['保存方案', '导出 JSON'].every(label => [...root.querySelectorAll('button')].some(button => button.textContent === label)), initial, dockScaleHidden, dockScaleRestored, walking, restoredAfterWalk, focused, projectsOpen, closed };
+  return { viewport: { width: innerWidth, height: innerHeight }, controlsCount: root.querySelectorAll('aside.lab-controls').length, rightToggleCount: root.querySelectorAll('[aria-label="切换 Agent 侧栏"]').length, notesCount: root.querySelectorAll('.lab-canvas-notes, #lab-chat, #lab-prompt').length, modelTextVisible: /layout-model-marker|retained-model-warning-marker/.test(root.textContent), localButtons: ['保存方案', '导出 JSON'].every(label => [...root.querySelectorAll('button')].some(button => button.textContent === label)), initial, spaceScaleCount, walking, restoredAfterWalk, focused, projectsOpen, closed };
 }
 
 async function layoutProbe() {
@@ -196,7 +195,7 @@ async function layoutProbe() {
     rail: rect(required('.lab-tool-rail')), dimensionTools: rect(required('.lab-dimension-tools')), walkTitle: rect(required('.lab-walk-title')), viewSwitch: rect(required('.lab-view-switch')), workspace: rect(workspace), editor: rect(required('.lab-editor')), canvas: rect(canvas), image: rect(image), knownLength: rect(known),
     sidebar: { ...rect(sidebar), visible: visible(sidebar) }, controls: { ...rect(controls), visible: visible(controls) },
     report: { ...rect(report), clientHeight: report.clientHeight, scrollHeight: report.scrollHeight, scrollTop: report.scrollTop, overflow: getComputedStyle(report).overflowY },
-    walkExit: button('.lab-walk-exit'), projectClose: button('[aria-label="收起项目侧栏"]'), controlsClose: button('[aria-label="收起 Agent 侧栏"]'),
+    walkExit: button('.lab-walk-exit'), walkLighting: button('.lab-walk-lighting select'), walkLightingGroup: rect(required('.lab-walk-lighting')), projectClose: button('[aria-label="收起项目侧栏"]'), controlsClose: button('[aria-label="收起 Agent 侧栏"]'),
     projectToggle: button('[aria-label="切换项目侧栏"]'), controlsToggle: button('[aria-label="切换 Agent 侧栏"]'),
     appbarUncovered: appbarUncovered(), backdropReachable: backdropReachable(),
     page: { scrollTop: document.scrollingElement.scrollTop, scrollWidth: document.scrollingElement.scrollWidth, scrollHeight: document.scrollingElement.scrollHeight },
@@ -348,10 +347,14 @@ test('the new-project editor route keeps edge-to-edge desktop docks and exclusiv
       assert.ok(!measured.walkingShell.sidebar.visible && !measured.walkingShell.controls.visible && measured.walkingShell.rail.width === 0, 'Walking must hide context, Agent and rail without reserving their columns.');
       assert.ok(Math.abs(measured.walkingShell.canvas.width - width) <= 1 && measured.walkingShell.canvas.height >= height - 46);
       assert.ok(measured.walkingShell.walkExit.reachable, 'The linear exit-walk action must remain hit-testable on desktop and mobile.');
-      const exitGap = measured.walkingShell.walkExit.left - measured.walkingShell.viewSwitch.right;
-      assert.ok(exitGap >= 0 && exitGap <= 16, 'Exit walk must sit directly beside 2D/3D, inside the same centered tool group.');
+      const exitGap = measured.walkingShell.viewSwitch.width > 0 ? measured.walkingShell.walkExit.left - measured.walkingShell.viewSwitch.right : null;
+      if (exitGap !== null) assert.ok(exitGap >= 0 && exitGap <= 16, 'Exit walk must sit directly beside 2D/3D inside the centered tools.');
+      else assert.ok(width <= 600, 'Only compact screens may omit the disabled dimension switch while walking.');
+      const lightingGap = measured.walkingShell.walkLightingGroup.left - measured.walkingShell.walkExit.right;
+      assert.ok(lightingGap >= 0 && lightingGap <= 16 && measured.walkingShell.walkLighting.reachable, 'Actual-lighting control must remain adjacent to exit and hit-testable.');
+      assert.ok(measured.walkingShell.dimensionTools.left >= 0 && measured.walkingShell.dimensionTools.right <= width, 'The entire walk tools group must fit on screen.');
       assert.ok(measured.walkingShell.walkTitle.width === 0 || measured.walkingShell.walkTitle.right <= measured.walkingShell.dimensionTools.left - 8, 'The left title must truncate before the centered tools.');
-      context.diagnostic(JSON.stringify({ walkingViewport: width, exitGap, dimensionTools: measured.walkingShell.dimensionTools }));
+      context.diagnostic(JSON.stringify({ walkingViewport: width, exitGap, lightingGap, dimensionTools: measured.walkingShell.dimensionTools }));
       assert.ok(Math.abs((measured.walkingShell.dimensionTools.left + measured.walkingShell.dimensionTools.right) / 2 - width / 2) <= 1);
       assert.ok(calibrationReached.localScrollParents.some(name => name.includes('lab-canvas') || name.includes('lab-calibrator')), 'Known-length form must have a local calibration scroll container.');
       assert.ok(calibrationReached.knownLength.top >= calibrationReached.canvas.top - 1 && calibrationReached.knownLength.bottom <= calibrationReached.canvas.bottom + 1, 'Known-length input must be reachable without scrolling the page.');
@@ -443,7 +446,7 @@ test('a loaded saved scene releases the entire right dock and keeps the local vi
       assert.equal(measured.error, undefined, JSON.stringify(measured));
       assert.equal(measured.controlsCount, 0); assert.equal(measured.rightToggleCount, 0); assert.equal(measured.notesCount, 0);
       assert.equal(measured.modelTextVisible, false); assert.equal(measured.localButtons, true);
-      assert.ok(measured.dockScaleHidden && measured.dockScaleRestored, 'Viewer library/inspector docks hide the outer scale tool, and closing them restores it.');
+      assert.equal(measured.spaceScaleCount, 0, 'Saved 2D/3D space views must not mount parent scale tools.');
       assert.ok(measured.walking.hiddenUi && measured.walking.exitReachable && measured.walking.sameIframe);
       assert.ok(Math.abs(measured.walking.canvas.width - width) <= 1 && measured.walking.canvas.height >= height - 46);
       assert.deepEqual(measured.restoredAfterWalk.canvas, measured.initial.canvas, 'Exiting walk restores the previous local drawer layout without remounting the iframe.');

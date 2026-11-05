@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-type IconName = 'back' | 'left' | 'right' | 'focus' | 'close' | 'plus' | 'plan' | 'upload' | 'arrow' | 'spark' | 'chat' | 'search' | 'projects' | 'view' | 'furniture' | 'properties' | 'ruler' | 'top' | 'iso' | 'fit' | 'send' | 'check' | 'clock';
+type IconName = 'back' | 'left' | 'right' | 'focus' | 'close' | 'plus' | 'plan' | 'upload' | 'arrow' | 'spark' | 'chat' | 'search' | 'projects' | 'view' | 'furniture' | 'properties' | 'ruler' | 'top' | 'iso' | 'fit' | 'send' | 'check' | 'clock' | 'sun';
 const paths: Record<IconName, React.ReactNode> = {
   back: <><path d="m12 5-7 7 7 7M5 12h14"/></>,
   left: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M5.5 8h1M5.5 11h1"/></>,
@@ -25,6 +25,7 @@ const paths: Record<IconName, React.ReactNode> = {
   send: <><path d="m4 4 17 8-17 8 3-8-3-8Zm3 8h14"/></>,
   check: <path d="m5 12 4 4L19 6"/>,
   clock: <><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></>,
+  sun: <><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></>,
 };
 
 export default function StudioIcon({ name, size = 18, style }: { name: IconName; size?: number; style?: CSSProperties }) {

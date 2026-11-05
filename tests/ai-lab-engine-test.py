@@ -303,7 +303,7 @@ drawer('panel',false);assert.equal(dom['.app'].classList.contains('has-left-dock
 
     def test_studio_and_daylight_presets_change_real_lighting_only(self):
         html=render_viewer_html(compiled(),None,'project-a',1)
-        light=re.search(r'function applyLight\([^)]*\)\{[\s\S]*?\n}',html)[0]
+        light='\n'.join(re.search(r'function '+name+r'\([^)]*\)\{[\s\S]*?\n}',html)[0] for name in ('applyLight','setLightingPreset','setSunHour'))
         three=(ROOT/'ai-lab/vendor/three/build/three.module.js').resolve().as_uri()
         script="import assert from 'node:assert/strict'; import * as THREE from "+json.dumps(three)+";\n"+r"""
 const opt={lighting:'studio',night:false,hour:10},sun=new THREE.DirectionalLight(),hemi=new THREE.HemisphereLight();
@@ -311,7 +311,8 @@ const scene=new THREE.Scene(),groundReviewMaterial=new THREE.MeshStandardMateria
 let reviewBackdrop=false;
 const lampG=new THREE.Group(),renderer={toneMappingExposure:0},matCache=new Map(),time={textContent:''};
 const material=new THREE.MeshStandardMaterial();material.envMap={};material.userData.env=1;matCache.set('metal',material);
-let envK=1;const $=()=>time;
+let envK=1,inited=true;const changes=[];const button=()=>({attrs:{},classList:{toggle(){},remove(){}},setAttribute(key,value){this.attrs[key]=value}}),nightButton=button(),presetButtons=['studio','daylight'].map(light=>({...button(),dataset:{light}}));
+const document={querySelectorAll:()=>presetButtons},$=selector=>selector==='#sunT'?time:nightButton;function publishLabViewState(){changes.push({lighting:opt.lighting,night:opt.night,mode:opt.mode})}
 const localStorage={setItem(){throw Error('view preset cannot save layout')}};
 """+light+r"""
 applyLight();const studioIntensity=hemi.intensity;assert.equal(scene.background.getHex(),0xffffff);assert.equal(sun.shadow.radius,4);assert.equal(material.envMapIntensity,.85);
@@ -320,6 +321,10 @@ opt.night=true;applyLight();assert.equal(scene.background.getHex(),0xffffff);ass
 opt.night=false;opt.lighting='studio';applyLight();assert.equal(scene.background.getHex(),0xffffff);assert.equal(hemi.intensity,studioIntensity);assert.equal(time.textContent,'10:00');
 reviewBackdrop=true;opt.lighting='daylight';applyLight();assert.equal(scene.background.getHex(),0xf7f4ee);assert.equal(ground.material,groundReviewMaterial);assert.equal(groundReviewMaterial.color.getHex(),0xf2eee7);
 reviewBackdrop=false;applyLight();assert.equal(scene.background.getHex(),0xffffff);assert.equal(ground.material,groundShadowMaterial);
+const camera=new THREE.PerspectiveCamera();camera.position.set(2,3,4);const cameraBefore=camera.toJSON(),ui={sel:{kind:'furn',id:'f1'}},state={furniture:[{id:'f1',cx:100,w:500}],rooms:{r1:{mat:'wood'}}},stateBefore=JSON.stringify(state),selectionBefore={...ui.sel};
+opt.mode='walk';opt.cut=2.8;opt.night=true;assert.equal(setLightingPreset('studio'),true);assert.equal(opt.night,false);assert.equal(opt.lighting,'studio');assert.equal(opt.mode,'walk');assert.equal(opt.cut,2.8);assert.deepEqual(camera.toJSON(),cameraBefore);assert.deepEqual(ui.sel,selectionBefore);assert.equal(JSON.stringify(state),stateBefore);
+assert.equal(setSunHour(14.5),true);assert.equal(opt.lighting,'daylight');assert.equal(opt.hour,14.5);assert.equal(opt.mode,'walk');assert.deepEqual(camera.toJSON(),cameraBefore);assert.equal(JSON.stringify(state),stateBefore);assert.ok(changes.every(change=>change.mode==='walk'));assert.equal(changes.length,2);
+const unchanged={...opt};assert.equal(setLightingPreset('hdr'),false);assert.equal(setLightingPreset(['studio']),false);assert.equal(setSunHour(Infinity),false);assert.equal(setSunHour(22),false);assert.deepEqual(opt,unchanged);assert.equal(changes.length,2);
 """
         result=subprocess.run(['node','--input-type=module'],input=script,text=True,encoding='utf-8',capture_output=True)
         self.assertEqual(result.returncode,0,result.stderr)
@@ -354,9 +359,9 @@ assert.equal(attrs.get('data-plan-profile'),'linear');attrs.delete('data-plan-pr
         script=r"""
 const assert=require('node:assert/strict');
 const messages=[],actions=[];const parent={postMessage(message,origin){assert.equal(origin,'http://localhost:5186');messages.push(message)}};
-const window={parent,location:{origin:'http://localhost:5186'},View3D:{flyToRoom:id=>actions.push(['room',id]),navigation:()=>navigation,walking:()=>navigation==='walk',setNavigation(mode){navigation=mode;actions.push(['navigation',mode]);return true}}};
+const window={parent,location:{origin:'http://localhost:5186'},View3D:{flyToRoom:id=>actions.push(['room',id]),navigation:()=>navigation,walking:()=>navigation==='walk',lighting:()=>lighting,night:()=>night,setLighting(preset){lighting=preset;night=false;actions.push(['lighting',preset]);return true},setNavigation(mode){navigation=mode;actions.push(['navigation',mode]);return true}}};
 const AI_LAB={context:{projectId:'project-a',version:7}},ROOMS=[{id:'r1'}],ui={sel:null},state={furniture:[],rooms:{r1:{name:'room',mat:'wood'}},demolished:[],measures:[]};
-let viewMode='2d',navigation='orbit',switching=false,labCapturePending=false,labBridgeReady=true,labDockFitFrame=0;
+let viewMode='2d',navigation='orbit',lighting='studio',night=false,switching=false,labCapturePending=false,labBridgeReady=true,labDockFitFrame=0;
 function element(action){const classes=new Set();return {inert:false,attrs:{},classList:{contains:key=>classes.has(key),toggle(key,on){if(on===undefined)on=!classes.has(key);on?classes.add(key):classes.delete(key)},remove:key=>classes.delete(key)},setAttribute(key,value){this.attrs[key]=value},click(){actions.push([action])}}}
 const dom=Object.fromEntries(['aside.lib','aside.right','#tgLib','#tgPanel','#stage','#vTop','#vIso','#fileIn','.app'].map(key=>[key,element(key)]));
 const $=key=>dom[key],tr=zh=>zh;const document={body:element()};document.body.classList.toggle('external-controls',true);
@@ -377,16 +382,17 @@ async function command(fields,origin=window.location.origin,source=parent){await
  await command({command:'set-camera',preset:'top'});assert.ok(actions.some(action=>action[0]==='#vTop'));
  await command({command:'focus-room',roomId:'r1'});assert.ok(actions.some(action=>action[0]==='room'&&action[1]==='r1'));
  await command({command:'import-state'});assert.ok(actions.some(action=>action[0]==='#fileIn'));
- await command({command:'set-navigation',mode:'walk'});assert.equal(messages.at(-1).viewState.navigation,'walk');assert.deepEqual(messages.at(-1).viewState.panes,{library:false,panel:false});
+ await command({command:'set-navigation',mode:'walk'});assert.equal(messages.at(-1).viewState.navigation,'walk');
+ await command({command:'set-lighting',preset:'daylight'});assert.equal(messages.at(-1).error,undefined);assert.equal(messages.at(-1).viewState.navigation,'walk');assert.equal(messages.at(-1).viewState.lighting,'daylight');assert.equal(messages.at(-1).viewState.night,false);assert.deepEqual(messages.at(-1).viewState.panes,{library:false,panel:false});
  await command({command:'open-panel',panel:'library',action:'open'});assert.equal(messages.at(-1).error.code,'view_busy');
  await command({command:'set-navigation',mode:'orbit'});assert.equal(messages.at(-1).viewState.navigation,'orbit');
  const actionCount=actions.length;
- for(const invalid of [{command:'eval',code:'globalThis.attacked=true'},{command:'__proto__'},{command:['fit']},{command:{name:'fit'}},{command:'set-view-mode',mode:'4d'},{command:'set-navigation',mode:'fly'},{command:'set-camera',preset:'front'},{command:'open-panel',panel:'html',action:'open'},{command:'focus-room',roomId:'missing'},{command:'fit',code:'arbitrary'},{command:'fit',mode:'3d'}]){
+ for(const invalid of [{command:'eval',code:'globalThis.attacked=true'},{command:'__proto__'},{command:['fit']},{command:{name:'fit'}},{command:'set-view-mode',mode:'4d'},{command:'set-navigation',mode:'fly'},{command:'set-lighting',preset:'hdr'},{command:'set-lighting',preset:['studio']},{command:'set-lighting',preset:'studio',camera:{x:1}},{command:'set-camera',preset:'front'},{command:'open-panel',panel:'html',action:'open'},{command:'focus-room',roomId:'missing'},{command:'fit',code:'arbitrary'},{command:'fit',mode:'3d'}]){
   await command(invalid);assert.equal(messages.at(-1).error.code,'invalid_command');assert.equal(actions.length,actionCount);
  }
  await command({command:'fit',projectVersion:6});assert.equal(messages.at(-1).error.code,'stale_context');
  await command({command:'fit',projectId:'other-project'});assert.equal(messages.at(-1).error.code,'stale_context');assert.equal(actions.length,actionCount);
- labCapturePending=true;await command({command:'fit'});assert.equal(messages.at(-1).error.code,'view_busy');assert.equal(messages.at(-1).viewState.busy,true);assert.equal(actions.length,actionCount);labCapturePending=false;
+ labCapturePending=true;await command({command:'fit'});assert.equal(messages.at(-1).error.code,'view_busy');assert.equal(messages.at(-1).viewState.busy,true);assert.equal(actions.length,actionCount);await command({command:'set-lighting',preset:'studio'});assert.equal(messages.at(-1).error.code,'view_busy');assert.equal(actions.length,actionCount);labCapturePending=false;
  await command({command:'fit'});assert.equal(actions.at(-1)[0],'fit');
  const ready=labViewMessage('ai-lab:ready');assert.equal(ready.requestId,null);assert.equal(ready.projectId,'project-a');assert.equal(ready.projectVersion,7);assert.equal(ready.viewState.busy,false);
  await handleLabMessage({source:parent,origin:window.location.origin,data:{type:'ai-lab:get-state',requestId:'old-state'}});assert.equal(messages.at(-1).type,'ai-lab:state');assert.deepEqual(messages.at(-1).state,state);assert.equal(messages.at(-1).projectVersion,7);
@@ -428,7 +434,7 @@ const SW=()=>classes.has('lab-walking')?1200:900,SH=()=>700,ROOMS=[{id:'r1',at:[
 const elements=Object.fromEntries(['#walkOverlay','#cross'].map(key=>[key,{style:{display:''}}])), $=key=>elements[key];
 const walkCtl={unlock(){}},archUp=new THREE.Group();const edge=new THREE.Object3D();edge.userData.walkOnly=true;archUp.add(edge);
 const messages=[];const window={select(value){ui.sel=value}};
-function finishViewInteraction(){finishCount++}function cancelAnimationFrame(){}function syncCutBtns(){}function syncModeBtns(){}function syncHint3d(){}function sync(){}function showLabels(value){edge.userData.labels=value}
+function closeOperationHelp(){}function finishViewInteraction(){finishCount++}function cancelAnimationFrame(){}function syncCutBtns(){}function syncModeBtns(){}function syncHint3d(){}function sync(){}function showLabels(value){edge.userData.labels=value}
 function startTouchWalk(){touchWalk=true}function stopTouchWalk(){touchWalk=false}function publishLabViewState(){messages.push({mode:opt.mode,walking:classes.has('lab-walking')})}
 function flyTo(){throw Error('restored navigation must retain previous camera, not replace it with iso')}
 const localStorage={setItem(){throw Error('navigation cannot write saved state')}};
@@ -482,6 +488,38 @@ for(const order of ['fit-first','observer-first']){
  const center=view.x0+svg.clientWidth/(2*view.s);svg.clientWidth=250;const oldScale=view.s;resizePlanViewport();assert.equal(view.s,oldScale);assert.ok(Math.abs(view.x0+250/(2*view.s)-center)<1e-7);
  svg.clientWidth=0;const hidden={...view};fitView();resizePlanViewport();assert.deepEqual(view,hidden);
 }
+"""
+        result=subprocess.run(['node'],input=script,text=True,encoding='utf-8',capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_help_is_separate_from_properties_and_blocks_editing_keys(self):
+        html=render_viewer_html(compiled(),None,'project-a',1)
+        names=('overviewPanel','furnPanel','operationHelpContent','openOperationHelp','closeOperationHelp','handleHelpKey','handleHelpClick','handleEditorKeydown')
+        functions='\n'.join(re.search(r'function '+name+r'\([^)]*\)\{[\s\S]*?\n}',html)[0] for name in names)
+        script=r"""
+const assert=require('node:assert/strict');
+let viewMode='2d',switching=false,labCapturePending=false,walking=false,finished=0,clearedInput=0;
+const ui={sel:{kind:'furn',id:'f1'},mA:null,tool:'select'},state={furniture:[{id:'f1',name:'Desk',w:600,d:500,cx:100,cy:200,rot:0,color:'#999999'}],rooms:{},demolished:[],measures:[]},stateBefore=JSON.stringify(state),selected={...ui.sel};
+const ROOMS=[],WALLS=[],MATS={},FLOORPLAN_CASE={metadata:{}},COARSE=true,tr=(zh,en)=>zh,esc=value=>String(value),nm=value=>value,fmt=value=>String(value),area=()=>0;
+function scaleProvenancePanel(){return '<section>scale evidence</section>'}
+const dialog={open:false,showModal(){this.open=true},close(){this.open=false},getBoundingClientRect(){return {left:10,right:100,top:20,bottom:150}}};
+const toggle={attrs:{},setAttribute(key,value){this.attrs[key]=value}},content={innerHTML:''},title={textContent:''};
+const dom={'#operationHelp':dialog,'#operationHelpToggle':toggle,'#operationHelpContent':content,'#operationHelpTitle':title};const $=key=>dom[key];
+const document={body:{classList:{contains:key=>key==='external-controls'}},querySelectorAll:()=>[]};const is3D=()=>viewMode==='3d';
+const window={View3D:{walking:()=>walking,clearInput(){clearedInput++}}};function finishViewInteraction(){finished++}
+const fail=()=>{throw Error('help leaked an editing shortcut')};const rotateSel=fail,deleteSel=fail,duplicateSel=fail,undo=fail,redo=fail,mutate=fail,setView=fail,setTool=fail,fitCanvas=fail,zoomCenter=fail,toggleFullscreen=fail,drawer=fail,renderMeasure=fail;
+function closeDrawers(){}function select(value){ui.sel=value}
+"""+functions+r"""
+const overview=overviewPanel(),properties=furnPanel(state.furniture[0]);assert.ok(overview.includes('scale evidence'));assert.ok(properties.includes('fW'));assert.equal(overview.includes('键盘快捷键'),false);assert.equal(overview.includes('触屏操作'),false);assert.equal(properties.includes('拖动家具移动'),false);
+assert.ok(operationHelpContent().includes('2D 平面操作'));assert.ok(operationHelpContent().includes('上方圆点'));assert.ok(operationHelpContent().includes('V / M / X'));assert.equal(operationHelpContent().includes('Space'),false);
+viewMode='3d';assert.ok(operationHelpContent().includes('3D 空间操作'));assert.equal(operationHelpContent().includes('上方圆点'),false);assert.equal(operationHelpContent().includes('V / M / X'),false);viewMode='2d';
+openOperationHelp();assert.equal(dialog.open,true);assert.equal(toggle.attrs['aria-expanded'],'true');assert.equal(finished,1);assert.equal(clearedInput,1);
+function key(value,extra={}){return {key:value,target:{matches:()=>false},stopPropagation(){this.stopped=true},preventDefault(){this.prevented=true},...extra}}
+for(const event of [key('r'),key('Delete'),key('ArrowRight'),key('z',{ctrlKey:true}),key('d',{metaKey:true}),key('Tab')]){handleEditorKeydown(event);assert.equal(event.stopped,true);assert.equal(event.prevented,undefined);assert.deepEqual(ui.sel,selected)}
+const escape=key('Escape',{target:{matches:()=>true}});handleEditorKeydown(escape);assert.equal(escape.prevented,true);assert.equal(escape.stopped,true);assert.equal(dialog.open,false);assert.equal(toggle.attrs['aria-expanded'],'false');assert.deepEqual(ui.sel,selected);assert.equal(JSON.stringify(state),stateBefore);
+openOperationHelp();handleHelpClick({target:dialog,currentTarget:dialog,clientX:50,clientY:50});assert.equal(dialog.open,true);handleHelpClick({target:dialog,currentTarget:dialog,clientX:0,clientY:0});assert.equal(dialog.open,false);assert.deepEqual(ui.sel,selected);
+walking=true;openOperationHelp();assert.equal(dialog.open,false);walking=false;labCapturePending=true;openOperationHelp();assert.equal(dialog.open,false);labCapturePending=false;
+handleEditorKeydown(key('Escape'));assert.equal(ui.sel,null);assert.equal(JSON.stringify(state),stateBefore);
 """
         result=subprocess.run(['node'],input=script,text=True,encoding='utf-8',capture_output=True)
         self.assertEqual(result.returncode,0,result.stderr)
