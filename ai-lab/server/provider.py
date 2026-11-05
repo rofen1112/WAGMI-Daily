@@ -1,4 +1,4 @@
-"""The documented Seedance gateway; credentials never leave this module."""
+"""Runtime defaults to current-session handoff; legacy gateway is explicit test-only."""
 import json
 import math
 import os
@@ -9,6 +9,24 @@ from .response_json import JsonResponseError, normalization_report, normalize_js
 
 MODEL = "deepseek-v4-1-flash-260910"
 ENDPOINT = "https://etc.seedance-api.net/server/api/call"
+
+
+class CodexHandoffProvider:
+    """No automatic inference, credential probing, or network fallback."""
+    model = "codex-current-session"
+    execution_mode = "codex_handoff"
+    configured = False
+    supports_images = False
+    wire_mode = "local_handoff"
+
+    def complete(self, messages):
+        raise ProviderError("codex_handoff_required", "此任务需由当前 Codex 聊天接力执行，网页不会自动调用模型。")
+
+
+def create_default_provider(config=None):
+    # Existing gateway credentials remain private and preserved, but cannot
+    # select or activate the old provider during runtime construction.
+    return CodexHandoffProvider()
 
 
 class ProviderError(Exception):

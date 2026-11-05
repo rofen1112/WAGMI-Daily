@@ -13,7 +13,7 @@ async function load(relative, context = {}) {
   const text = await readFile(resolve(root, relative), 'utf8');
   const code = ts.transpileModule(text.replaceAll('import.meta.env.DEV', 'true'), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX }, fileName: relative }).outputText;
   const exports = {};
-  vm.runInNewContext(code, { exports, URL, URLSearchParams, AbortController, console, setTimeout, clearTimeout, ...context });
+  vm.runInNewContext(code, { exports, URL, URLSearchParams, AbortController, crypto: globalThis.crypto, console, setTimeout, clearTimeout, ...context });
   return exports;
 }
 
@@ -23,11 +23,13 @@ async function loadLabPage(context) {
   const icons = await load('src/features/ai-lab/StudioIcon.tsx', context);
   const thumbnail = await load('src/features/ai-lab/SceneThumbnail.tsx', { ...context, require(id) { return id === './StudioIcon' ? icons : context.require(id); } });
   const gallery = await load('src/features/ai-lab/ProjectsGallery.tsx', { ...context, require(id) { if (id === './StudioIcon') return icons; if (id === './SceneThumbnail') return thumbnail; return context.require(id); } });
+  const agent = await load('src/features/ai-lab/AgentPanel.tsx', { ...context, require(id) { if (id === './StudioIcon') return icons; return context.require(id); } });
   return load('src/features/ai-lab/AiLabPage.tsx', { ...context, require(id) {
     if (id === './ScaleCalibrator') return calibration;
     if (id === './WorkflowSummary') return workflow;
     if (id === './StudioIcon') return icons;
     if (id === './ProjectsGallery') return gallery;
+    if (id === './AgentPanel') return agent;
     if (id === './assets/ark-logo.png') return { default: '/test-assets/ark-logo.png' };
     return context.require(id);
   } });
@@ -122,6 +124,14 @@ test('calibration maps contained-image coordinates to source pixels and submits 
   assert.throws(() => api.generationScalePayload('calibrated', '', [[1, 1], [1, 1]], '3000', asset), /两个不同点/);
   assert.equal(api.isActiveJob({ status: 'awaiting_review_images' }), true);
   assert.equal(api.projectStatusLabel({ sceneVersion: 0, latestJob: { status: 'awaiting_review_images' } }), '等待预览复核');
+  const React = require('react'), { renderToStaticMarkup } = require('react-dom/server');
+  const { default: Calibrator } = await load('src/features/ai-lab/ScaleCalibrator.tsx', { require: id => id === './api' ? api : require(id) });
+  const props = { asset, imageUrl: '/source.png', points: [[100, 100], [400, 500]], lengthMm: '3000', disabled: false, onPoints() {}, onLength() {} };
+  assert.match(renderToStaticMarkup(React.createElement(Calibrator, props)), /id="lab-known-length"/);
+  const compact = renderToStaticMarkup(React.createElement(Calibrator, { ...props, compact: true }));
+  assert.doesNotMatch(compact, /id="lab-known-length"/);
+  assert.match(compact, /lab-calibrator is-compact/); assert.match(compact, /<details class="lab-calibration-advanced">/);
+  assert.equal((compact.match(/aria-label="点[12][XY]像素坐标"/g) || []).length, 4, 'Compact mode retains keyboard coordinate entry in closed advanced options.');
 });
 
 test('generation input snapshots restore only public assets and submitted valid fields', async () => {
@@ -224,7 +234,7 @@ test('draft capture uploads once per revision, explicitly retries failure and ne
     useCallback(callback, deps) { const index = cursor++; if (!hooks[index] || !equal(hooks[index].deps, deps)) hooks[index] = { callback, deps }; return hooks[index].callback; },
     useEffect(callback, deps) { const index = cursor++, previous = hooks[index]; if (!previous || !equal(previous.deps, deps)) { hooks[index] = { deps }; effects.push(() => { previous?.cleanup?.(); hooks[index].cleanup = callback(); }); } },
   };
-  const jsx = (type, props, key) => { if (type === 'iframe' && props.ref) props.ref.current = { contentWindow: source }; return { type, props, key }; };
+  const jsx = (type, props, key) => { if (typeof type === 'function' && type.name === 'AgentPanel') return type(props); if (type === 'iframe' && props.ref) props.ref.current = { contentWindow: source }; return { type, props, key }; };
   const page = await loadLabPage({ window, require(id) {
     if (id === 'react') return react;
     if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx };
@@ -236,7 +246,7 @@ test('draft capture uploads once per revision, explicitly retries failure and ne
   const flush = async () => { for (let index = 0; index < 15; index++) { await new Promise(setImmediate); if (dirty) render(); } };
   const find = (node, predicate) => { if (!node || typeof node !== 'object') return null; if (Array.isArray(node)) { for (const child of node) { const found = find(child, predicate); if (found) return found; } return null; } return predicate(node) ? node : find(node.props?.children, predicate); };
   const poll = async () => { const timer = [...timers.entries()].find(([, item]) => item.delay === 500 || item.delay === 1500); assert.ok(timer); timers.delete(timer[0]); await timer[1].callback(); await flush(); };
-  const ready = async () => { emit({ source, origin: window.location.origin, data: { type: 'ai-lab:ready' } }); await flush(); };
+  const ready = async () => { emit({ source, origin: window.location.origin, data: { type: 'ai-lab:ready', projectId: 'draft-' + currentJob.draft.id, projectVersion: 1 } }); await flush(); };
   render(); await flush();
   const originalTab = find(tree, (node) => node.type === 'button' && node.props.children === '原始平面图');
   assert.equal(originalTab.props.disabled, false); originalTab.props.onClick(); await flush();
@@ -247,9 +257,17 @@ test('draft capture uploads once per revision, explicitly retries failure and ne
   await ready();
   assert.equal(captureCount, 1); assert.equal(posts.length, 1); assert.equal(posts[0].body.draftId, 'd1');
   assert.equal(posts[0].body.images[0].view, '2d'); assert.equal(posts[0].body.images[1].view, '3d');
+  find(tree, node => node.type === 'button' && node.props.children === '原始平面图').props.onClick(); await flush();
+  assert.equal(find(tree, node => node.props?.className === 'lab-draft-bar'), null);
+  assert.match(renderedText(find(tree, node => node.props?.className === 'lab-canvas-footer')), /原始图纸/);
+  assert.doesNotMatch(renderedText(find(tree, node => node.props?.className === 'lab-canvas-footer')), /候选方案/);
+  find(tree, node => node.type === 'button' && node.props.children === '空间预览').props.onClick(); await flush(); await ready();
+  assert.equal(captureCount, 1, 'Source-image navigation must not retrigger captures for the same candidate.');
+
   currentJob = { ...currentJob, sourceAsset: { ...inputAsset, id: 'repeat', url: '/api/ai-lab/v1/assets/repeat' }, input: { scaleMode: 'manual', mmPerPixel: 99, prompt: '轮询重复字段不应回填' } };
   await ready(); await poll(); assert.equal(captureCount, 1); assert.equal(posts.length, 1);
   assert.equal(find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.value, '本次原始生成要求');
+  find(tree, (node) => node.type === 'button' && node.props['aria-label'] === '比例尺与尺寸校准').props.onClick(); await flush();
   assert.equal(find(tree, (node) => node.type === 'select' && node.props.id === 'lab-scale-mode').props.value, 'auto');
   assert.equal(find(tree, (node) => node.type === 'iframe').props.src.includes('draftId=d1'), true);
   for (const label of ['导出 JSON', '保存方案']) assert.equal(find(tree, (node) => node.type === 'button' && node.props.children === label).props.disabled, true);
@@ -266,7 +284,7 @@ test('draft capture uploads once per revision, explicitly retries failure and ne
   assert.equal(find(tree, (node) => node.props?.className === 'lab-canvas-notes'), null, 'Removed explanatory overlays must not return for terminal candidates.');
   assert.equal(find(tree, (node) => node.type === 'button' && node.props.children === '导出 JSON').props.disabled, true);
   assert.ok(find(tree, (node) => node.type === 'aside' && node.props.className === 'lab-controls'), 'An unsaved failed candidate must retain the initial generation panel.');
-  assert.equal(find(tree, (node) => node.type === 'button' && node.props.className?.includes('lab-generate')).props.disabled, false, 'A failed initial generation can still be submitted again.');
+  assert.equal(find(tree, (node) => node.type === 'button' && node.props.className?.includes('lab-agent-send')).props.disabled, false, 'A failed initial generation can still be submitted again.');
   for (const hook of hooks) hook?.cleanup?.();
 });
 
@@ -281,12 +299,15 @@ test('project links retain local saved editing and recover unfinished generation
   const automaticJob = { id: 'j4', projectId: 'p4', status: 'needs_input', sourceAsset: recoveryAsset, input: { scaleMode: 'auto', prompt: '自动比例原始要求' } };
   const calibrationJob = { id: 'j5', projectId: 'p5', status: 'failed', sourceAsset: recoveryAsset, input: { scaleMode: 'calibrated', calibration: { p1: [100, 100], p2: [400, 100], lengthMm: 3000 }, prompt: '校准原始要求' } };
   const manualJob = { id: 'j6', projectId: 'p6', status: 'failed', sourceAsset: recoveryAsset, input: { scaleMode: 'manual', mmPerPixel: 18, prompt: '手动比例原始要求' } };
+  const handoffJob = { id: 'j10', projectId: 'p10', status: 'awaiting_input', stage: 'scale_check', pipelineVersion: 'codex-handoff-v1', sourceAsset: recoveryAsset, input: { scaleMode: 'auto', prompt: '当前聊天核对比例' }, handoff: { requestId: 'scale-request', revision: 2, phase: 'scale_check' } };
   const projects = [{ id: 'p1', title: '住宅', sceneVersion: 2 }, { id: 'p2', title: '办公', sceneVersion: 1 }, { id: 'p3', title: '未通过校验', sceneVersion: 0, latestJob: failedJob }, { id: 'p4', title: '自动估算待补信息', sceneVersion: 0, latestJob: automaticJob }, { id: 'p5', title: '已知长度失败项目', sceneVersion: 0, latestJob: calibrationJob }, { id: 'p6', title: '失败但保留旧版本', sceneVersion: 2, latestJob: manualJob }];
   let projectRefreshResponse = null;
   const requests = [];
   const statePosts = [], downloads = [];
   const editorState = { furniture: [{ id: 'desk-local', cx: 150, cy: 200, w: 100, d: 50, rot: 90 }], rooms: {}, demolished: [], measures: [] };
-  const viewerWindow = {};
+  projects.push({ id: 'p10', title: '当前聊天待补尺寸', sceneVersion: 0, latestJob: handoffJob });
+  const bridgeCommands = [];
+  const viewerWindow = { postMessage(message, origin) { bridgeCommands.push({ message, origin }); } };
   let rejectStateSave = false;
   const hooks = [];
   let cursor = 0, dirty = false, effects = [], tree;
@@ -297,7 +318,7 @@ test('project links retain local saved editing and recover unfinished generation
     useCallback(callback, deps) { const index = cursor++; if (!hooks[index] || !equal(hooks[index].deps, deps)) hooks[index] = { callback, deps }; return hooks[index].callback; },
     useEffect(callback, deps) { const index = cursor++, previous = hooks[index]; if (!previous || !equal(previous.deps, deps)) { hooks[index] = { deps }; effects.push(() => { previous?.cleanup?.(); hooks[index].cleanup = callback(); }); } },
   };
-  const jsx = (type, props, key) => { if (type === 'iframe' && props.ref) props.ref.current = { contentWindow: viewerWindow }; return { type, props, key }; };
+  const jsx = (type, props, key) => { if (typeof type === 'function' && type.name === 'AgentPanel') return type(props); if (type === 'iframe' && props.ref) props.ref.current = { contentWindow: viewerWindow }; return { type, props, key }; };
   const helpers = await load('src/features/ai-lab/api.ts');
   const api = {
     ...helpers,
@@ -305,10 +326,10 @@ test('project links retain local saved editing and recover unfinished generation
     errorMessage: (error) => error.message, projectPath: (id) => `/projects/${id}`, jobError: () => '', sceneSourceLabel: () => '生成结果需人工核对',
     async request(path) {
       requests.push(path);
-      if (path === '/health') return { status: 'ok', providerConfigured: true, model: 'test-vendor-model-marker' };
+      if (path === '/health') return { status: 'ok', providerConfigured: false, executionMode: 'codex_handoff', capabilities: { generation: true }, model: 'test-vendor-model-marker' };
       if (path === '/projects') return projectRefreshResponse ? projectRefreshResponse() : { projects: projects.map((project) => ({ ...project })) };
       if (path === '/baselines') return { baselines: [{ id: 'reference-one', title: '离线历史参考' }] };
-      if (['/projects/p3/scene', '/projects/p4/scene', '/projects/p5/scene'].includes(path)) return null;
+      if (['/projects/p3/scene', '/projects/p4/scene', '/projects/p5/scene', '/projects/p10/scene'].includes(path)) return null;
       if (path === '/projects/p6/scene') return { scene: { furniture: [], metadata: { mmPerPixel: 99 } }, state: null, version: 2, sourceAsset: { ...recoveryAsset, id: 'older', url: '/api/ai-lab/v1/assets/older' } };
       if (path === '/projects/p6/export') return { projectId: 'p6', scene: { furniture: [] }, state: editorState, version: 2 };
       if (path.endsWith('/scene')) return { scene: { furniture: [], metadata: { mmPerPixel: path.includes('/p1/') ? 25 : -2 } }, state: null, version: 2 };
@@ -389,15 +410,19 @@ test('project links retain local saved editing and recover unfinished generation
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p4');
   assert.ok(find(tree, (node) => node.type === 'img' && node.props.src === recoveryAsset.url));
   assert.equal(find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.value, '自动比例原始要求');
+  find(tree, (node) => node.type === 'button' && node.props['aria-label'] === '比例尺与尺寸校准').props.onClick(); await flush();
   assert.equal(find(tree, (node) => node.type === 'select' && node.props.id === 'lab-scale-mode').props.value, 'auto');
-  assert.equal(find(tree, (node) => node.type === 'button' && node.props.className?.includes('lab-generate')).props.disabled, false);
+  assert.equal(find(tree, (node) => node.type === 'button' && node.props.className?.includes('lab-agent-send')).props.disabled, false);
   find(tree, (node) => node.type === 'select' && node.props.id === 'lab-scale-mode').props.onChange({ target: { value: 'calibrated' } }); await flush();
   const calibrator = () => find(tree, (node) => node.props?.asset?.id === recoveryAsset.id && Array.isArray(node.props.points));
-  calibrator().props.onPoints([[10, 10], [510, 10]]); calibrator().props.onLength('5000');
+  assert.equal(calibrator().props.compact, true);
+  calibrator().props.onPoints([[10, 10], [510, 10]]);
+  find(tree, (node) => node.type === 'input' && node.props.id === 'lab-scale-known-length').props.onChange({ target: { value: '5000' } });
   find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.onChange({ target: { value: '用户正在修正生成要求' } }); await flush();
   const recoveryReads = requests.filter((path) => path === '/projects/p4/scene').length;
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p4&context=unrelated');
   assert.equal(calibrator().props.lengthMm, '5000'); assert.equal(calibrator().props.points[1][0], 510);
+  assert.match(renderedText(tree), /当前换算：10 mm \/ px/);
   assert.equal(find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.value, '用户正在修正生成要求');
   assert.equal(requests.filter((path) => path === '/projects/p4/scene').length, recoveryReads);
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p5');
@@ -467,8 +492,25 @@ test('project links retain local saved editing and recover unfinished generation
   assert.equal(requests.length, requestsBeforeDockChanges, 'Dock and tab changes must not issue requests.');
   window.matchMedia = () => ({ matches: false });
   find(tree, (node) => node.type === 'button' && node.props.children === '空间预览').props.onClick(); await flush();
-  const viewerReady = async () => { for (const callback of listeners.get('message') || []) callback({ source: viewerWindow, origin: window.location.origin, data: { type: 'ai-lab:ready' } }); await flush(); };
+  const viewerReady = async () => { for (const callback of listeners.get('message') || []) callback({ source: viewerWindow, origin: window.location.origin, data: { type: 'ai-lab:ready', projectId: 'p6', projectVersion: Number(find(tree, (node) => node.type === 'iframe').props.src.match(/version=(\d+)/)[1]) } }); await flush(); };
   await viewerReady();
+  const publishView = (data, origin = window.location.origin, source = viewerWindow) => { for (const callback of listeners.get('message') || []) callback({ source, origin, data: { type: 'ai-lab:view-state', requestId: null, projectId: 'p6', projectVersion: 2, ...data } }); };
+  const state3d = { mode: '3d', panes: { library: false, panel: false }, selection: null, busy: false };
+  publishView({ viewState: state3d }, 'https://unrelated.test'); publishView({ viewState: state3d }, window.location.origin, {}); publishView({ projectVersion: 1, viewState: state3d }); await flush();
+  assert.equal(find(tree, node => node.type === 'button' && node.props.children === '3D').props['aria-pressed'], false);
+  publishView({ viewState: state3d }); await flush();
+  assert.equal(find(tree, node => node.type === 'button' && node.props.children === '3D').props['aria-pressed'], true);
+  find(tree, node => node.type === 'button' && node.props.children === '2D').props.onClick(); await flush();
+  const modeCommand = bridgeCommands.at(-1); assert.equal(modeCommand.origin, window.location.origin); assert.equal(modeCommand.message.type, 'ai-lab:command'); assert.equal(modeCommand.message.projectId, 'p6'); assert.equal(modeCommand.message.projectVersion, 2); assert.equal(modeCommand.message.mode, '2d');
+  assert.equal(find(tree, node => node.type === 'button' && node.props.children === '2D').props['aria-pressed'], false, 'A command must not optimistically fake a viewer state.');
+  publishView({ requestId: 'unrelated-request', viewState: { ...state3d, mode: '2d' } }); await flush();
+  assert.equal(find(tree, node => node.type === 'button' && node.props.children === '2D').props['aria-pressed'], false);
+  publishView({ requestId: modeCommand.message.requestId, viewState: { ...state3d, mode: '2d' } }); await flush();
+  assert.equal(find(tree, node => node.type === 'button' && node.props.children === '2D').props['aria-pressed'], true);
+  find(tree, node => node.type === 'button' && node.props['aria-label'] === '打开家具库').props.onClick(); await flush();
+  assert.match(tree.props.className, /is-left-collapsed/); assert.equal(bridgeCommands.at(-1).message.panel, 'library');
+  publishView({ viewState: { ...state3d, panes: { library: true, panel: false } } }); await flush();
+  assert.match(find(tree, node => node.type === 'button' && node.props['aria-label'] === '打开家具库').props.className, /is-active/);
   assert.equal(find(tree, (node) => node.type === 'button' && node.props.children === '保存方案').props.disabled, false);
   find(tree, (node) => node.type === 'button' && node.props.children === '保存方案').props.onClick(); await flush();
   assert.equal(statePosts.length, 1); assert.equal(statePosts[0].body.baseVersion, 2); assert.deepEqual(statePosts[0].body.state, editorState);
@@ -513,15 +555,24 @@ test('project links retain local saved editing and recover unfinished generation
   let resolveGeneration;
   let generationPosts = 0;
   api.post = async (path, body) => {
-    assert.equal(path, '/projects/p4/jobs'); assert.equal(body.pipelineVersion, 'codex-workflow-v1'); generationPosts++;
+    assert.equal(path, '/projects/p4/jobs'); assert.equal(body.pipelineVersion, 'codex-handoff-v1'); generationPosts++;
     return new Promise((resolve) => { resolveGeneration = resolve; });
   };
-  find(tree, (node) => node.type === 'button' && node.props.className?.includes('lab-generate')).props.onClick(); await flush();
+  find(tree, (node) => node.type === 'button' && node.props.className?.includes('lab-agent-send')).props.onClick(); await flush();
   await navigateHash('#/ai-lab');
   resolveGeneration({ job: { id: 'late-generation', projectId: 'p4', status: 'queued' } }); await flush();
   assert.equal(window.location.hash, '#/ai-lab'); assert.match(tree.props.className, /lab-gallery-shell/);
   assert.equal(galleryProps().projects.find((project) => project.id === 'p4').latestJob.id, 'j4');
   assert.equal(generationPosts, 1);
+  await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p10');
+  find(tree, node => node.type === 'button' && node.props['aria-label'] === '比例尺与尺寸校准').props.onClick(); await flush();
+  find(tree, node => node.type === 'select' && node.props.id === 'lab-scale-mode').props.onChange({ target: { value: 'manual' } }); await flush();
+  find(tree, node => node.type === 'input' && node.props.id === 'lab-scale').props.onChange({ target: { value: '25' } }); await flush();
+  const inputPosts = [];
+  api.post = async (path, body) => { inputPosts.push({ path, body }); return { job: { ...handoffJob, status: 'awaiting_codex', stage: 'structure', input: { ...handoffJob.input, scaleMode: 'manual', mmPerPixel: 25 } } }; };
+  find(tree, node => node.type === 'button' && node.props.children === '提交尺寸并继续接力').props.onClick(); await flush();
+  assert.equal(inputPosts.length, 1); assert.equal(inputPosts[0].path, '/jobs/j10/input'); assert.equal(inputPosts[0].body.requestId, 'scale-request'); assert.equal(inputPosts[0].body.revision, 2); assert.equal(inputPosts[0].body.mmPerPixel, 25); assert.match(inputPosts[0].body.submissionId, /^[a-f0-9]{32}$/);
+  assert.match(renderedText(tree), /等待当前聊天接力/); assert.match(renderedText(tree), /复制接力指令/);
   for (const hook of hooks) hook?.cleanup?.();
 });
 
@@ -675,4 +726,49 @@ test('independent lab config cannot execute daily/publication plugins', async ()
   assert.match(config, /outDir:\s*['"]dist\/ai-lab/);
   const app = await readFile(resolve(root, 'src/App.tsx'), 'utf8');
   assert.match(app, /isLabBuild \? lazy\(\(\) => import\('\.\/features\/ai-lab\/AiLabPage'\)\) : null/);
+});
+
+test('handoff availability and waiting states do not depend on a configured gateway or invent session usage', async () => {
+  const api = await load('src/features/ai-lab/api.ts');
+  assert.equal(api.generationAvailable({ executionMode: 'codex_handoff', providerConfigured: false, capabilities: { generation: true } }), true);
+  assert.equal(api.generationAvailable({ executionMode: 'codex_handoff', providerConfigured: true, capabilities: { generation: false } }), false);
+  for (const status of ['awaiting_codex', 'awaiting_input', 'awaiting_review_images']) assert.equal(api.isActiveJob({ status }), true);
+  assert.equal(api.projectStatusLabel({ sceneVersion: 0, latestJob: { status: 'awaiting_codex' } }), '等待当前聊天接力');
+  assert.equal(api.jobUsageLabel(null, { status: 'succeeded', usageAccounting: 'current_session_unreported' }), '当前聊天用量未在网页统计');
+});
+
+test('Agent appends actual cursor events once, keeps static guidance explicit and copies a real task handoff', async () => {
+  const hooks = []; let cursor = 0, dirty = false, effects = [], tree;
+  const equal = (a, b) => a?.length === b?.length && a.every((value, index) => Object.is(value, b[index]));
+  const react = {
+    useState(initial) { const index = cursor++; hooks[index] ??= { value: initial }; return [hooks[index].value, next => { const value = typeof next === 'function' ? next(hooks[index].value) : next; if (!Object.is(value, hooks[index].value)) { hooks[index].value = value; dirty = true; } }]; },
+    useRef(initial) { const index = cursor++; hooks[index] ??= { current: initial }; return hooks[index]; },
+    useEffect(callback, deps) { const index = cursor++, previous = hooks[index]; if (!previous || !equal(previous.deps, deps)) { hooks[index] = { deps }; effects.push(() => { previous?.cleanup?.(); hooks[index].cleanup = callback(); }); } },
+  };
+  const timers = new Map(); let timerId = 0;
+  const window = { setTimeout(callback, delay) { timers.set(++timerId, { callback, delay }); return timerId; }, clearTimeout(id) { timers.delete(id); } };
+  const helpers = await load('src/features/ai-lab/api.ts');
+  const reads = [], copies = [];
+  let job = { id: 'real-task-12', projectId: 'real-project', status: 'awaiting_codex', pipelineVersion: 'codex-handoff-v1', stage: 'structure', input: { prompt: '保留真实原图隔墙' } };
+  const api = { ...helpers, async request(path) { reads.push(path); return reads.length === 1 ? { events: [{ id: 1, type: 'stage', stage: 'structure', message: '已核对标注，正在识别结构' }], cursor: 1, hasMore: true, terminal: false } : { events: [{ id: 1, type: 'stage', message: '重复项不应再次追加' }, { id: 2, type: 'agent_message', stage: 'structure', message: '<script>只作为文本显示</script>' }, { id: 3, type: 'private_reasoning', message: '不公开的记录' }], cursor: 2, hasMore: false, terminal: false }; } };
+  const jsx = (type, props, key) => ({ type, props, key });
+  const icons = await load('src/features/ai-lab/StudioIcon.tsx', { require: id => id === 'react/jsx-runtime' ? { jsx, jsxs: jsx } : react });
+  const agent = await load('src/features/ai-lab/AgentPanel.tsx', { window, navigator: { clipboard: { async writeText(value) { copies.push(value); } } }, require(id) { if (id === 'react') return react; if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx }; if (id === './api') return api; if (id === './StudioIcon') return icons; throw Error(id); } });
+  const props = () => ({ job, health: { executionMode: 'codex_handoff', providerConfigured: false, capabilities: { generation: true } }, asset: { name: '真实图纸.png', width: 1000, height: 500 }, title: '空间', prompt: '保留结构', busy: null, working: true, readOnly: false, onTitle() {}, onPrompt() {}, onUpload() {}, onSubmit() {}, onCancel() {}, onScale() {} });
+  const render = () => { cursor = 0; dirty = false; tree = agent.default(props()); const pending = effects; effects = []; pending.forEach(effect => effect()); };
+  const flush = async () => { for (let index = 0; index < 10; index++) { await new Promise(setImmediate); if (dirty) render(); } };
+  const find = (node, predicate) => { if (!node || typeof node !== 'object') return null; if (Array.isArray(node)) { for (const child of node) { const result = find(child, predicate); if (result) return result; } return null; } return predicate(node) ? node : find(node.props?.children, predicate); };
+  render(); await flush();
+  assert.match(renderedText(tree), /使用引导/); assert.match(renderedText(tree), /网页不会自行开始推理/);
+  const next = [...timers.entries()].find(([, timer]) => timer.delay === 30); assert.ok(next); timers.delete(next[0]); await next[1].callback(); await flush();
+  assert.deepEqual(reads, ['/jobs/real-task-12/events?after=0', '/jobs/real-task-12/events?after=1']);
+  assert.equal(renderedText(tree).split('已核对标注，正在识别结构').length - 1, 1);
+  assert.doesNotMatch(renderedText(tree), /重复项不应再次追加|不公开的记录/);
+  assert.match(renderedText(tree), /<script>只作为文本显示<\/script>/);
+  await find(tree, node => node.type === 'button' && node.props.children === '复制接力指令').props.onClick(); await flush();
+  assert.equal(copies.length, 1); assert.match(copies[0], /real-task-12/); assert.match(copies[0], /real-project/);
+  job = { ...job, status: 'awaiting_review_images', stage: 'preview' }; render(); await flush();
+  const steps = find(tree, node => node.props?.['aria-label'] === '建模阶段');
+  assert.equal(find(steps, node => node.props?.['aria-current'] === 'step').props.children[1].props.children, '检查复核');
+  for (const hook of hooks) hook?.cleanup?.();
 });

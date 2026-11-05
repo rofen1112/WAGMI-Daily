@@ -8,7 +8,8 @@
 
 ```powershell
 npm ci --ignore-scripts --no-audit --no-fund
-# 将 .env.ai-lab.example 复制为 .env.ai-lab.local，在私有文件中设置 Key。
+# 当前聊天接力不需要模型 Key；保留已有私有配置。
+python -m pip install -r ai-lab/server/requirements.txt
 powershell -NoProfile -File scripts/start-ai-lab-dev.ps1
 ```
 
@@ -20,24 +21,24 @@ powershell -NoProfile -File scripts/start-ai-lab-dev.ps1
 
 ## 模型与数据
 
-后端固定调用用户指定网关 `https://etc.seedance-api.net/server/api/call` 和模型 `deepseek-v4-1-flash-260910`。该网关的实际可用请求为 Responses `input`，文档示例中的 `messages` 在实测中被拒绝，不能直接视为官方 DeepSeek API 的等价实现。密钥只从后端私有配置读取，不进入浏览器、Git、导出文件和错误正文。
+自 2026-11-05 起，按用户要求默认使用 **当前 Codex 聊天接力**。后端默认 provider 不发出模型请求、不启动 CLI/SDK；旧 DeepSeek 网关和私有 Key 不会自动生效。网页创建本地任务并显示持久化进度，当前聊天显式读取原图、提交分析/候选、核对客户端视图并保存。`codex-current-session` 是执行方式标签，不是具体模型型号。接口、工具与部署依赖见 [Codex 接力说明](docs/ai-lab-codex-handoff.md)。
 
-`AI_LAB_GATEWAY_IMAGE_VERIFIED=1` 只应在该网关/模型完成图像探测后设置。`AI_LAB_REASONING_EFFORT` 可显式指定 `none|low|high|max`，不填则保留供应商默认；`AI_LAB_MAX_OUTPUT_TOKENS` 同时限制推理和可见输出。上游规则、网关探测与实际完整生成结果须分别记录，参见 [参数证据](ai-lab/server/reasoning-notes.md)。
+历史 DeepSeek 测试的参数证据和用量记录继续保留，参见 [参数证据](ai-lab/server/reasoning-notes.md)。这些旧配置不代表当前运行方式；大模型切换测评在基础交互完成后另行进行。当前聊天的 token/费用未接入网页账单，必须显示未知，不能按零用量或零费用统计。
 
 图片、SQLite、不可变场景版本和参考案例均保存在忽略的 `.local-ai-lab/`，不复用主项目 `data/dev`、`data/main` 或其发布目录。既有三例可作为私有参考导入，界面会标注“历史参考”及其修改来源；不会将参考场景当作新模型生成结果。原 floorplan 工程、图片和浏览器布置均保留。
 
 ## 已实现的产品链路
 
 - PNG/JPG 上传、自动估算/图上两点已知长度校准/手动比例、要求输入、单队列生成、进度、取消、重启中断处理和幂等提交。尺度记录来源、锚点、依据、范围和置信度；无依据时要求补充，不套用参考比例。
-- 新界面显式提交 `codex-workflow-v1`：图纸分析及尺度选择→结构→可见家具/设施→结构与编辑状态校验→候选预览→浏览器真实2D/3D截图→原图视觉复核→限定修正与再次截图复核→版本保存。候选始终标记未提交；等待截图时释放worker，重新打开项目可继续，取消不会保存。历史未指定版本的API请求仍走 `legacy-single-v1`，历史结果不能冒充完整工作流结果。
+- 当前默认强制使用 `codex-handoff-v1`：尺寸核对→识别结构→搭建空间→检查复核→方案完成。`awaiting_codex` 等待当前聊天接手，`awaiting_input` 等待用户在比例尺浮层补充已知尺寸。候选经过完整编译和编辑状态检查，客户端提交可解码的2D/3D图片后，仍需当前Codex对照原图显式复核与保存；浏览器不能自行提交复核或finalize。重放、取消、修订与场景版本均有校验。历史 `codex-workflow-v1` / `legacy-single-v1` 数据和离线回归保留，不作为默认模型执行通路。
 - 确定性编译器仅进行一次像素到毫米转换，检查边界、房间相交、合法对象和门窗参数。显式 `wallSegments`、`furnitureRows`、`stairRuns` 展开为同一legacy几何，不执行模型代码，不补猜测厚度或夹紧越界坐标。
 - 复用 floorplan 的 2D/3D、家具库、测量与编辑器，iframe 样式隔离，缓存按项目和版本分开；完整 scene 与当前 state 一并保存、导出。
-- 聊天支持明确对象的移动、旋转、尺寸及房间名称/材质修改。明确语法本地执行，其他语言最多一次模型调用转为受限 patch。当前不能通过聊天增删墙、自动重构房间或任意执行代码。
-- 供应商返回的usage、参数、每阶段输入/输出哈希、尺度和复核结果逐调用保存，包括失败及修复。阶段产物和截图留在私有目录，缺失用量明确显示未知；无已确认单价时费用为空。
+- 已保存场景通过本地家具/材质属性和视角工具编辑；右侧Agent可按需查看实际任务记录，不开放后续AI修改输入。户型导入仅支持已实现的PNG/JPG，不展示未实现的DXF等入口。
+- 旧供应商usage和参数继续按原记录保存，当前聊天接力的usage保持null。阶段产物、尺度依据、候选校验和客户端图片留在私有目录；页面事件只显示显式工作摘要，不显示隐藏推理、凭据或内部路径。
 
 尺度可以来自图纸标注、用户已知长度或模型估算；均不代表现场实测。几何通过、模型视觉复核通过和独立人工验收分别记录。模型复核不能替代人工还原质量判断。原图叠加可在viewer内开关，自动复核图排除叠加层，避免把原图当成生成结果。
 
-默认调用/修复/视觉复核上限为8/2/2。私有配置 `AI_LAB_WORKFLOW_MAX_CALLS`、`AI_LAB_WORKFLOW_MAX_REPAIRS`、`AI_LAB_WORKFLOW_MAX_REVIEWS` 可设置有界预算，新job创建时即固定快照；旧任务重启不扩额。比较模型应固定同一流程、输入、尺度策略、推理档位和预算，并保留所有失败及人工修改记录。此前Codex会话的历史参考结果与新API测试不构成同条件模型排名。迁移范围见 [流程记录](docs/ai-lab-workflow-parity.md)。
+接力任务仍固定修正/视觉复核上限快照，重开任务不扩额。`AI_LAB_WORKFLOW_MAX_CALLS` 是历史自动工作流预算，不代表当前接力会发出模型请求。后续比较模型时应固定同一流程、输入、尺度策略、推理档位和预算，并保留所有失败及人工修改记录。此前Codex会话的历史参考结果与旧API测试不构成同条件模型排名。历史迁移范围见 [流程记录](docs/ai-lab-workflow-parity.md)。
 
 ## 验收与隔离
 

@@ -10,14 +10,20 @@ export interface LabJob {
   pipelineVersion?: string; analysis?: Record<string, unknown> | null; scaleProvenance?: LabScaleProvenance | null;
   visualReview?: Record<string, unknown> | null; review?: Record<string, unknown> | null; draft?: { id: string; viewerUrl: string } | null; reviewImagesRequired?: boolean;
   sourceAsset?: LabAsset | null; input?: { scaleMode?: ScaleMode; mmPerPixel?: number; calibration?: { p1: PixelPoint; p2: PixelPoint; lengthMm: number }; prompt?: string } | null;
+  usageAccounting?: string;
+  handoff?: { requestId: string; revision: number; phase: string } | null;
 }
+export interface LabJobEvent { id: string | number; at?: string; type: 'stage' | 'agent_message' | 'status'; stage?: string; message: string }
+export interface LabJobEvents { events: LabJobEvent[]; cursor: string | number; hasMore: boolean; terminal: boolean }
+export interface LabViewerState { mode: '2d' | '3d'; panes: { library: boolean; panel: boolean }; selection: { kind: 'room' | 'furn'; id: string } | null; busy: boolean }
+export interface LabViewerContext { projectId: string; projectVersion: string | number }
 export type ScaleMode = 'auto' | 'calibrated' | 'manual';
 export type PixelPoint = [number, number];
 export interface LabScaleProvenance { mode: 'manual' | 'measured' | 'estimated'; mmPerPixel?: number; rangeMmPerPixel?: [number, number]; confidence?: 'low' | 'medium' | 'high'; evidence?: string[]; assumptions?: string[]; anchors?: Array<{ label?: string; p1: PixelPoint; p2: PixelPoint; lengthMm: number; source?: string }> }
 export interface LabDraft { draftId: string; scene: Record<string, unknown>; state: Record<string, unknown> | null; validation?: LabValidation; sourceAsset?: LabAsset | null; scaleProvenance?: LabScaleProvenance | null }
 export interface LabValidation { errors?: Array<unknown>; warnings?: Array<unknown>; counts?: Record<string, number> }
 export interface LabScene { scene: Record<string, unknown>; state: Record<string, unknown> | null; version: number; validation?: LabValidation; source?: string; sourceAsset?: LabAsset | null }
-export interface LabHealth { status: string; model?: string; providerConfigured: boolean; capabilities?: Record<string, unknown> }
+export interface LabHealth { status: string; model?: string; executionMode?: string; providerConfigured: boolean; capabilities?: Record<string, unknown> }
 export interface LabBaseline { id: string; title: string; description?: string }
 
 export class LabApiError extends Error {
@@ -40,7 +46,8 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
 
 export const post = <T>(path: string, body: unknown = {}): Promise<T> => request<T>(path, { method: 'POST', body: JSON.stringify(body) });
 export const projectPath = (id: string) => `/projects/${encodeURIComponent(id)}`;
-export const isActiveJob = (job: LabJob | null | undefined) => Boolean(job && ['queued', 'running', 'awaiting_review_images'].includes(job.status));
+export const isActiveJob = (job: LabJob | null | undefined) => Boolean(job && ['queued', 'running', 'awaiting_codex', 'awaiting_input', 'awaiting_review_images'].includes(job.status));
+export const generationAvailable = (health: LabHealth | null) => Boolean(health && (health.executionMode === 'codex_handoff' ? health.capabilities?.generation === true : health.providerConfigured));
 export const errorMessage = (error: unknown) => error instanceof Error ? error.message : '操作未完成，请重试。';
 export const jobError = (job: LabJob) => typeof job.error === 'string' ? job.error : job.error?.message || job.message || '';
 
@@ -48,7 +55,7 @@ export function projectStatusLabel(project: LabProject) {
   const version = Number.isFinite(project.sceneVersion) && project.sceneVersion > 0 ? `版本 ${project.sceneVersion} · ` : '';
   const status = project.latestJob?.status;
   const modified = ['modified', 'baseline_reference_modified'].includes(project.latestJob?.source || '');
-  const labels: Record<string, string> = { queued: '排队中', running: '生成中', awaiting_review_images: '等待预览复核', failed: modified ? '修改失败' : '生成失败', cancelled: '已取消', canceled: '已取消', needs_input: '需补信息' };
+  const labels: Record<string, string> = { queued: '排队中', running: '生成中', awaiting_codex: '等待当前聊天接力', awaiting_input: '需补充尺寸', awaiting_review_images: '等待预览复核', failed: modified ? '修改失败' : '生成失败', cancelled: '已取消', canceled: '已取消', needs_input: '需补信息' };
   if (status && labels[status]) return `${version}${labels[status]}`;
   if (version && (!status || status === 'succeeded')) return `${version}已保存`;
   if (status === 'succeeded') return '任务已完成';
@@ -103,7 +110,8 @@ export function summarizeJobUsage(usage: Record<string, unknown> | null | undefi
   return { knownTotalTokens, reportedCalls, callCount: calls.length };
 }
 
-export function jobUsageLabel(usage: Record<string, unknown> | null | undefined, job?: Pick<LabJob, 'status' | 'source'>) {
+export function jobUsageLabel(usage: Record<string, unknown> | null | undefined, job?: Pick<LabJob, 'status' | 'source' | 'usageAccounting'>) {
+  if (job?.usageAccounting === 'current_session_unreported') return '当前聊天用量未在网页统计';
   if (job?.status === 'succeeded' && ['modified', 'baseline_reference_modified'].includes(job.source || '') && Array.isArray(usage?.calls) && usage.calls.length === 0) return '本次未调用模型';
   const { knownTotalTokens, reportedCalls, callCount } = summarizeJobUsage(usage);
   if (knownTotalTokens === null) return `总用量未返回${callCount ? `（${callCount} 次调用）` : ''}`;
@@ -120,10 +128,11 @@ export function sceneSourceLabel(source: string | undefined) {
 }
 
 export function draftStatusCopy(job: LabJob | null) {
+  if (job?.status === 'awaiting_codex') return { title: job.stage === 'visual_review' ? '等待当前聊天复核的候选空间' : '等待当前聊天接力的候选空间', footer: '等待当前 Codex 聊天接力', help: '候选尚未保存。请在当前 Codex 聊天中继续查看与核对，网页不会自动完成推理或验收。' };
   if (job?.status === 'awaiting_review_images') return { title: '待视觉复核的候选空间', footer: '等待实际视图复核', help: '这是待复核候选。请保持空间预览打开，系统会提交实际 2D / 3D 视图；复核通过后才保存为项目版本。' };
   if (job?.status === 'failed') return { title: '未通过检查的候选空间', footer: '候选未通过 · 未保存', help: '本次任务已停止，候选未保存。可查看现有候选和右侧具体原因，核对原图或补充要求后重新提交。' };
   if (job?.status === 'cancelled' || job?.status === 'canceled') return { title: '已取消任务的候选空间', footer: '任务已取消 · 未保存', help: '本次任务已取消，现有候选仅供查看，不会继续自动复核或保存。' };
-  if (job?.status === 'needs_input') return { title: '需要补充信息的候选空间', footer: '任务需补信息 · 未保存', help: '本次未完成，请补充右侧所需信息后重新提交。此候选尚未保存。' };
+  if (job?.status === 'needs_input' || job?.status === 'awaiting_input') return { title: '需要补充信息的候选空间', footer: '任务需补信息 · 未保存', help: '请通过比例尺补充已知尺寸。此候选尚未保存。' };
   if (isActiveJob(job)) return { title: job?.stage === 'visual_review' ? '视觉复核中的候选空间' : '处理中的候选空间', footer: '候选处理中 · 尚未保存', help: '任务仍在处理，候选可能继续修正。请以最终任务结果为准，当前候选尚未保存。' };
   return { title: '未提交的候选空间', footer: '候选尚未保存', help: '这是尚未提交的候选，请以右侧任务状态为准。' };
 }

@@ -287,7 +287,7 @@ anim={};assert.throws(()=>captureSceneDataUrl(),/capture_busy/);
 const assert=require('node:assert/strict');
 function element(){const classes=new Set();return {inert:false,attrs:{},classList:{contains:key=>classes.has(key),toggle(key,on){if(on===undefined)on=!classes.has(key);on?classes.add(key):classes.delete(key)},remove:key=>classes.delete(key)},setAttribute(key,value){this.attrs[key]=value}}}
 const dom=Object.fromEntries(['aside.lib','aside.right','#tgLib','#tgPanel','#stage'].map(key=>[key,element()]));
-const $=key=>dom[key],tr=zh=>zh;
+const $=key=>dom[key],tr=zh=>zh;function publishLabViewState(){}
 const localStorage={getItem(){throw Error('must not read saved layout for a transient drawer')},setItem(){throw Error('must not overwrite saved layout')}};
 """+functions+r"""
 drawer(null);assert.equal(dom['aside.lib'].inert,true);assert.equal(dom['aside.right'].inert,true);
@@ -320,6 +320,86 @@ reviewBackdrop=false;applyLight();assert.equal(scene.background.getHex(),0xfffff
 """
         result=subprocess.run(['node','--input-type=module'],input=script,text=True,encoding='utf-8',capture_output=True)
         self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_linear_profile_keeps_legacy_capture_and_restores_after_failure(self):
+        html=render_viewer_html(compiled(),None,'project-a',1)
+        self.assertIn('id="plan" data-plan-profile="linear"',html)
+        self.assertIn('#plan[data-plan-profile="linear"] #gRooms polygon{fill:#fff}',html)
+        self.assertIn('#plan[data-plan-profile="linear"] #gFurn [stroke]{stroke:#737373}',html)
+        self.assertIn('#plan[data-plan-profile="linear"] #gFurn text{display:none;',html)
+        self.assertIn('${furnSVG(f.type,f.w,f.d,f.color,f)}${label}',html)  # Keep original labels for review/profile restoration.
+        self.assertIn("const clone=withLegacyPlanProfile(()=>svg.cloneNode(true))",html)
+        self.assertIn("fill=\"url(#m-${esc(state.rooms[r.id].mat)})\"",html)  # Original review paint still exists.
+        function=re.search(r'function withLegacyPlanProfile\([^)]*\)\{[\s\S]*?\n}',html)[0]
+        script=r"""
+const assert=require('node:assert/strict');
+const attrs=new Map([['data-plan-profile','linear']]);
+const svg={getAttribute:key=>attrs.get(key)??null,removeAttribute:key=>attrs.delete(key),setAttribute:(key,value)=>attrs.set(key,value),cloneNode:()=>new Map(attrs)};
+const localStorage={setItem(){throw Error('presentation must not save editor state')}};
+"""+function+r"""
+const clone=withLegacyPlanProfile(()=>svg.cloneNode(true));assert.equal(clone.has('data-plan-profile'),false);assert.equal(attrs.get('data-plan-profile'),'linear');
+assert.throws(()=>withLegacyPlanProfile(()=>{assert.equal(attrs.has('data-plan-profile'),false);throw Error('clone failed')}),/clone failed/);
+assert.equal(attrs.get('data-plan-profile'),'linear');attrs.delete('data-plan-profile');withLegacyPlanProfile(()=>{});assert.equal(attrs.has('data-plan-profile'),false);
+"""
+        result=subprocess.run(['node'],input=script,text=True,encoding='utf-8',capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_command_bridge_requires_same_origin_scope_and_allowlisted_parameters(self):
+        html=render_viewer_html(compiled(),None,'project-a',7)
+        names=('drawer','syncPaneBtns','labViewState','labViewMessage','publishLabViewState','validateLabCommand','executeLabCommand','handleLabMessage')
+        functions='\n'.join(re.search(r'(?:async )?function '+name+r'\([^)]*\)\{[\s\S]*?\n}',html)[0] for name in names)
+        script=r"""
+const assert=require('node:assert/strict');
+const messages=[],actions=[];const parent={postMessage(message,origin){assert.equal(origin,'http://localhost:5186');messages.push(message)}};
+const window={parent,location:{origin:'http://localhost:5186'},View3D:{flyToRoom:id=>actions.push(['room',id])}};
+const AI_LAB={context:{projectId:'project-a',version:7}},ROOMS=[{id:'r1'}],ui={sel:null},state={furniture:[],rooms:{r1:{name:'room',mat:'wood'}},demolished:[],measures:[]};
+let viewMode='2d',switching=false,labCapturePending=false,labBridgeReady=true;
+function element(action){const classes=new Set();return {inert:false,attrs:{},classList:{contains:key=>classes.has(key),toggle(key,on){if(on===undefined)on=!classes.has(key);on?classes.add(key):classes.delete(key)},remove:key=>classes.delete(key)},setAttribute(key,value){this.attrs[key]=value},click(){actions.push([action])}}}
+const dom=Object.fromEntries(['aside.lib','aside.right','#tgLib','#tgPanel','#stage','#vTop','#vIso','#fileIn'].map(key=>[key,element(key)]));
+const $=key=>dom[key],tr=zh=>zh;
+async function setView(mode){actions.push(['mode',mode]);viewMode=mode}
+function fitCanvas(){actions.push(['fit'])}
+async function captureLabViews(){actions.push(['capture']);return {planDataUrl:'data:image/png;base64,plan',sceneDataUrl:'data:image/jpeg;base64,scene'}}
+const localStorage={setItem(){throw Error('commands cannot directly mutate persisted editor state')}};
+"""+functions+r"""
+const base={type:'ai-lab:command',requestId:'req-1',projectId:'project-a',projectVersion:7};
+async function command(fields,origin=window.location.origin,source=parent){await handleLabMessage({source,origin,data:{...base,...fields}})}
+(async()=>{
+ await command({command:'fit'},'https://other.example');await command({command:'fit'},window.location.origin,{});assert.equal(messages.length,0);assert.equal(actions.length,0);
+ await command({command:'set-view-mode',mode:'3d'});assert.equal(viewMode,'3d');assert.equal(messages.at(-1).requestId,'req-1');assert.equal(messages.at(-1).projectId,'project-a');assert.equal(messages.at(-1).projectVersion,7);assert.equal(messages.at(-1).viewState.mode,'3d');
+ await command({command:'open-panel',panel:'library',action:'open'});assert.equal(messages.at(-1).viewState.panes.library,true);assert.equal(dom['aside.lib'].inert,false);
+ await command({command:'open-panel',panel:'panel',action:'toggle'});assert.equal(messages.at(-1).viewState.panes.library,false);assert.equal(messages.at(-1).viewState.panes.panel,true);
+ await command({command:'open-panel',panel:'panel',action:'close'});assert.equal(messages.at(-1).viewState.panes.panel,false);
+ await command({command:'set-camera',preset:'top'});assert.ok(actions.some(action=>action[0]==='#vTop'));
+ await command({command:'focus-room',roomId:'r1'});assert.ok(actions.some(action=>action[0]==='room'&&action[1]==='r1'));
+ await command({command:'import-state'});assert.ok(actions.some(action=>action[0]==='#fileIn'));
+ const actionCount=actions.length;
+ for(const invalid of [{command:'eval',code:'globalThis.attacked=true'},{command:'__proto__'},{command:['fit']},{command:{name:'fit'}},{command:'set-view-mode',mode:'4d'},{command:'set-camera',preset:'front'},{command:'open-panel',panel:'html',action:'open'},{command:'focus-room',roomId:'missing'},{command:'fit',code:'arbitrary'},{command:'fit',mode:'3d'}]){
+  await command(invalid);assert.equal(messages.at(-1).error.code,'invalid_command');assert.equal(actions.length,actionCount);
+ }
+ await command({command:'fit',projectVersion:6});assert.equal(messages.at(-1).error.code,'stale_context');
+ await command({command:'fit',projectId:'other-project'});assert.equal(messages.at(-1).error.code,'stale_context');assert.equal(actions.length,actionCount);
+ labCapturePending=true;await command({command:'fit'});assert.equal(messages.at(-1).error.code,'view_busy');assert.equal(messages.at(-1).viewState.busy,true);assert.equal(actions.length,actionCount);labCapturePending=false;
+ await command({command:'fit'});assert.equal(actions.at(-1)[0],'fit');
+ const ready=labViewMessage('ai-lab:ready');assert.equal(ready.requestId,null);assert.equal(ready.projectId,'project-a');assert.equal(ready.projectVersion,7);assert.equal(ready.viewState.busy,false);
+ await handleLabMessage({source:parent,origin:window.location.origin,data:{type:'ai-lab:get-state',requestId:'old-state'}});assert.equal(messages.at(-1).type,'ai-lab:state');assert.deepEqual(messages.at(-1).state,state);assert.equal(messages.at(-1).projectVersion,7);
+ await handleLabMessage({source:parent,origin:window.location.origin,data:{type:'ai-lab:capture',requestId:'old-capture'}});assert.equal(messages.at(-1).type,'ai-lab:captures');assert.equal(messages.at(-1).sceneDataUrl,'data:image/jpeg;base64,scene');assert.equal(messages.at(-1).projectVersion,7);
+})().catch(error=>{console.error(error);process.exitCode=1});
+"""
+        result=subprocess.run(['node'],input=script,text=True,encoding='utf-8',capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_embedded_controls_flag_is_presentation_only_and_explicit(self):
+        scene=compiled();before=deepcopy(scene)
+        for flag in (True,False):
+            html=render_viewer_html(scene,None,'project-a',1,embedded_controls=flag)
+            payload=json.loads(re.search(r'id="ai-lab-payload" type="application/json">(.*?)</script>',html,re.S)[1])
+            self.assertEqual(payload['context']['embeddedControls'],flag)
+            self.assertEqual(scene,before)
+            self.assertIn('AI_LAB.context.embeddedControls !== false && window.parent !== window',html)
+            self.assertIn('body.external-controls #viewSeg{display:none}',html)
+        for invalid in ('yes',0,None):
+            with self.assertRaises(ValueError):render_viewer_html(scene,None,'project-a',1,embedded_controls=invalid)
 
     def test_overlay_mapping_and_capture_size_are_single_transform(self):
         html=render_viewer_html(compiled(),None,'project-a',1)

@@ -18,15 +18,18 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from .prompts import PROMPT_VERSION, generation_messages, parse_json, repair_messages
-from .provider import MODEL, ProviderError, SeedanceProvider, normalize_usage, read_private_config
+from .provider import ProviderError, create_default_provider, normalize_usage, read_private_config
 from .store import LabError, Store, dump, now, uid
 from .workflow import WorkflowRunner, PIPELINE_VERSION, LEGACY_PIPELINE, settings as provider_settings, parse_workflow_limits
 from .workflow_prompts import WORKFLOW_PROMPT_VERSION
 from .scale import validate_scale_input
+from .handoff import HandoffRunner
+from .events import public_events, event_page
 
 PREFIX = "/api/ai-lab/v1"
 MAX_BODY = 18 * 1024 * 1024
 TERMINAL = {"succeeded", "failed", "cancelled", "needs_input"}
+HANDOFF_PIPELINE = "codex-handoff-v1"
 
 
 def initial_state(scene):
@@ -106,15 +109,17 @@ class Lab:
         config = read_private_config(self.root)
         self.workflow_limits = parse_workflow_limits(config)
         self.store = Store(data_dir or self.root / ".local-ai-lab")
-        self.provider = provider or SeedanceProvider(config)
+        self.provider = provider if provider is not None else create_default_provider(config)
+        self.execution_mode = getattr(self.provider, "execution_mode", "injected_provider")
         self._engine = engine
         self.pending = queue.Queue()
         self.stop_event = threading.Event()
         self.worker = None
         self.workflow = WorkflowRunner(self)
+        self.handoff = HandoffRunner(self)
         with self.store.transaction() as db:
             for row in db.execute("SELECT id,record FROM jobs ORDER BY created"):
-                if json.loads(row["record"])["status"] == "queued":
+                if self.execution_mode != "codex_handoff" and json.loads(row["record"])["status"] == "queued":
                     self.pending.put(row["id"])
         if start_worker:
             self.worker = threading.Thread(target=self._work, name="ai-lab-single-worker", daemon=True)
@@ -133,7 +138,11 @@ class Lab:
             self.worker.join(timeout=1)
 
     def health(self):
-        return {"status": "ok", "model": MODEL, "providerConfigured": self.provider.configured, "capabilities": {"imageInputVerified": bool(self.provider.supports_images), "generation": bool(self.provider.configured and self.provider.supports_images), "modify": True, "cancel": True, "export": True, "baselineReference": True, "concurrency": 1, "maxRepairCalls": 1, "usageAccounting": "vendor_only", "promptVersion": PROMPT_VERSION, "pipelineVersions": [LEGACY_PIPELINE, PIPELINE_VERSION], "workflowPromptVersion": WORKFLOW_PROMPT_VERSION, "workflowBudget": copy.deepcopy(self.workflow_limits), "browserReviewCapture": True}}
+        handoff = self.execution_mode == "codex_handoff"
+        return {"status": "ok", "model": getattr(self.provider, "model", None), "executionMode": self.execution_mode, "providerConfigured": bool(self.provider.configured), "message": "生成任务需由当前 Codex 聊天接力，网页不会自动调用模型。" if handoff else None, "capabilities": {"imageInputVerified": bool(self.provider.supports_images), "generation": handoff or bool(self.provider.configured and self.provider.supports_images), "modify": True, "cancel": True, "export": True, "baselineReference": True, "concurrency": 1, "maxRepairCalls": 1, "usageAccounting": "current_session_unreported" if handoff else "vendor_only", "promptVersion": PROMPT_VERSION, "pipelineVersions": [HANDOFF_PIPELINE, LEGACY_PIPELINE, PIPELINE_VERSION] if handoff else [LEGACY_PIPELINE, PIPELINE_VERSION], "workflowPromptVersion": WORKFLOW_PROMPT_VERSION, "workflowBudget": copy.deepcopy(self.workflow_limits), "browserReviewCapture": True}}
+
+    def job_events(self, job_id, after=0, limit=100):
+        return event_page(self.store.job(job_id)["record"], after, limit)
 
     def projects(self):
         with self.store.transaction() as db:
@@ -150,6 +159,13 @@ class Lab:
         """Read-only recovery adapter for both new and historical generation jobs."""
         job = self.store.job(job_id, db)
         result = copy.deepcopy(job["record"])
+        result["events"] = public_events(result)
+        if job["payload"].get("pipelineVersion") == HANDOFF_PIPELINE:
+            if db is None:
+                with self.store.transaction() as connection:
+                    result["handoff"] = self.handoff.public_context(job, connection)
+            else:
+                result["handoff"] = self.handoff.public_context(job, db)
         payload = job["payload"]
         if payload.get("action", "generate") != "generate":
             result.pop("input", None)
@@ -205,9 +221,11 @@ class Lab:
         payload.setdefault("action", "generate")
         payload.setdefault("prompt", "")
         payload.setdefault("pipelineVersion", LEGACY_PIPELINE)
-        if payload["pipelineVersion"] not in (LEGACY_PIPELINE, PIPELINE_VERSION) or (payload["pipelineVersion"] == PIPELINE_VERSION and payload["action"] != "generate"):
+        if self.execution_mode == "codex_handoff" and payload["action"] == "generate":
+            payload["pipelineVersion"] = HANDOFF_PIPELINE
+        if payload["pipelineVersion"] not in (LEGACY_PIPELINE, PIPELINE_VERSION, HANDOFF_PIPELINE) or (payload["pipelineVersion"] in (PIPELINE_VERSION, HANDOFF_PIPELINE) and payload["action"] != "generate"):
             raise LabError("invalid_pipeline", "分阶段工作流仅用于生成；请选择支持的pipelineVersion。")
-        if payload["pipelineVersion"] == PIPELINE_VERSION:
+        if payload["pipelineVersion"] in (PIPELINE_VERSION, HANDOFF_PIPELINE):
             payload.setdefault("scaleMode", "auto")
         if not isinstance(payload["prompt"], str) or len(payload["prompt"]) > 12000:
             raise LabError("invalid_prompt", "指令应为不超过 12000 字符的文本。")
@@ -230,7 +248,7 @@ class Lab:
             payload["baseVersion"] = base_version
             if payload["action"] == "generate":
                 asset = self.store.asset(str(payload.get("assetId", "")), db)
-                if payload["pipelineVersion"] == PIPELINE_VERSION:
+                if payload["pipelineVersion"] in (PIPELINE_VERSION, HANDOFF_PIPELINE):
                     validate_scale_input(payload, asset)
                 else:
                     scale = payload.get("mmPerPixel")
@@ -238,18 +256,21 @@ class Lab:
                         raise LabError("scale_required", "请明确提供大于零的 mmPerPixel；它只是尺度假设。")
             elif base_version == 0:
                 raise LabError("scene_not_found", "请先生成或载入参考场景。", 404)
-            if payload["pipelineVersion"] == PIPELINE_VERSION:
+            if payload["pipelineVersion"] in (PIPELINE_VERSION, HANDOFF_PIPELINE):
                 payload["workflowLimits"] = copy.deepcopy(self.workflow_limits)
             job_id = uid()
-            record = {"id": job_id, "projectId": project_id, "status": "queued", "stage": "queued", "progress": 0, "message": "等待处理。", "events": [{"at": now(), "stage": "queued", "message": "等待处理。"}], "usage": None, "timings": {}, "model": MODEL if payload["action"] == "generate" else None, "pipelineVersion": payload["pipelineVersion"], "promptVersion": WORKFLOW_PROMPT_VERSION if payload["pipelineVersion"] == PIPELINE_VERSION else PROMPT_VERSION, "providerSettings": provider_settings(self.provider), "source": "generated" if payload["action"] == "generate" else "modified"}
+            record = {"id": job_id, "projectId": project_id, "status": "queued", "stage": "queued", "progress": 0, "message": "等待处理。", "events": [{"at": now(), "stage": "queued", "message": "等待处理。"}], "usage": None, "timings": {}, "model": getattr(self.provider, "model", None) if payload["action"] == "generate" else None, "executionMode": self.execution_mode, "pipelineVersion": payload["pipelineVersion"], "promptVersion": WORKFLOW_PROMPT_VERSION if payload["pipelineVersion"] in (PIPELINE_VERSION, HANDOFF_PIPELINE) else PROMPT_VERSION, "providerSettings": provider_settings(self.provider), "source": "generated" if payload["action"] == "generate" else "modified"}
+            if payload["pipelineVersion"] == HANDOFF_PIPELINE:
+                record.update(status="awaiting_codex", stage="awaiting_codex", usageAccounting="current_session_unreported", message="等待当前 Codex 聊天接力；网页不会自动执行推理。", events=[{"at": now(), "stage": "awaiting_codex", "message": "已创建接力任务，等待当前 Codex 聊天读取原图与要求。"}])
             if payload["pipelineVersion"] == PIPELINE_VERSION:
                 record["budget"] = {**payload["workflowLimits"], "callsUsed": 0, "repairsUsed": 0, "visualReviewsUsed": 0}
             if payload["action"] == "generate":
                 record["sourceAsset"] = public_asset(asset)
                 record["input"] = generation_input(body)
             db.execute("INSERT INTO jobs VALUES(?,?,?,?,?,?,?)", (job_id, project_id, dump(payload), dump(record), idempotency_key, request_hash, now()))
-        self.pending.put(job_id)
-        return {"job": record}
+        if record["status"] == "queued":
+            self.pending.put(job_id)
+        return {"job": self.public_job(job_id)}
 
     def cancel(self, job_id):
         with self.store.transaction() as db:
@@ -274,6 +295,8 @@ class Lab:
     def run_job(self, job_id):
         started = time.monotonic()
         job = self.store.job(job_id)
+        if self.execution_mode == "codex_handoff" and job["payload"].get("pipelineVersion") in (PIPELINE_VERSION, HANDOFF_PIPELINE):
+            return  # Historical checkpoints are readable, never automatically replayed.
         if job["record"]["status"] != "queued":
             return
         if job["payload"].get("pipelineVersion") == PIPELINE_VERSION:
@@ -578,6 +601,12 @@ class Handler(BaseHTTPRequestHandler):
             raise LabError("invalid_json", "请求必须为 JSON 对象。")
         return value
 
+    def _handoff_only(self):
+        # Operator bridge is deliberately unavailable to browser fetch/XHR,
+        # including same-origin UI. It accepts only local non-browser clients.
+        if self.client_address[0] not in ("127.0.0.1", "::1") or self.headers.get("Origin") is not None or any(key.lower().startswith("sec-fetch-") for key in self.headers):
+            raise LabError("handoff_operator_only", "接力桥仅供本机当前Codex操作，网页不能自行提交建模与复核结果。", 403)
+
     def _dispatch(self):
         try:
             path = self._check_request()
@@ -598,6 +627,16 @@ class Handler(BaseHTTPRequestHandler):
                 if route == "/health": result = lab.health()
                 elif route == "/projects": result = lab.projects()
                 elif route == "/baselines": result = lab.baselines()
+                elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/events", route):
+                    query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+                    try:
+                        after, limit = int(query.get("after", ["0"])[0]), int(query.get("limit", ["100"])[0])
+                    except ValueError:
+                        raise LabError("invalid_event_cursor", "事件游标无效。") from None
+                    result = lab.job_events(match[1], after, limit)
+                elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/handoff/request", route):
+                    self._handoff_only()
+                    result = lab.handoff.request(match[1])
                 elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})", route): result = {"job": lab.public_job(match[1])}
                 elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/(draft|viewer)", route):
                     if match[2] == "draft":
@@ -623,7 +662,13 @@ class Handler(BaseHTTPRequestHandler):
                 if route == "/projects": result, status = lab.create_project(body), 201
                 elif route == "/assets": result, status = lab.upload(body), 201
                 elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/cancel", route): result = lab.cancel(match[1])
-                elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/review-images", route): result, status = lab.workflow.review_images(match[1], body), 202
+                elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/handoff/(analysis|candidate|review|finalize)", route):
+                    self._handoff_only()
+                    result = lab.handoff.submit(match[1], match[2], body)
+                elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/input", route): result = lab.handoff.submit(match[1], "input", body)
+                elif match := re.fullmatch(r"/jobs/([a-f0-9]{32})/review-images", route):
+                    runner = lab.handoff if lab.store.job(match[1])["payload"].get("pipelineVersion") == HANDOFF_PIPELINE else lab.workflow
+                    result, status = runner.review_images(match[1], body), 202
                 elif match := re.fullmatch(r"/projects/([a-f0-9]{32})/(jobs|state|baseline)", route):
                     if match[2] == "jobs": result, status = lab.create_job(match[1], body, self.headers.get("Idempotency-Key") or body.get("idempotencyKey")), 202
                     elif match[2] == "state": result = lab.save_state(match[1], body)

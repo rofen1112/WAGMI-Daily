@@ -246,6 +246,30 @@ html,body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC
 
 #plan #gMeasure [fill="#2f5d62"]{fill:#525252}#plan #gMeasure [stroke="#2f5d62"]{stroke:#525252}
 </style>
+
+<style id="plan-linear-style">
+/* User-facing plan profile. Legacy paint attributes stay intact for review captures. */
+#plan[data-plan-profile="linear"]{background:#fff}
+#plan[data-plan-profile="linear"] #gRooms polygon{fill:#fff}
+#plan[data-plan-profile="linear"] #gRooms rect{fill:#fff;stroke:#b8b8b8}
+#plan[data-plan-profile="linear"] #gFurn [fill]:not([fill="none"]):not([fill="transparent"]){fill:#fafafa;fill-opacity:1}
+#plan[data-plan-profile="linear"] #gFurn [stroke]{stroke:#737373}
+#plan[data-plan-profile="linear"] #gFurn text{display:none;fill:#737373;stroke:none}
+#plan[data-plan-profile="linear"] #gWalls .wall,#plan[data-plan-profile="linear"] #gWalls .case-wall{fill:#444;fill-opacity:1}
+#plan[data-plan-profile="linear"] #gWalls .wall[stroke-dasharray]{fill:#fff;stroke:#737373}
+#plan[data-plan-profile="linear"] #gCaseFeatures .case-step{fill:#f5f5f5;stroke:#737373}
+#plan[data-plan-profile="linear"] #gOpen [fill]:not([fill="none"]){fill:#fff}
+#plan[data-plan-profile="linear"] #gOpen [stroke]{stroke:#525252}
+#plan[data-plan-profile="linear"] #gLabels text{fill:#404040;stroke:#fff}
+#plan[data-plan-profile="linear"] #gDims text{fill:#737373}
+#plan[data-plan-profile="linear"] #gDims line{stroke:#737373}
+#plan[data-plan-profile="linear"] #grid path{stroke:#e5e5e5}
+#plan[data-plan-profile="linear"] #gMeasure [stroke]:not(text){stroke:#525252}
+#plan[data-plan-profile="linear"] #gMeasure [fill]:not([fill="none"]):not([fill="transparent"]){fill:#525252}
+#plan[data-plan-profile="linear"] #gSel [stroke]:not(text){stroke:#ec765b}
+#plan[data-plan-profile="linear"] #gSel [fill]:not([fill="none"]):not([fill="transparent"]){fill:#ec765b}
+body.external-controls #viewSeg{display:none}
+</style>
 <script type="importmap">
 {"imports":{
   "three":"/viewer-assets/vendor/three/build/three.module.js",
@@ -287,7 +311,7 @@ html,body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC
   </aside>
 
   <main id="stage">
-    <svg id="plan" class="tool-select" font-family="-apple-system,'PingFang SC','Microsoft YaHei',sans-serif">
+    <svg id="plan" data-plan-profile="linear" class="tool-select" font-family="-apple-system,'PingFang SC','Microsoft YaHei',sans-serif">
       <defs id="defs"></defs>
       <g id="gGrid"></g>
       <g id="gRooms"></g>
@@ -344,6 +368,8 @@ const AI_LAB = JSON.parse(document.getElementById('ai-lab-payload').textContent)
 const FLOORPLAN_CASE = AI_LAB.scene;
 if (!FLOORPLAN_CASE || !Array.isArray(FLOORPLAN_CASE.rooms) || !FLOORPLAN_CASE.rooms.length) throw new Error('No validated scene supplied');
 const LAB_SCOPE = 'ai-lab:' + encodeURIComponent(AI_LAB.context.projectId) + ':v' + AI_LAB.context.version;
+let labBridgeReady = false;
+document.body.classList.toggle('external-controls',AI_LAB.context.embeddedControls !== false && window.parent !== window);
 /* ======================= 多语言（中文 / English，默认中文） ======================= */
 const LANG_KEY = LAB_SCOPE + ':lang';
 const LANGS = ['zh', 'zht', 'en'];             // 简体 / 繁體（台湾用字）/ English
@@ -806,7 +832,7 @@ function renderSel(){
 
 function renderAll(){
   renderGrid(); renderRooms(); renderCaseFeatures(); renderFurn(); renderWalls(); renderLabels(); renderMeasure(); renderSel(); renderPanel(); updateHeader();
-  window.View3D?.sync();
+  window.View3D?.sync(); publishLabViewState();
 }
 
 function updateHeader(){
@@ -933,7 +959,7 @@ function drawer(which, open){
     const visible = key === which && !!show;
     el.classList.toggle('open',visible); el.inert = !visible; el.setAttribute('aria-hidden',String(!visible));
   });
-  syncPaneBtns();
+  syncPaneBtns(); publishLabViewState();
 }
 function syncPaneBtns(){
   const els = {lib:$('aside.lib'), panel:$('aside.right')};
@@ -1009,7 +1035,7 @@ function bindFurnPanel(f){
 }
 
 /* ======================= 操作 ======================= */
-function select(sel){ ui.sel = sel; renderSel(); renderPanel(); }
+function select(sel){ ui.sel = sel; renderSel(); renderPanel(); publishLabViewState(); }
 function rotateSel(d){ if (ui.sel?.kind==='furn') mutate(() => { const f = getF(ui.sel.id); f.rot = norm(f.rot + d); }); }
 function deleteSel(){ if (ui.sel?.kind==='furn'){ const id = ui.sel.id; ui.sel = null; mutate(() => state.furniture = state.furniture.filter(f => f.id !== id)); } }
 function duplicateSel(){
@@ -1375,8 +1401,13 @@ function captureCanvasSize(width,height,maxSide=1280){
   const factor = Math.min(1,maxSide/Math.max(width,height));
   return {width:Math.max(1,Math.round(width*factor)),height:Math.max(1,Math.round(height*factor))};
 }
+function withLegacyPlanProfile(action){
+  const previous=svg.getAttribute('data-plan-profile');
+  try { svg.removeAttribute('data-plan-profile'); return action(); }
+  finally { if (previous===null) svg.removeAttribute('data-plan-profile'); else svg.setAttribute('data-plan-profile',previous); }
+}
 async function capturePlanDataUrl(){
-  const clone = svg.cloneNode(true), size = captureCanvasSize(BOUNDS.w,BOUNDS.h);
+  const clone=withLegacyPlanProfile(()=>svg.cloneNode(true)),size=captureCanvasSize(BOUNDS.w,BOUNDS.h);
   clone.setAttribute('viewBox',`${BOUNDS.x} ${BOUNDS.y} ${BOUNDS.w} ${BOUNDS.h}`);
   clone.setAttribute('width',size.width); clone.setAttribute('height',size.height);
   clone.querySelector('#gSel').replaceChildren();
@@ -1396,32 +1427,34 @@ let labCapturePending = false;
 async function captureLabViews(){
   if (labCapturePending || switching) throw new Error('capture_busy');
   if (!window.View3D?.capture) throw new Error('capture_engine_unavailable');
-  labCapturePending = true;
+  labCapturePending = true; publishLabViewState();
   try {
     // Both functions render from current state without mutating editor state,
     // view mode, undo history, overlay controls or localStorage.
     const sceneDataUrl = window.View3D.capture();
     const planDataUrl = await capturePlanDataUrl();
     return {planDataUrl,sceneDataUrl};
-  } finally { labCapturePending = false; }
+  } finally { labCapturePending = false; publishLabViewState(); }
 }
 initSourceOverlay();
 
 function exportPNG(){
   if (is3D()) return window.View3D.shot();
   const clone = svg.cloneNode(true), W = 3200, H = Math.round(W*BOUNDS.h/BOUNDS.w);
+  const exportBackground=clone.getAttribute('data-plan-profile')==='linear'?'#fff':'#f7f4ee';
+  if (clone.getAttribute('data-plan-profile')==='linear'){ const profile=document.createElementNS('http://www.w3.org/2000/svg','style'); profile.textContent=$('#plan-linear-style').textContent; clone.prepend(profile); }
   clone.setAttribute('viewBox', `${BOUNDS.x} ${BOUNDS.y} ${BOUNDS.w} ${BOUNDS.h}`);
   clone.setAttribute('width', W); clone.setAttribute('height', H);
   clone.querySelector('#gSel').innerHTML = '';
-  clone.querySelector('#gGrid').innerHTML = `<rect x="${BOUNDS.x}" y="${BOUNDS.y}" width="${BOUNDS.w}" height="${BOUNDS.h}" fill="${ui.layers.grid?'url(#grid)':'#f7f4ee'}"/>`;
+  clone.querySelector('#gGrid').innerHTML = `<rect x="${BOUNDS.x}" y="${BOUNDS.y}" width="${BOUNDS.w}" height="${BOUNDS.h}" fill="${ui.layers.grid?'url(#grid)':exportBackground}"/>`;
   const bg = document.createElementNS('http://www.w3.org/2000/svg','rect');
-  Object.entries({x:BOUNDS.x,y:BOUNDS.y,width:BOUNDS.w,height:BOUNDS.h,fill:'#f7f4ee'}).forEach(([k,v]) => bg.setAttribute(k,v));
+  Object.entries({x:BOUNDS.x,y:BOUNDS.y,width:BOUNDS.w,height:BOUNDS.h,fill:exportBackground}).forEach(([k,v]) => bg.setAttribute(k,v));
   clone.insertBefore(bg, clone.querySelector('#gGrid'));
   const img = new Image();
   img.onload = () => {
     const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
     const ctx = cv.getContext('2d');
-    ctx.fillStyle = '#f7f4ee'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = exportBackground; ctx.fillRect(0,0,W,H);
     ctx.drawImage(img, 0, 0, W, H);
     cv.toBlob(b => download(tr('户型装修方案', 'floor-plan-design') + '.png', b));
   };
@@ -1441,14 +1474,21 @@ const TIPS = () => COARSE
   : {'2d':tr('拖动左侧家具到平面图 · 滚轮缩放 · 拖动空白处平移 · T 切换 3D', 'Drag furniture onto the plan · scroll to zoom · drag empty space to pan · T for 3D'),
      '3d':tr('3D 场景与平面方案实时同步 · 右侧面板修改会立即生效 · T 返回 2D', '3D stays in sync with the plan · panel edits apply instantly · T for 2D')};
 async function setView(m){
-  if (m === viewMode || switching) return;
-  if (!window.View3D) return toast(tr('3D 引擎仍在加载，请稍后重试', '3D engine is still loading; please try again shortly'));
-  switching = true; document.body.classList.add('busy');
-  viewMode = m; document.querySelectorAll('#viewSeg [data-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===m)));
-  if (m === '3d'){ if (ui.tool !== 'select') setTool('select'); ui.mA = null; document.body.classList.add('m3d'); await window.View3D.enter(); }
-  else { document.body.classList.remove('m3d'); await window.View3D.exit(); applyView(); }
-  $('#tip').textContent = TIPS()[m];
-  switching = false; document.body.classList.remove('busy');
+  if (m===viewMode || switching) return;
+  if (!window.View3D) return toast(tr('3D 引擎仍在加载，请稍后重试','3D engine is still loading; please try again shortly'));
+  const previousMode=viewMode;
+  switching=true; document.body.classList.add('busy');
+  viewMode=m; document.querySelectorAll('#viewSeg [data-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===m)));
+  publishLabViewState();
+  try {
+    if (m==='3d'){ if (ui.tool!=='select') setTool('select'); ui.mA=null; document.body.classList.add('m3d'); await window.View3D.enter(); }
+    else { document.body.classList.remove('m3d'); await window.View3D.exit(); applyView(); }
+    $('#tip').textContent=TIPS()[m];
+  } catch(error){
+    viewMode=previousMode; document.body.classList.toggle('m3d',viewMode==='3d'); $('#stage').classList.toggle('is3d',viewMode==='3d');
+    document.querySelectorAll('#viewSeg [data-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===viewMode)));
+    throw error;
+  } finally { switching=false; document.body.classList.remove('busy'); publishLabViewState(); }
 }
 document.querySelectorAll('.menu-pop .btn').forEach(b => b.addEventListener('click', () => b.closest('details').open = false));
 document.querySelectorAll('#viewSeg .btn').forEach(b => b.onclick = () => setView(b.dataset.view));
@@ -1533,23 +1573,66 @@ buildDefs(); buildLib(); renderOpenings(); renderDims();
 $('#tip').textContent = TIPS()['2d'];
 fitView(); renderAll();
 
-// Same-origin iframe bridge. Only serializable editor state crosses this boundary.
-window.addEventListener('message', async event => {
-  if (event.source !== window.parent || event.origin !== window.location.origin || !event.data || !['ai-lab:get-state','ai-lab:capture'].includes(event.data.type)) return;
-  const requestId = event.data.requestId;
-  if (typeof requestId !== 'string' || !requestId || requestId.length > 200) return;
-  if (event.data.type === 'ai-lab:get-state'){
-    window.parent.postMessage({type:'ai-lab:state',requestId,state:structuredClone(state)},window.location.origin);
+// Same-origin iframe bridge. Commands operate the existing editor, never code or JSON paths.
+function labViewState(){
+  return {mode:viewMode,panes:{library:$('aside.lib').classList.contains('open'),panel:$('aside.right').classList.contains('open')},selection:ui.sel ? {kind:ui.sel.kind,id:ui.sel.id} : null,busy:!!(switching||labCapturePending)};
+}
+function labViewMessage(type,requestId=null){
+  return {type,requestId,projectId:AI_LAB.context.projectId,projectVersion:AI_LAB.context.version,viewState:labViewState()};
+}
+function publishLabViewState(requestId=null,error=null){
+  if (!labBridgeReady || window.parent===window) return;
+  const message=labViewMessage('ai-lab:view-state',requestId); if (error) message.error=error;
+  window.parent.postMessage(message,window.location.origin);
+}
+function validateLabCommand(value){
+  if (!value || typeof value!=='object' || Array.isArray(value)) throw new Error('invalid_command');
+  if (value.projectId!==AI_LAB.context.projectId || value.projectVersion!==AI_LAB.context.version) throw new Error('stale_context');
+  const fields={'set-view-mode':['mode'],'open-panel':['panel','action'],'set-camera':['preset'],fit:[],'focus-room':['roomId'],'import-state':[]};
+  if (typeof value.command!=='string' || !Object.hasOwn(fields,value.command)) throw new Error('invalid_command');
+  const allowed=['type','requestId','projectId','projectVersion','command',...fields[value.command]];
+  if (Object.keys(value).some(key=>!allowed.includes(key)) || fields[value.command].some(key=>!Object.hasOwn(value,key))) throw new Error('invalid_command');
+  if (value.command==='set-view-mode' && !['2d','3d'].includes(value.mode)) throw new Error('invalid_command');
+  if (value.command==='open-panel' && (!['library','panel'].includes(value.panel)||!['open','close','toggle'].includes(value.action))) throw new Error('invalid_command');
+  if (value.command==='set-camera' && !['top','iso'].includes(value.preset)) throw new Error('invalid_command');
+  if (value.command==='focus-room' && !ROOMS.some(room=>room.id===value.roomId)) throw new Error('invalid_command');
+  return value;
+}
+async function executeLabCommand(value){
+  const command=validateLabCommand(value);
+  if (!labBridgeReady) throw new Error('view_unavailable');
+  if (switching||labCapturePending) throw new Error('view_busy');
+  if (command.command==='set-view-mode'){
+    await setView(command.mode); if (viewMode!==command.mode) throw new Error('view_unavailable');
+  } else if (command.command==='open-panel') drawer(command.panel==='library'?'lib':'panel',command.action==='toggle'?undefined:command.action==='open');
+  else if (command.command==='fit') fitCanvas();
+  else if (command.command==='import-state') $('#fileIn').click();
+  else {
+    await setView('3d'); if (viewMode!=='3d' || !window.View3D) throw new Error('view_unavailable');
+    if (command.command==='set-camera') $(command.preset==='top'?'#vTop':'#vIso').click();
+    else window.View3D.flyToRoom(command.roomId);
+  }
+}
+async function handleLabMessage(event){
+  if (event.source !== window.parent || event.origin !== window.location.origin || !event.data || !['ai-lab:get-state','ai-lab:capture','ai-lab:command'].includes(event.data.type)) return;
+  const requestId=event.data.requestId;
+  if (typeof requestId!=='string' || !requestId || requestId.length>200) return;
+  if (event.data.type==='ai-lab:command'){
+    try { await executeLabCommand(event.data); publishLabViewState(requestId); }
+    catch(error){ const code=['invalid_command','stale_context','view_busy','view_unavailable'].includes(error?.message)?error.message:'command_failed'; publishLabViewState(requestId,{code,message:'视图操作未完成，请核对当前方案并稍后重试。'}); }
     return;
   }
-  try {
-    const captures = await captureLabViews();
-    window.parent.postMessage({type:'ai-lab:captures',requestId,...captures},window.location.origin);
-  } catch (error){
-    const code = ['capture_busy','capture_engine_unavailable','capture_image_timeout','capture_image_unavailable'].includes(error?.message) ? error.message : 'capture_failed';
-    window.parent.postMessage({type:'ai-lab:captures',requestId,planDataUrl:null,sceneDataUrl:null,error:{code,message:'无法取得完整2D/3D预览，请等待画面就绪后重试。'}},window.location.origin);
+  const context={projectId:AI_LAB.context.projectId,projectVersion:AI_LAB.context.version};
+  if (event.data.type==='ai-lab:get-state'){
+    window.parent.postMessage({type:'ai-lab:state',requestId,...context,state:structuredClone(state)},window.location.origin); return;
   }
-});
+  try { const captures=await captureLabViews(); window.parent.postMessage({type:'ai-lab:captures',requestId,...context,...captures},window.location.origin); }
+  catch(error){
+    const code=['capture_busy','capture_engine_unavailable','capture_image_timeout','capture_image_unavailable'].includes(error?.message)?error.message:'capture_failed';
+    window.parent.postMessage({type:'ai-lab:captures',requestId,...context,planDataUrl:null,sceneDataUrl:null,error:{code,message:'无法取得完整2D/3D预览，请等待画面就绪后重试。'}},window.location.origin);
+  }
+}
+window.addEventListener('message',handleLabMessage);
 // Readiness is announced below after the local 3D module exposes capture.
 </script>
 <script type="module">
@@ -2943,7 +3026,8 @@ window.addEventListener('pagehide', disposeLabViewer, {once:true});
 window.addEventListener('unload', disposeLabViewer, {once:true});
 
 window.View3D = {enter, exit, relang, fit:() => { if (active && !anim){ if (opt.mode === 'walk') setMode('orbit'); flyTo(isoWhole()); } }, sync:() => sync(), shot, capture:captureSceneDataUrl, groundAt, flyToRoom:id => active && !anim && flyToRoom(id), walking:() => active && opt.mode === 'walk'};
-window.parent.postMessage({type:'ai-lab:ready'},window.location.origin);
+labBridgeReady=true;
+window.parent.postMessage(labViewMessage('ai-lab:ready'),window.location.origin);
 </script>
 </body>
 </html>

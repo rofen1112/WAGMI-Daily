@@ -66,15 +66,16 @@ async function fixtureHtml(width, view = 'editor') {
   const icons = load('src/features/ai-lab/StudioIcon.tsx');
   const thumbnail = load('src/features/ai-lab/SceneThumbnail.tsx', { './api': api, './StudioIcon': icons });
   const gallery = load('src/features/ai-lab/ProjectsGallery.tsx', { './api': api, './StudioIcon': icons, './SceneThumbnail': thumbnail });
+  const agent = load('src/features/ai-lab/AgentPanel.tsx', { './api': saved?.api || api, './StudioIcon': icons }, { window: saved?.window || {} });
   const { default: Page } = load('src/features/ai-lab/AiLabPage.tsx', {
     react: saved?.react || React, './api': saved?.api || api, './ScaleCalibrator': { default: Calibrator }, './WorkflowSummary': workflowModule,
-    './StudioIcon': icons, './ProjectsGallery': gallery, './ai-lab.css': {},
+    './StudioIcon': icons, './ProjectsGallery': gallery, './AgentPanel': agent, './ai-lab.css': {},
     './assets/ark-logo.png': { default: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="32" height="32"/%3E' },
   }, { window: saved?.window || { location: { hash: view === 'gallery' ? '#/ai-lab?tool=floorplan3d' : '#/ai-lab?tool=floorplan3d&view=new', origin: 'http://127.0.0.1:5186' }, matchMedia() { return { matches: width <= 980 }; } } });
   const page = saved ? await saved.render(Page) : renderToStaticMarkup(React.createElement(Page));
   const image = `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="600"><rect width="1000" height="600" fill="white"/><path d="M50 50H950V550H50ZM500 50V550M50 300H500" fill="none" stroke="#333" stroke-width="8"/></svg>').toString('base64')}`;
   const asset = { id: 'layout-only', name: '布局测试平面图', width: 1000, height: 600, url: image };
-  const calibration = renderToStaticMarkup(React.createElement(Calibrator, { asset, imageUrl: image, points: [[50, 50], [950, 50]], lengthMm: '9000', disabled: false, onPoints() {}, onLength() {} }));
+  const calibration = renderToStaticMarkup(React.createElement(Calibrator, { asset, imageUrl: image, compact: view === 'compact', points: [[50, 50], [950, 50]], lengthMm: '9000', disabled: false, onPoints() {}, onLength() {} }));
   const paragraph = '模型复核发现局部隔断和家具位置仍需人工确认，请按原始图纸逐项核对。'.repeat(12);
   const job = { pipelineVersion: 'codex-workflow-v1', stage: 'visual_review', analysis: { summary: paragraph, notes: Array(4).fill(paragraph) }, scaleProvenance: { mode: 'estimated', mmPerPixel: 25, confidence: 'low', evidence: Array(6).fill(paragraph), assumptions: Array(6).fill(paragraph) }, visualReview: { pass: false, reason: paragraph, issues: Array.from({ length: 8 }, () => ({ severity: 'critical', description: paragraph, suggestedChange: paragraph })), limitations: Array(6).fill(paragraph) } };
   const workflow = renderToStaticMarkup(React.createElement(Workflow, { job }));
@@ -92,7 +93,7 @@ async function fixtureHtml(width, view = 'editor') {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${baseCss}\n${labCss}</style></head><body>
   <div class="app-shell lab-shell"><main class="app-main lab-main" style="width:100%;max-width:none;margin:0;padding:0">${page}</main></div>
   <template id="calibration-fixture">${calibration}</template><template id="workflow-fixture"><section class="lab-job has-error" aria-label="任务状态"><details class="lab-task-details" open><summary>查看原因与任务详情</summary>${workflow}</details></section></template>
-  <pre id="layout-result" hidden></pre><script>(${layoutProbe.toString()})().then(result => { document.querySelector('#layout-result').textContent = JSON.stringify(result); }).catch(error => { document.querySelector('#layout-result').textContent = JSON.stringify({error:String(error)}); });</script></body></html>`;
+  <pre id="layout-result" hidden></pre><script>(${(view === 'compact' ? compactCalibrationProbe : layoutProbe).toString()})().then(result => { document.querySelector('#layout-result').textContent = JSON.stringify(result); }).catch(error => { document.querySelector('#layout-result').textContent = JSON.stringify({error:String(error)}); });</script></body></html>`;
 }
 
 async function galleryProbe() {
@@ -151,7 +152,7 @@ async function savedLayoutProbe() {
     root.classList.remove('mobile-projects-open'); sidebar.setAttribute('aria-hidden', 'true'); scrim.remove();
     await frame(); closed = snapshot();
   }
-  return { viewport: { width: innerWidth, height: innerHeight }, controlsCount: root.querySelectorAll('aside.lab-controls').length, rightToggleCount: root.querySelectorAll('[aria-label="切换新建空间侧栏"]').length, notesCount: root.querySelectorAll('.lab-canvas-notes, #lab-chat, #lab-prompt').length, modelTextVisible: /layout-model-marker|retained-model-warning-marker/.test(root.textContent), localButtons: ['保存方案', '导出 JSON'].every(label => [...root.querySelectorAll('button')].some(button => button.textContent === label)), initial, focused, projectsOpen, closed };
+  return { viewport: { width: innerWidth, height: innerHeight }, controlsCount: root.querySelectorAll('aside.lab-controls').length, rightToggleCount: root.querySelectorAll('[aria-label="切换 Agent 侧栏"]').length, notesCount: root.querySelectorAll('.lab-canvas-notes, #lab-chat, #lab-prompt').length, modelTextVisible: /layout-model-marker|retained-model-warning-marker/.test(root.textContent), localButtons: ['保存方案', '导出 JSON'].every(label => [...root.querySelectorAll('button')].some(button => button.textContent === label)), initial, focused, projectsOpen, closed };
 }
 
 async function layoutProbe() {
@@ -159,7 +160,7 @@ async function layoutProbe() {
   const rect = element => { const value = element.getBoundingClientRect(); return { top: value.top, bottom: value.bottom, left: value.left, right: value.right, width: value.width, height: value.height }; };
   const frame = () => new Promise(resolveFrame => requestAnimationFrame(() => requestAnimationFrame(resolveFrame)));
   const root = required('.ai-lab'), workspace = required('.lab-workspace'), canvas = required('.lab-canvas');
-  const controls = required('.lab-controls'), sidebar = required('.lab-sidebar'), report = required('.lab-controls-scroll');
+  const controls = required('.lab-controls'), sidebar = required('.lab-sidebar'), report = required('.lab-agent-timeline');
   canvas.replaceChildren(required('#calibration-fixture').content.cloneNode(true));
   await Promise.all([...canvas.querySelectorAll('img')].map(image => image.decode()));
   const image = required('.lab-calibration-image img'), known = required('#lab-known-length');
@@ -186,11 +187,11 @@ async function layoutProbe() {
   };
   const snapshot = () => ({
     main: rect(required('.lab-main')), app: rect(root), appbar: rect(required('.lab-appbar')), toolbar: rect(required('.lab-editor-toolbar')),
-    workspace: rect(workspace), editor: rect(required('.lab-editor')), canvas: rect(canvas), image: rect(image), knownLength: rect(known),
+    rail: rect(required('.lab-tool-rail')), viewSwitch: rect(required('.lab-view-switch')), workspace: rect(workspace), editor: rect(required('.lab-editor')), canvas: rect(canvas), image: rect(image), knownLength: rect(known),
     sidebar: { ...rect(sidebar), visible: visible(sidebar) }, controls: { ...rect(controls), visible: visible(controls) },
     report: { ...rect(report), clientHeight: report.clientHeight, scrollHeight: report.scrollHeight, scrollTop: report.scrollTop, overflow: getComputedStyle(report).overflowY },
-    projectClose: button('[aria-label="收起项目侧栏"]'), controlsClose: button('[aria-label="收起新建空间侧栏"]'),
-    projectToggle: button('[aria-label="切换项目侧栏"]'), controlsToggle: button('[aria-label="切换新建空间侧栏"]'),
+    projectClose: button('[aria-label="收起项目侧栏"]'), controlsClose: button('[aria-label="收起 Agent 侧栏"]'),
+    projectToggle: button('[aria-label="切换项目侧栏"]'), controlsToggle: button('[aria-label="切换 Agent 侧栏"]'),
     appbarUncovered: appbarUncovered(), backdropReachable: backdropReachable(),
     page: { scrollTop: document.scrollingElement.scrollTop, scrollWidth: document.scrollingElement.scrollWidth, scrollHeight: document.scrollingElement.scrollHeight },
   });
@@ -239,6 +240,19 @@ async function layoutProbe() {
   }
   await frame();
   return { viewport: { width: innerWidth, height: innerHeight }, realPage: { appbar: Boolean(document.querySelector('.lab-appbar')), oldHeroCount: document.querySelectorAll('.lab-heading, .app-header').length, realCalibrator: Boolean(document.querySelector('#lab-known-length')), realWorkflow: Boolean(document.querySelector('.lab-workflow-detail')) }, initial, longReport, reportScrolled, focused, projectsOpen, controlsOpen, mobileClosed, calibrationReached: { ...snapshot(), localScrollParents: scrollParents.map(element => element.className) } };
+}
+
+async function compactCalibrationProbe() {
+  const canvas = document.querySelector('.lab-canvas');
+  canvas.replaceChildren(document.querySelector('#calibration-fixture').content.cloneNode(true));
+  const image = canvas.querySelector('.lab-calibration-image img'); await image.decode();
+  await new Promise(resolveFrame => requestAnimationFrame(() => requestAnimationFrame(resolveFrame)));
+  const root = canvas.querySelector('.lab-calibrator.is-compact'), advanced = root.querySelector('.lab-calibration-advanced');
+  const imageRect = image.getBoundingClientRect(), canvasRect = canvas.getBoundingClientRect();
+  const visible = element => { const rect = element.getBoundingClientRect(); return rect.height > 0 && document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2) === element; };
+  const initiallyVisibleCoordinates = [...advanced.querySelectorAll('input')].filter(visible).length;
+  advanced.open = true; advanced.querySelector('input').focus();
+  return { canvasHeight: canvasRect.height, imageHeight: imageRect.height, imageTop: imageRect.top, canvasTop: canvasRect.top, imageBottom: imageRect.bottom, canvasBottom: canvasRect.bottom, compactHeight: root.getBoundingClientRect().height, standardLengthCount: root.querySelectorAll('#lab-known-length').length, initiallyVisibleCoordinates, coordinateCount: advanced.querySelectorAll('input').length, keyboardFocus: advanced.contains(document.activeElement), pageScrollWidth: document.scrollingElement.scrollWidth, pageScrollTop: document.scrollingElement.scrollTop };
 }
 
 async function measureInBrowser(html, profile, width, height) {
@@ -327,13 +341,16 @@ test('the new-project editor route keeps edge-to-edge desktop docks and exclusiv
       assert.ok(calibrationReached.localScrollParents.some(name => name.includes('lab-canvas') || name.includes('lab-calibrator')), 'Known-length form must have a local calibration scroll container.');
       assert.ok(calibrationReached.knownLength.top >= calibrationReached.canvas.top - 1 && calibrationReached.knownLength.bottom <= calibrationReached.canvas.bottom + 1, 'Known-length input must be reachable without scrolling the page.');
       if (width > 980) {
+        assert.ok(Math.abs(initial.rail.width - 72) <= 1, 'Desktop rail must be 72px wide.');
+        assert.ok(Math.abs((initial.viewSwitch.left + initial.viewSwitch.right) / 2 - (initial.editor.left + initial.editor.right) / 2) <= 1, '2D/3D must be centered in the space title toolbar.');
+        assert.ok(initial.viewSwitch.top >= initial.appbar.bottom && initial.viewSwitch.bottom <= initial.toolbar.bottom + 1);
         assert.ok(initial.sidebar.visible && initial.controls.visible, 'Both desktop docks must be visible.');
-        assert.ok(Math.abs(initial.sidebar.left) <= 1 && Math.abs(initial.controls.right - width) <= 1, 'Desktop side docks must attach to left/right viewport edges.');
+        assert.ok(Math.abs(initial.sidebar.left - 72) <= 1 && Math.abs(initial.controls.right - width) <= 1, 'The context drawer follows the 72px rail and Agent dock reaches the right viewport edge.');
         assert.ok(Math.abs(initial.editor.left - initial.sidebar.right) <= 2 && Math.abs(initial.editor.right - initial.controls.left) <= 2, 'Canvas editor must fill the whole space between the docks.');
-        assert.ok(initial.canvas.width >= width - 550, 'Desktop canvas must release the space previously lost to centered max-width cards.');
+        assert.ok(initial.canvas.width >= width - 684, 'Desktop canvas must release the space previously lost to centered max-width cards.');
         assert.ok(initial.canvas.height >= height * .65, 'Toolbar and task text must leave a substantial vertical canvas.');
         assert.ok(!measured.focused.sidebar.visible && !measured.focused.controls.visible, 'Focus CSS state must collapse both docks.');
-        assert.ok(measured.focused.canvas.width >= width - 2, 'Focused canvas must fill the viewport width.');
+        assert.ok(measured.focused.canvas.width >= width - 74, 'Focused canvas must use all available width beside the persistent tool rail.');
       } else {
         assert.ok(!initial.sidebar.visible && !initial.controls.visible, 'Mobile starts with both drawers closed.');
         assert.ok(measured.projectsOpen.sidebar.visible && !measured.projectsOpen.controls.visible, 'Projects drawer must not expose the controls drawer.');
@@ -342,7 +359,7 @@ test('the new-project editor route keeps edge-to-edge desktop docks and exclusiv
         for (const snapshot of [initial, measured.mobileClosed]) {
           assert.ok(snapshot.projectToggle.reachable && snapshot.controlsToggle.reachable, 'Hidden drawers must not intercept the controls used to open them.');
         }
-        assert.ok(initial.canvas.width >= width - 2 && measured.mobileClosed.canvas.width >= width - 2, 'Closed mobile drawers must not reserve desktop column widths.');
+        assert.ok(initial.canvas.width >= width - 58 && measured.mobileClosed.canvas.width >= width - 58, 'Closed mobile drawers must not reserve desktop column widths.');
         for (const [snapshot, dock, close] of [[measured.projectsOpen, 'sidebar', 'projectClose'], [measured.controlsOpen, 'controls', 'controlsClose']]) {
           assert.ok(snapshot[dock].top >= snapshot.appbar.bottom - 1, 'Active drawer must begin below the app toolbar.');
           assert.ok(snapshot[close].visible && snapshot[close].reachable, 'The active drawer close button must remain visible and hit-testable.');
@@ -416,11 +433,11 @@ test('a loaded saved scene releases the entire right dock and keeps the local vi
         assert.ok(Math.abs(snapshot.canvas.right - width) <= 1 && Math.abs(snapshot.iframe.width - snapshot.canvas.width) <= 1 && Math.abs(snapshot.iframe.height - snapshot.canvas.height) <= 1, 'Saved iframe must fill the full canvas through the viewport right edge.');
       }
       if (width > 980) {
-        assert.ok(measured.initial.sidebarVisible && measured.initial.canvas.width >= width - 232, 'Saved scenes must recover the former 300px creation column.');
-        assert.ok(!measured.focused.sidebarVisible && measured.focused.canvas.width >= width - 2);
+        assert.ok(measured.initial.sidebarVisible && measured.initial.canvas.width >= width - 324, 'Saved scenes must recover the former 300px creation column.');
+        assert.ok(!measured.focused.sidebarVisible && measured.focused.canvas.width >= width - 74);
         assert.ok(measured.closed.sidebarVisible && Math.abs(measured.closed.canvas.width - measured.initial.canvas.width) <= 1);
       } else {
-        assert.ok(!measured.initial.sidebarVisible && !measured.closed.sidebarVisible && measured.initial.canvas.width >= width - 2);
+        assert.ok(!measured.initial.sidebarVisible && !measured.closed.sidebarVisible && measured.initial.canvas.width >= width - 58);
         assert.ok(measured.projectsOpen.sidebarVisible && measured.projectsOpen.closeReachable && measured.projectsOpen.backdropReachable && measured.projectsOpen.appbarUncovered, 'The sole saved-editor drawer must have reachable dismiss controls without covering the appbar.');
         assert.deepEqual(measured.projectsOpen.canvas, measured.initial.canvas);
       }
@@ -431,5 +448,25 @@ test('a loaded saved scene releases the entire right dock and keeps the local vi
     assert.equal(dirname(resolved), tempBase);
     assert.ok(resolved.startsWith(tempBase + sep) && resolved.includes('ai-lab-layout-'));
     rmSync(resolved, { recursive: true, force: true });
+  }
+});
+
+
+test('compact workbench calibration reserves the canvas for the source image and keeps coordinates behind an advanced disclosure', { skip: !browser ? 'No Chromium browser installed.' : false }, async context => {
+  const tempBase = resolve(tmpdir()), directory = mkdtempSync(resolve(tempBase, 'ai-lab-layout-'));
+  try {
+    for (const [width, height] of [[1440, 900], [390, 844]]) {
+      const html = resolve(directory, 'compact-' + width + '.html'); writeFileSync(html, await fixtureHtml(width, 'compact'));
+      const measured = await measureInBrowser(html, resolve(directory, 'profile-' + width), width, height);
+      assert.equal(measured.error, undefined, JSON.stringify(measured));
+      assert.equal(measured.standardLengthCount, 0); assert.equal(measured.initiallyVisibleCoordinates, 0);
+      assert.equal(measured.coordinateCount, 4); assert.equal(measured.keyboardFocus, true);
+      assert.ok(measured.imageHeight >= measured.canvasHeight * .65, 'The source-image container must use the available canvas height instead of a fixed thumbnail.');
+      assert.ok(measured.imageTop >= measured.canvasTop && measured.imageBottom <= measured.canvasBottom + 1);
+      assert.ok(measured.pageScrollWidth <= width + 1); assert.equal(measured.pageScrollTop, 0);
+      context.diagnostic(JSON.stringify({ compactViewport: width, imageHeight: measured.imageHeight, canvasHeight: measured.canvasHeight }));
+    }
+  } finally {
+    const resolved = resolve(directory); assert.equal(dirname(resolved), tempBase); assert.ok(resolved.startsWith(tempBase + sep)); rmSync(resolved, { recursive: true, force: true });
   }
 });

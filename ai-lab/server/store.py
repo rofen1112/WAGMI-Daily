@@ -161,8 +161,11 @@ class Store:
             raise LabError("scene_not_found", "项目尚未保存场景。", 404)
         return {"scene": json.loads(row["scene"]), "state": json.loads(row["state"]), "version": row["version"], "validation": json.loads(row["validation"]), "sourceAsset": json.loads(row["source_asset"]) if row["source_asset"] else None, "source": row["source_type"]}
 
-    def commit_scene(self, project_id, base_version, scene, state, validation, source_asset=None, source_type="generated", job_id=None):
-        with self.transaction() as db:
+    def commit_scene(self, project_id, base_version, scene, state, validation, source_asset=None, source_type="generated", job_id=None, *, db=None):
+        if db is None:
+            with self.transaction() as connection:
+                return self.commit_scene(project_id, base_version, scene, state, validation, source_asset, source_type, job_id, db=connection)
+        if db is not None:
             project = self.project(project_id, db)
             if job_id and self.job(job_id, db)["record"]["status"] == "cancelled":
                 return None

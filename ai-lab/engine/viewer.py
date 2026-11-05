@@ -9,7 +9,7 @@ TEMPLATE = Path(__file__).resolve().parents[1] / 'viewer' / 'index.html'
 PLACEHOLDER = '__AI_LAB_SCENE_JSON__'
 
 
-def render_viewer_html(scene, state, project_id, version, source_asset_url=None):
+def render_viewer_html(scene, state, project_id, version, source_asset_url=None, *, embedded_controls=True):
     """Return isolated HTML; the only injection is an inert safely escaped JSON blob.
 
     Preserve stored scene and state. Renderer-only optional presentation defaults
@@ -33,7 +33,8 @@ def render_viewer_html(scene, state, project_id, version, source_asset_url=None)
     normalized.setdefault('titleEn',normalized.get('title','AI Lab'))
     for key in ('dimensions','extraLintels','annotations','polygonWalls','columns','steps'):normalized.setdefault(key,[])
     normalized.setdefault('windowHeads',[2400]*len(scene['windows']))
-    context={'projectId':project_id,'version':version}
+    if not isinstance(embedded_controls,bool):raise ValueError('Embedded controls flag must be boolean.')
+    context={'projectId':project_id,'version':version,'embeddedControls':embedded_controls}
     if source_asset_url is not None:
         if not isinstance(source_asset_url,str) or re.fullmatch(r'/api/ai-lab/v1/assets/[a-f0-9]{32}',source_asset_url) is None:
             raise ValueError('Source overlay requires an allowlisted same-origin asset URL.')
