@@ -30,8 +30,36 @@ function load(relative, imports = {}, globals = {}) {
   return exports;
 }
 
-function fixtureHtml(width, view = 'editor') {
+function savedPageHarness(width, helpers) {
+  const hooks = []; let cursor = 0, dirty = false, effects = [], tree;
+  const equal = (a, b) => a?.length === b?.length && a.every((value, index) => Object.is(value, b[index]));
+  const react = {
+    useState(initial) { const index = cursor++; hooks[index] ??= { value: typeof initial === 'function' ? initial() : initial }; return [hooks[index].value, next => { const value = typeof next === 'function' ? next(hooks[index].value) : next; if (!Object.is(value, hooks[index].value)) { hooks[index].value = value; dirty = true; } }]; },
+    useRef(initial) { const index = cursor++; hooks[index] ??= { current: initial }; return hooks[index]; },
+    useCallback(callback, deps) { const index = cursor++; if (!hooks[index] || !equal(hooks[index].deps, deps)) hooks[index] = { callback, deps }; return hooks[index].callback; },
+    useEffect(callback, deps) { const index = cursor++, previous = hooks[index]; if (!previous || !equal(previous.deps, deps)) { hooks[index] = { deps }; effects.push(() => { previous?.cleanup?.(); hooks[index].cleanup = callback(); }); } },
+  };
+  const window = { location: { hash: '#/ai-lab?tool=floorplan3d&projectId=saved-layout', origin: 'http://127.0.0.1:5186' }, history: { replaceState(_state, _title, href) { window.location.hash = href; } }, matchMedia() { return { matches: width <= 980 }; }, addEventListener() {}, removeEventListener() {} };
+  const api = { ...helpers, async request(path) {
+    if (path === '/health') return { status: 'ok', providerConfigured: true, model: 'layout-model-marker' };
+    if (path === '/projects') return { projects: [{ id: 'saved-layout', title: '已保存的本地空间', sceneVersion: 2 }] };
+    if (path === '/baselines') return { baselines: [] };
+    if (path === '/projects/saved-layout/scene') return { scene: { furniture: [], warnings: ['retained-model-warning-marker'] }, state: { furniture: [], rooms: {}, demolished: [], measures: [] }, version: 2, source: 'generated', validation: { errors: [], warnings: [] } };
+    throw new Error('Unexpected saved layout fixture request: ' + path);
+  } };
+  return { react, window, api, async render(Page) {
+    const render = () => { cursor = 0; dirty = false; tree = Page(); const pending = effects; effects = []; for (const effect of pending) effect(); };
+    render();
+    for (let index = 0; index < 20; index++) { await new Promise(setImmediate); if (dirty) render(); }
+    const html = renderToStaticMarkup(tree);
+    for (const hook of hooks) hook?.cleanup?.();
+    return html;
+  } };
+}
+
+async function fixtureHtml(width, view = 'editor') {
   const api = load('src/features/ai-lab/api.ts');
+  const saved = view === 'saved' ? savedPageHarness(width, api) : null;
   const { default: Calibrator } = load('src/features/ai-lab/ScaleCalibrator.tsx', { './api': api });
   const workflowModule = load('src/features/ai-lab/WorkflowSummary.tsx');
   const { default: Workflow } = workflowModule;
@@ -39,11 +67,11 @@ function fixtureHtml(width, view = 'editor') {
   const thumbnail = load('src/features/ai-lab/SceneThumbnail.tsx', { './api': api, './StudioIcon': icons });
   const gallery = load('src/features/ai-lab/ProjectsGallery.tsx', { './api': api, './StudioIcon': icons, './SceneThumbnail': thumbnail });
   const { default: Page } = load('src/features/ai-lab/AiLabPage.tsx', {
-    './api': api, './ScaleCalibrator': { default: Calibrator }, './WorkflowSummary': workflowModule,
+    react: saved?.react || React, './api': saved?.api || api, './ScaleCalibrator': { default: Calibrator }, './WorkflowSummary': workflowModule,
     './StudioIcon': icons, './ProjectsGallery': gallery, './ai-lab.css': {},
     './assets/ark-logo.png': { default: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="32" height="32"/%3E' },
-  }, { window: { location: { hash: view === 'gallery' ? '#/ai-lab?tool=floorplan3d' : '#/ai-lab?tool=floorplan3d&view=new', origin: 'http://127.0.0.1:5186' }, matchMedia() { return { matches: width <= 980 }; } } });
-  const page = renderToStaticMarkup(React.createElement(Page));
+  }, { window: saved?.window || { location: { hash: view === 'gallery' ? '#/ai-lab?tool=floorplan3d' : '#/ai-lab?tool=floorplan3d&view=new', origin: 'http://127.0.0.1:5186' }, matchMedia() { return { matches: width <= 980 }; } } });
+  const page = saved ? await saved.render(Page) : renderToStaticMarkup(React.createElement(Page));
   const image = `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="600"><rect width="1000" height="600" fill="white"/><path d="M50 50H950V550H50ZM500 50V550M50 300H500" fill="none" stroke="#333" stroke-width="8"/></svg>').toString('base64')}`;
   const asset = { id: 'layout-only', name: '布局测试平面图', width: 1000, height: 600, url: image };
   const calibration = renderToStaticMarkup(React.createElement(Calibrator, { asset, imageUrl: image, points: [[50, 50], [950, 50]], lengthMm: '9000', disabled: false, onPoints() {}, onLength() {} }));
@@ -52,10 +80,11 @@ function fixtureHtml(width, view = 'editor') {
   const workflow = renderToStaticMarkup(React.createElement(Workflow, { job }));
   const baseCss = readFileSync(resolve(moduleRoot, 'src/styles.css'), 'utf8');
   const labCss = readFileSync(resolve(sourceRoot, 'src/features/ai-lab/ai-lab.css'), 'utf8');
-  if (view === 'gallery') {
+  if (view === 'gallery' || view === 'saved') {
+    const probe = view === 'gallery' ? galleryProbe : savedLayoutProbe;
     return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${baseCss}\n${labCss}</style></head><body>
     <div class="app-shell lab-shell"><main class="app-main lab-main" style="width:100%;max-width:none;margin:0;padding:0">${page}</main></div>
-    <pre id="layout-result" hidden></pre><script>(${galleryProbe.toString()})().then(result => { document.querySelector('#layout-result').textContent = JSON.stringify(result); }).catch(error => { document.querySelector('#layout-result').textContent = JSON.stringify({error:String(error)}); });</script></body></html>`;
+    <pre id="layout-result" hidden></pre><script>(${probe.toString()})().then(result => { document.querySelector('#layout-result').textContent = JSON.stringify(result); }).catch(error => { document.querySelector('#layout-result').textContent = JSON.stringify({error:String(error)}); });</script></body></html>`;
   }
   // This is the real Page SSR inside App's actual lab-only shell branch. Only
   // stress content is inserted: the real calibrator and real long workflow.
@@ -94,6 +123,37 @@ async function galleryProbe() {
   };
 }
 
+async function savedLayoutProbe() {
+  const required = selector => { const element = document.querySelector(selector); if (!element) throw new Error('Missing saved editor element: ' + selector); return element; };
+  const root = required('.ai-lab.is-local-editor'), workspace = required('.lab-workspace'), canvas = required('.lab-canvas');
+  const sidebar = required('.lab-sidebar'), iframe = required('iframe.lab-viewer');
+  const rect = element => { const value = element.getBoundingClientRect(); return { left: value.left, right: value.right, top: value.top, bottom: value.bottom, width: value.width, height: value.height }; };
+  const frame = () => new Promise(resolveFrame => requestAnimationFrame(() => requestAnimationFrame(resolveFrame)));
+  const visible = element => { const value = rect(element), style = getComputedStyle(element); return style.visibility !== 'hidden' && style.display !== 'none' && value.width > 0 && value.right > 0 && value.left < innerWidth; };
+  const snapshot = () => ({ canvas: rect(canvas), iframe: rect(iframe), sidebarVisible: visible(sidebar), pageScrollWidth: document.scrollingElement.scrollWidth, pageScrollTop: document.scrollingElement.scrollTop, sameIframe: document.querySelector('iframe.lab-viewer') === iframe });
+  await frame();
+  const initial = snapshot();
+  let focused, projectsOpen, closed;
+  if (innerWidth > 980) {
+    root.classList.add('is-left-collapsed', 'is-focused'); sidebar.setAttribute('aria-hidden', 'true');
+    await frame(); focused = snapshot();
+    root.classList.remove('is-left-collapsed', 'is-focused'); sidebar.setAttribute('aria-hidden', 'false');
+    await frame(); closed = snapshot();
+  } else {
+    const scrim = document.createElement('button'); scrim.type = 'button'; scrim.className = 'lab-drawer-scrim'; scrim.setAttribute('aria-label', '关闭侧栏'); workspace.prepend(scrim);
+    root.classList.add('mobile-projects-open'); sidebar.setAttribute('aria-hidden', 'false');
+    await frame();
+    const close = required('[aria-label="收起项目侧栏"]'), closeRect = rect(close);
+    const appbar = required('.lab-appbar'), appbarRect = rect(appbar);
+    const closeHit = document.elementFromPoint(closeRect.left + closeRect.width / 2, closeRect.top + closeRect.height / 2);
+    const backdropHit = document.elementFromPoint((rect(sidebar).right + innerWidth) / 2, workspace.getBoundingClientRect().top + workspace.clientHeight / 2);
+    projectsOpen = { ...snapshot(), closeReachable: Boolean(closeHit && close.contains(closeHit)), backdropReachable: Boolean(backdropHit && scrim.contains(backdropHit)), appbarUncovered: [1, innerWidth / 2, innerWidth - 1].every(x => appbar.contains(document.elementFromPoint(x, appbarRect.top + appbarRect.height / 2))) };
+    root.classList.remove('mobile-projects-open'); sidebar.setAttribute('aria-hidden', 'true'); scrim.remove();
+    await frame(); closed = snapshot();
+  }
+  return { viewport: { width: innerWidth, height: innerHeight }, controlsCount: root.querySelectorAll('aside.lab-controls').length, rightToggleCount: root.querySelectorAll('[aria-label="切换新建空间侧栏"]').length, notesCount: root.querySelectorAll('.lab-canvas-notes, #lab-chat, #lab-prompt').length, modelTextVisible: /layout-model-marker|retained-model-warning-marker/.test(root.textContent), localButtons: ['保存方案', '导出 JSON'].every(label => [...root.querySelectorAll('button')].some(button => button.textContent === label)), initial, focused, projectsOpen, closed };
+}
+
 async function layoutProbe() {
   const required = selector => { const element = document.querySelector(selector); if (!element) throw new Error('Missing real Page element: ' + selector); return element; };
   const rect = element => { const value = element.getBoundingClientRect(); return { top: value.top, bottom: value.bottom, left: value.left, right: value.right, width: value.width, height: value.height }; };
@@ -129,8 +189,8 @@ async function layoutProbe() {
     workspace: rect(workspace), editor: rect(required('.lab-editor')), canvas: rect(canvas), image: rect(image), knownLength: rect(known),
     sidebar: { ...rect(sidebar), visible: visible(sidebar) }, controls: { ...rect(controls), visible: visible(controls) },
     report: { ...rect(report), clientHeight: report.clientHeight, scrollHeight: report.scrollHeight, scrollTop: report.scrollTop, overflow: getComputedStyle(report).overflowY },
-    projectClose: button('[aria-label="收起项目侧栏"]'), controlsClose: button('[aria-label="收起创作侧栏"]'),
-    projectToggle: button('[aria-label="切换项目侧栏"]'), controlsToggle: button('[aria-label="切换创作侧栏"]'),
+    projectClose: button('[aria-label="收起项目侧栏"]'), controlsClose: button('[aria-label="收起新建空间侧栏"]'),
+    projectToggle: button('[aria-label="切换项目侧栏"]'), controlsToggle: button('[aria-label="切换新建空间侧栏"]'),
     appbarUncovered: appbarUncovered(), backdropReachable: backdropReachable(),
     page: { scrollTop: document.scrollingElement.scrollTop, scrollWidth: document.scrollingElement.scrollWidth, scrollHeight: document.scrollingElement.scrollHeight },
   });
@@ -244,7 +304,7 @@ test('the new-project editor route keeps edge-to-edge desktop docks and exclusiv
   try {
     for (const [width, height] of [[1440, 900], [1920, 1080], [390, 844]]) {
       const html = resolve(directory, `fixture-${width}.html`);
-      writeFileSync(html, fixtureHtml(width));
+      writeFileSync(html, await fixtureHtml(width));
       const measured = await measureInBrowser(html, resolve(directory, `profile-${width}`), width, height);
       assert.equal(measured.error, undefined, JSON.stringify(measured));
       assert.equal(measured.viewport.width, width);
@@ -307,7 +367,7 @@ test('the tool gallery follows the reference desktop hierarchy and keeps mobile 
   try {
     for (const [width, height] of [[1656, 900], [390, 844]]) {
       const html = resolve(directory, `gallery-${width}.html`);
-      writeFileSync(html, fixtureHtml(width, 'gallery'));
+      writeFileSync(html, await fixtureHtml(width, 'gallery'));
       const measured = await measureInBrowser(html, resolve(directory, `profile-${width}`), width, height);
       assert.equal(measured.error, undefined, JSON.stringify(measured));
       assert.equal(measured.viewport.width, width);
@@ -331,6 +391,40 @@ test('the tool gallery follows the reference desktop hierarchy and keeps mobile 
         assert.ok(measured.topNew.reachable && Math.max(...channels(measured.topNew.background)) <= 40 && neutral(measured.topNew.background), 'The toolbar must expose a visible, hit-testable black new-project action.');
       }
       context.diagnostic(JSON.stringify({ galleryViewport: measured.viewport, gridWidth: measured.grid.width, columns: measured.grid.columns, gap: measured.grid.gap, headingSize: measured.headingFontSize, sidePadding: measured.padding, cardWidths: measured.cards.map(card => card.width) }));
+    }
+  } finally {
+    const resolved = resolve(directory);
+    assert.equal(dirname(resolved), tempBase);
+    assert.ok(resolved.startsWith(tempBase + sep) && resolved.includes('ai-lab-layout-'));
+    rmSync(resolved, { recursive: true, force: true });
+  }
+});
+
+test('a loaded saved scene releases the entire right dock and keeps the local viewer full width on mobile', { skip: !browser ? 'No Chromium browser is installed for actual layout measurement.' : false }, async (context) => {
+  const tempBase = resolve(tmpdir());
+  const directory = mkdtempSync(resolve(tempBase, 'ai-lab-layout-'));
+  try {
+    for (const [width, height] of [[1440, 900], [390, 844]]) {
+      const html = resolve(directory, `saved-${width}.html`);
+      writeFileSync(html, await fixtureHtml(width, 'saved'));
+      const measured = await measureInBrowser(html, resolve(directory, `profile-${width}`), width, height);
+      assert.equal(measured.error, undefined, JSON.stringify(measured));
+      assert.equal(measured.controlsCount, 0); assert.equal(measured.rightToggleCount, 0); assert.equal(measured.notesCount, 0);
+      assert.equal(measured.modelTextVisible, false); assert.equal(measured.localButtons, true);
+      for (const snapshot of [measured.initial, measured.focused, measured.projectsOpen, measured.closed].filter(Boolean)) {
+        assert.ok(snapshot.sameIframe && snapshot.pageScrollWidth <= width + 1 && snapshot.pageScrollTop === 0, 'Local dock changes must retain the viewer without page overflow or scrolling.');
+        assert.ok(Math.abs(snapshot.canvas.right - width) <= 1 && Math.abs(snapshot.iframe.width - snapshot.canvas.width) <= 1 && Math.abs(snapshot.iframe.height - snapshot.canvas.height) <= 1, 'Saved iframe must fill the full canvas through the viewport right edge.');
+      }
+      if (width > 980) {
+        assert.ok(measured.initial.sidebarVisible && measured.initial.canvas.width >= width - 232, 'Saved scenes must recover the former 300px creation column.');
+        assert.ok(!measured.focused.sidebarVisible && measured.focused.canvas.width >= width - 2);
+        assert.ok(measured.closed.sidebarVisible && Math.abs(measured.closed.canvas.width - measured.initial.canvas.width) <= 1);
+      } else {
+        assert.ok(!measured.initial.sidebarVisible && !measured.closed.sidebarVisible && measured.initial.canvas.width >= width - 2);
+        assert.ok(measured.projectsOpen.sidebarVisible && measured.projectsOpen.closeReachable && measured.projectsOpen.backdropReachable && measured.projectsOpen.appbarUncovered, 'The sole saved-editor drawer must have reachable dismiss controls without covering the appbar.');
+        assert.deepEqual(measured.projectsOpen.canvas, measured.initial.canvas);
+      }
+      context.diagnostic(JSON.stringify({ savedViewport: measured.viewport, canvasWidth: measured.initial.canvas.width, focusedWidth: measured.focused?.canvas.width, rightDocks: measured.controlsCount }));
     }
   } finally {
     const resolved = resolve(directory);

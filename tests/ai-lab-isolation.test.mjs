@@ -201,7 +201,7 @@ test('draft capture uploads once per revision, explicitly retries failure and ne
   const helpers = await load('src/features/ai-lab/api.ts', { window });
   const inputAsset = { id: 'input-a', name: '分析中的原图.png', mime: 'image/png', width: 1000, height: 500, url: '/api/ai-lab/v1/assets/input-a' };
   let currentJob = { id: 'j1', projectId: 'p1', status: 'running', stage: 'analyzing', pipelineVersion: 'codex-workflow-v1', sourceAsset: inputAsset, input: { scaleMode: 'auto', prompt: '本次原始生成要求' } };
-  const project = { id: 'p1', title: '候选复核', sceneVersion: 1 };
+  const project = { id: 'p1', title: '首次生成候选复核', sceneVersion: 0 };
   const posts = []; let captureCount = 0, failCapture = false;
   const source = { postMessage(message, origin) {
     assert.equal(message.type, 'ai-lab:capture'); captureCount++;
@@ -211,7 +211,7 @@ test('draft capture uploads once per revision, explicitly retries failure and ne
     if (path === '/health') return { status: 'ok', providerConfigured: true };
     if (path === '/projects') return { projects: [{ ...project, latestJob: currentJob }] };
     if (path === '/baselines') return { baselines: [] };
-    if (path === '/projects/p1/scene') return { scene: { furniture: [] }, state: null, version: 1, source: 'baseline_reference' };
+    if (path === '/projects/p1/scene') return null;
     if (path === '/jobs/j1') return { job: currentJob };
     if (path === '/jobs/j1/draft') return { draftId: currentJob.draft.id, scene: { furniture: [] }, state: null, validation: { errors: [], warnings: [] } };
     throw new Error(`Unexpected GET ${path}`);
@@ -253,7 +253,7 @@ test('draft capture uploads once per revision, explicitly retries failure and ne
   assert.equal(find(tree, (node) => node.type === 'select' && node.props.id === 'lab-scale-mode').props.value, 'auto');
   assert.equal(find(tree, (node) => node.type === 'iframe').props.src.includes('draftId=d1'), true);
   for (const label of ['导出 JSON', '保存方案']) assert.equal(find(tree, (node) => node.type === 'button' && node.props.children === label).props.disabled, true);
-  assert.equal(find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-chat').props.disabled, true);
+  assert.equal(find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-chat'), null);
   currentJob = { ...currentJob, draft: { id: 'd2', viewerUrl: '/api/ai-lab/v1/jobs/j1/viewer?draftId=d2' } };
   failCapture = true; await poll(); await ready();
   assert.equal(captureCount, 2); assert.equal(posts.length, 1);
@@ -263,16 +263,14 @@ test('draft capture uploads once per revision, explicitly retries failure and ne
   assert.equal(captureCount, 3); assert.equal(posts.length, 2); assert.equal(posts[1].body.draftId, 'd2');
   currentJob = { ...currentJob, status: 'failed', reviewImagesRequired: false }; await poll();
   assert.match(find(tree, (node) => node.type === 'iframe').props.title, /未通过检查/);
-  const terminalHelp = find(tree, (node) => node.props?.className === 'lab-editor-help').props.children;
-  assert.match(terminalHelp, /任务已停止/); assert.doesNotMatch(terminalHelp, /保持空间预览打开|系统会提交/);
+  assert.equal(find(tree, (node) => node.props?.className === 'lab-canvas-notes'), null, 'Removed explanatory overlays must not return for terminal candidates.');
   assert.equal(find(tree, (node) => node.type === 'button' && node.props.children === '导出 JSON').props.disabled, true);
-  const saved = find(tree, (node) => node.type === 'button' && Array.isArray(node.props.children) && node.props.children[0] === '已保存版本 '); assert.ok(saved); saved.props.onClick(); await flush();
-  assert.equal(find(tree, (node) => node.type === 'iframe').props.src.includes('/projects/p1/viewer'), true);
-  assert.equal(find(tree, (node) => node.type === 'button' && node.props.children === '导出 JSON').props.disabled, false);
+  assert.ok(find(tree, (node) => node.type === 'aside' && node.props.className === 'lab-controls'), 'An unsaved failed candidate must retain the initial generation panel.');
+  assert.equal(find(tree, (node) => node.type === 'button' && node.props.className?.includes('lab-generate')).props.disabled, false, 'A failed initial generation can still be submitted again.');
   for (const hook of hooks) hook?.cleanup?.();
 });
 
-test('project links restore, react to A-B-back-A and preserve edits on unrelated query changes', async () => {
+test('project links retain local saved editing and recover unfinished generation without reopening AI controls', async () => {
   const window = browser('#/ai-lab?tool=floorplan3d&projectId=p1&context=handoff');
   window.history.owner = window;
   const listeners = new Map();
@@ -286,6 +284,10 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
   const projects = [{ id: 'p1', title: '住宅', sceneVersion: 2 }, { id: 'p2', title: '办公', sceneVersion: 1 }, { id: 'p3', title: '未通过校验', sceneVersion: 0, latestJob: failedJob }, { id: 'p4', title: '自动估算待补信息', sceneVersion: 0, latestJob: automaticJob }, { id: 'p5', title: '已知长度失败项目', sceneVersion: 0, latestJob: calibrationJob }, { id: 'p6', title: '失败但保留旧版本', sceneVersion: 2, latestJob: manualJob }];
   let projectRefreshResponse = null;
   const requests = [];
+  const statePosts = [], downloads = [];
+  const editorState = { furniture: [{ id: 'desk-local', cx: 150, cy: 200, w: 100, d: 50, rot: 90 }], rooms: {}, demolished: [], measures: [] };
+  const viewerWindow = {};
+  let rejectStateSave = false;
   const hooks = [];
   let cursor = 0, dirty = false, effects = [], tree;
   const equal = (a, b) => a?.length === b?.length && a.every((value, index) => Object.is(value, b[index]));
@@ -293,9 +295,9 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
     useState(initial) { const index = cursor++; hooks[index] ??= { value: initial }; return [hooks[index].value, (next) => { hooks[index].value = typeof next === 'function' ? next(hooks[index].value) : next; dirty = true; }]; },
     useRef(initial) { const index = cursor++; hooks[index] ??= { current: initial }; return hooks[index]; },
     useCallback(callback, deps) { const index = cursor++; if (!hooks[index] || !equal(hooks[index].deps, deps)) hooks[index] = { callback, deps }; return hooks[index].callback; },
-    useEffect(callback, deps) { const index = cursor++; if (!hooks[index] || !equal(hooks[index].deps, deps)) { hooks[index] = { deps }; effects.push(callback); } },
+    useEffect(callback, deps) { const index = cursor++, previous = hooks[index]; if (!previous || !equal(previous.deps, deps)) { hooks[index] = { deps }; effects.push(() => { previous?.cleanup?.(); hooks[index].cleanup = callback(); }); } },
   };
-  const jsx = (type, props, key) => ({ type, props, key });
+  const jsx = (type, props, key) => { if (type === 'iframe' && props.ref) props.ref.current = { contentWindow: viewerWindow }; return { type, props, key }; };
   const helpers = await load('src/features/ai-lab/api.ts');
   const api = {
     ...helpers,
@@ -303,17 +305,26 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
     errorMessage: (error) => error.message, projectPath: (id) => `/projects/${id}`, jobError: () => '', sceneSourceLabel: () => '生成结果需人工核对',
     async request(path) {
       requests.push(path);
-      if (path === '/health') return { status: 'ok', providerConfigured: true };
+      if (path === '/health') return { status: 'ok', providerConfigured: true, model: 'test-vendor-model-marker' };
       if (path === '/projects') return projectRefreshResponse ? projectRefreshResponse() : { projects: projects.map((project) => ({ ...project })) };
       if (path === '/baselines') return { baselines: [{ id: 'reference-one', title: '离线历史参考' }] };
       if (['/projects/p3/scene', '/projects/p4/scene', '/projects/p5/scene'].includes(path)) return null;
       if (path === '/projects/p6/scene') return { scene: { furniture: [], metadata: { mmPerPixel: 99 } }, state: null, version: 2, sourceAsset: { ...recoveryAsset, id: 'older', url: '/api/ai-lab/v1/assets/older' } };
+      if (path === '/projects/p6/export') return { projectId: 'p6', scene: { furniture: [] }, state: editorState, version: 2 };
       if (path.endsWith('/scene')) return { scene: { furniture: [], metadata: { mmPerPixel: path.includes('/p1/') ? 25 : -2 } }, state: null, version: 2 };
       throw new Error(`Unexpected request: ${path}`);
     },
-    async post() { throw new Error('Restoring a project must never create a job'); },
+    async readViewerState(frame) { assert.equal(frame.contentWindow, viewerWindow); return editorState; },
+    async post(path, body) {
+      if (path === '/projects/p6/state') {
+        statePosts.push({ path, body });
+        if (rejectStateSave) throw new Error('本地保存失败，请重试。');
+        return { version: 3 };
+      }
+      throw new Error('Restoring a project must never create a job');
+    },
   };
-  const page = await loadLabPage({ window, require(id) {
+  const page = await loadLabPage({ window, Blob, document: { createElement(tag) { assert.equal(tag, 'a'); const anchor = { click() { downloads.push({ href: anchor.href, download: anchor.download }); } }; return anchor; } }, require(id) {
     if (id === 'react') return react;
     if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx };
     if (id === './api') return api;
@@ -328,33 +339,35 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
     if (predicate(node)) return node;
     return find(node.props?.children, predicate);
   };
+  const assertLocalEditor = () => {
+    assert.match(tree.props.className, /is-local-editor/);
+    assert.equal(find(tree, (node) => node.type === 'aside' && node.props.className === 'lab-controls'), null);
+    assert.equal(find(tree, (node) => node.type === 'button' && /切换(?:创作|新建空间)侧栏/.test(node.props['aria-label'] || '')), null);
+    for (const id of ['lab-prompt', 'lab-scale', 'lab-chat']) assert.equal(find(tree, (node) => node.props?.id === id), null);
+    assert.equal(find(tree, (node) => node.props?.className === 'lab-canvas-notes'), null);
+    assert.doesNotMatch(renderedText(tree), /说明与提醒|test-vendor-model-marker|AI 辅助创作|对话调整/);
+  };
   render(); await flush();
   assert.ok(requests.includes('/projects/p1/scene'));
   assert.ok(find(tree, (node) => node.type === 'iframe' && node.props.src.includes('/projects/p1/viewer')));
-  assert.equal(find(tree, (node) => node.type === 'input' && node.props.id === 'lab-scale').props.value, '25');
+  assertLocalEditor();
   const navigateHash = async (hash) => { window.location.hash = hash; for (const callback of listeners.get('hashchange') || []) callback(); await flush(); };
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p2&context=handoff');
   assert.ok(find(tree, (node) => node.type === 'iframe' && node.props.src.includes('/projects/p2/viewer')));
-  assert.equal(find(tree, (node) => node.props?.role === 'tabpanel' && node.props['aria-label'] === '对话调整').props.hidden, false);
-  find(tree, (node) => node.type === 'button' && node.props.role === 'tab' && renderedText(node) === '生成空间').props.onClick(); await flush();
-  assert.equal(find(tree, (node) => node.type === 'select' && node.props.id === 'lab-scale-mode').props.value, 'auto');
-  find(tree, (node) => node.type === 'select' && node.props.id === 'lab-scale-mode').props.onChange({ target: { value: 'manual' } }); await flush();
-  assert.equal(find(tree, (node) => node.type === 'input' && node.props.id === 'lab-scale').props.value, '');
+  assertLocalEditor();
   let query = new URLSearchParams(window.location.hash.split('?')[1]);
   assert.equal(query.get('projectId'), 'p2'); assert.equal(query.get('tool'), 'floorplan3d'); assert.equal(query.get('context'), 'handoff');
   const p2Calls = requests.filter((path) => path === '/projects/p2/scene').length;
-  const chat = find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-chat');
-  chat.props.onChange({ target: { value: '尚未提交的编辑指令' } }); await flush();
-  find(tree, (node) => node.type === 'input' && node.props.id === 'lab-scale').props.onChange({ target: { value: '30' } }); await flush();
   const frameKey = find(tree, (node) => node.type === 'iframe').key;
+  const frameSource = find(tree, (node) => node.type === 'iframe').props.src;
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p2&context=changed');
   assert.equal(requests.filter((path) => path === '/projects/p2/scene').length, p2Calls);
   assert.equal(find(tree, (node) => node.type === 'iframe').key, frameKey);
-  assert.equal(find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-chat').props.value, '尚未提交的编辑指令');
-  assert.equal(find(tree, (node) => node.type === 'input' && node.props.id === 'lab-scale').props.value, '30');
+  assert.equal(find(tree, (node) => node.type === 'iframe').props.src, frameSource, 'Unrelated query changes must preserve the local editing iframe.');
+  assertLocalEditor();
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p1&context=handoff');
   assert.ok(find(tree, (node) => node.type === 'iframe' && node.props.src.includes('/projects/p1/viewer')));
-  assert.equal(find(tree, (node) => node.type === 'input' && node.props.id === 'lab-scale').props.value, '25');
+  assertLocalEditor();
   assert.equal(requests.filter((path) => path === '/projects/p1/scene').length, 2);
   await navigateHash('#/ai-lab?tool=floorplan3d&context=handoff');
   assert.equal(find(tree, (node) => node.type === 'iframe'), null);
@@ -392,8 +405,7 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
   assert.equal(find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.value, '校准原始要求');
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p6');
   assert.ok(find(tree, (node) => node.type === 'iframe' && node.props.src.includes('/projects/p6/viewer?version=2')));
-  assert.equal(find(tree, (node) => node.type === 'input' && node.props.id === 'lab-scale').props.value, '18');
-  assert.equal(find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.value, '手动比例原始要求');
+  assertLocalEditor();
   find(tree, (node) => node.type === 'button' && node.props.children === '原始平面图').props.onClick(); await flush();
   assert.ok(find(tree, (node) => node.type === 'img' && node.props.src === recoveryAsset.url));
   projects.push({ id: 'p7', title: '由另一个窗口创建', sceneVersion: 1 });
@@ -409,27 +421,26 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p8&context=unrelated');
   assert.equal(requests.filter((path) => path === '/projects').length, readsBeforePending + 1, 'Unrelated query changes must share one pending project refresh.');
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p7&context=keep-editing');
-  find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.onChange({ target: { value: '异步查找期间保留的编辑' } }); await flush();
   const preservedFrame = find(tree, (node) => node.type === 'iframe').key;
   projects.push({ id: 'p8', title: '迟到的新项目', sceneVersion: 1 });
   resolveLateLookup({ projects: projects.map((project) => ({ ...project })) }); await flush();
   assert.equal(find(tree, (node) => node.type === 'iframe').key, preservedFrame);
-  assert.equal(find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.value, '异步查找期间保留的编辑');
+  assertLocalEditor();
   assert.equal(requests.includes('/projects/p8/scene'), false, 'A late lookup must not follow a URL that is no longer selected.');
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p9');
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=p6');
-  find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.onChange({ target: { value: '切换项目后保留的编辑' } }); await flush();
   const switchedFrame = find(tree, (node) => node.type === 'iframe').key;
   projects.push({ id: 'p9', title: '选择已变化的迟到项目', sceneVersion: 1 });
   resolveLateLookup({ projects: projects.map((project) => ({ ...project })) }); await flush();
   assert.equal(find(tree, (node) => node.type === 'iframe').key, switchedFrame);
-  assert.equal(find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.value, '切换项目后保留的编辑');
+  assertLocalEditor();
   assert.equal(requests.includes('/projects/p9/scene'), false);
   projectRefreshResponse = null;
   const readsBeforeMissing = requests.filter((path) => path === '/projects').length;
   await navigateHash('#/ai-lab?tool=floorplan3d&projectId=missing');
   assert.equal(requests.filter((path) => path === '/projects').length, readsBeforeMissing + 1);
-  assert.ok(find(tree, (node) => node.type === 'p' && node.props.children === '链接中的项目不存在，请从项目列表重新选择。'));
+  assert.ok(find(tree, (node) => node.props?.role === 'alert' && renderedText(node).includes('链接中的项目不存在，请从项目列表重新选择。')), 'Saved-editor errors must remain visible outside the removed creation panel.');
+  assert.ok(find(tree, (node) => node.props?.className === 'lab-canvas-feedback'));
   assert.equal(find(tree, (node) => node.type === 'iframe').key, switchedFrame);
   assert.equal(requests.includes('/projects/missing/scene'), false);
   const requestsBeforeDockChanges = requests.length;
@@ -437,23 +448,39 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
   find(tree, (node) => node.type === 'button' && node.props['aria-label'] === '专注画布').props.onClick(); await flush();
   assert.match(tree.props.className, /is-left-collapsed/); assert.match(tree.props.className, /is-right-collapsed/);
   assert.equal(find(tree, (node) => node.type === 'iframe').key, dockFrame);
+  for (const callback of listeners.get('keydown') || []) callback({ key: 'Escape' }); await flush();
+  assert.doesNotMatch(tree.props.className, /is-left-collapsed/); assert.match(tree.props.className, /is-right-collapsed/);
   find(tree, (node) => node.type === 'button' && node.props['aria-label'] === '专注画布').props.onClick(); await flush();
-  assert.doesNotMatch(tree.props.className, /is-left-collapsed|is-right-collapsed/);
-  find(tree, (node) => node.type === 'button' && node.props.role === 'tab' && renderedText(node) === '生成空间').props.onClick(); await flush();
-  find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.onChange({ target: { value: '切换面板也保留的要求' } }); await flush();
-  find(tree, (node) => node.type === 'button' && node.props.role === 'tab' && renderedText(node) === '对话调整').props.onClick(); await flush();
-  assert.equal(find(tree, (node) => node.props?.role === 'tabpanel' && node.props['aria-label'] === '生成空间').props.hidden, true);
-  find(tree, (node) => node.type === 'button' && node.props.role === 'tab' && renderedText(node) === '生成空间').props.onClick(); await flush();
-  assert.equal(find(tree, (node) => node.type === 'textarea' && node.props.id === 'lab-prompt').props.value, '切换面板也保留的要求');
+  find(tree, (node) => node.type === 'button' && node.props['aria-label'] === '专注画布').props.onClick(); await flush();
+  assert.doesNotMatch(tree.props.className, /is-left-collapsed/); assert.match(tree.props.className, /is-right-collapsed/);
+  assertLocalEditor();
   window.matchMedia = () => ({ matches: true });
   find(tree, (node) => node.type === 'button' && node.props['aria-label'] === '切换项目侧栏').props.onClick(); await flush();
   assert.match(tree.props.className, /mobile-projects-open/); assert.doesNotMatch(tree.props.className, /mobile-controls-open/);
-  find(tree, (node) => node.type === 'button' && node.props['aria-label'] === '切换创作侧栏').props.onClick(); await flush();
-  assert.match(tree.props.className, /mobile-controls-open/); assert.doesNotMatch(tree.props.className, /mobile-projects-open/);
+  assert.equal(find(tree, (node) => node.type === 'button' && node.props['aria-label'] === '切换新建空间侧栏'), null);
+  const dismiss = find(tree, (node) => node.type === 'button' && node.props.className === 'lab-drawer-scrim'); assert.ok(dismiss); dismiss.props.onClick(); await flush();
+  assert.doesNotMatch(tree.props.className, /mobile-controls-open|mobile-projects-open/);
+  find(tree, (node) => node.type === 'button' && node.props['aria-label'] === '切换项目侧栏').props.onClick(); await flush();
   for (const callback of listeners.get('keydown') || []) callback({ key: 'Escape' }); await flush();
   assert.doesNotMatch(tree.props.className, /mobile-controls-open|mobile-projects-open/);
   assert.equal(find(tree, (node) => node.type === 'iframe').key, dockFrame);
   assert.equal(requests.length, requestsBeforeDockChanges, 'Dock and tab changes must not issue requests.');
+  window.matchMedia = () => ({ matches: false });
+  find(tree, (node) => node.type === 'button' && node.props.children === '空间预览').props.onClick(); await flush();
+  const viewerReady = async () => { for (const callback of listeners.get('message') || []) callback({ source: viewerWindow, origin: window.location.origin, data: { type: 'ai-lab:ready' } }); await flush(); };
+  await viewerReady();
+  assert.equal(find(tree, (node) => node.type === 'button' && node.props.children === '保存方案').props.disabled, false);
+  find(tree, (node) => node.type === 'button' && node.props.children === '保存方案').props.onClick(); await flush();
+  assert.equal(statePosts.length, 1); assert.equal(statePosts[0].body.baseVersion, 2); assert.deepEqual(statePosts[0].body.state, editorState);
+  assert.ok(find(tree, (node) => node.props?.role === 'status' && renderedText(node).includes('完整方案已保存')), 'Local save notices must remain visible in the canvas feedback area.');
+  assert.ok(find(tree, (node) => node.type === 'iframe' && node.props.src.includes('version=3')));
+  find(tree, (node) => node.type === 'button' && node.props.children === '导出 JSON').props.onClick(); await flush();
+  assert.equal(downloads.length, 1); assert.match(downloads[0].download, /\.json$/); assert.ok(requests.includes('/projects/p6/export'));
+  assert.ok(find(tree, (node) => node.props?.role === 'status' && renderedText(node).includes('已导出最近保存')));
+  await viewerReady(); rejectStateSave = true;
+  find(tree, (node) => node.type === 'button' && node.props.children === '保存方案').props.onClick(); await flush();
+  assert.ok(find(tree, (node) => node.props?.role === 'alert' && renderedText(node).includes('本地保存失败，请重试。')));
+  assertLocalEditor();
   const backToProjects = find(tree, (node) => node.type === 'a' && node.props['aria-label'] === '返回项目管理');
   assert.equal(backToProjects.props.href, '#/ai-lab?tool=floorplan3d'); backToProjects.props.onClick({ preventDefault() {} }); await flush();
   assert.match(tree.props.className, /lab-gallery-shell/); assert.equal(new URLSearchParams(window.location.hash.split('?')[1]).has('projectId'), false);
@@ -495,6 +522,7 @@ test('project links restore, react to A-B-back-A and preserve edits on unrelated
   assert.equal(window.location.hash, '#/ai-lab'); assert.match(tree.props.className, /lab-gallery-shell/);
   assert.equal(galleryProps().projects.find((project) => project.id === 'p4').latestJob.id, 'j4');
   assert.equal(generationPosts, 1);
+  for (const hook of hooks) hook?.cleanup?.();
 });
 
 test('project labels reflect terminal and active jobs while retaining saved versions', async () => {
