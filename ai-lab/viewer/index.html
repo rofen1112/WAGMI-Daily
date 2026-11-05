@@ -245,6 +245,31 @@ html,body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC
 
 
 #plan #gMeasure [fill="#2f5d62"]{fill:#525252}#plan #gMeasure [stroke="#2f5d62"]{stroke:#525252}
+/* Embedded panels belong to the parent's rail: an actual column, never a canvas overlay. */
+body.external-controls #paneBtns,body.external-controls #fab [data-a="prop"]{display:none!important}
+body.external-controls .app{--lab-dock-width:0px;transition:none;display:grid;grid-template-columns:var(--lab-dock-width) minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+body.external-controls .app.has-left-dock{--lab-dock-width:min(280px,42vw)}
+body.external-controls .app>main{position:relative;inset:auto;grid-column:2;grid-row:1;min-width:0;min-height:0;height:100%;container-type:inline-size}
+body.external-controls .app>aside{display:none;position:relative;inset:auto;grid-column:1;grid-row:1;width:100%;height:100%;min-width:0;max-width:none;border:0!important;border-right:1px solid #e5e5e5!important;border-radius:0;box-shadow:none;transform:none;transition:none;backdrop-filter:none;overflow:auto!important}
+body.external-controls .app>aside.open{display:block;opacity:1;visibility:visible;pointer-events:auto;transform:none;box-shadow:none}
+body.external-controls .app>aside>div{min-width:0}
+body.external-controls .editor-topbar{left:var(--lab-dock-width)}
+body.external-controls .app>footer{left:calc(var(--lab-dock-width) + 20px)}
+body.external-controls .dock-panel-header{padding:15px 12px 12px}
+#view3d canvas{touch-action:none}
+body.external-controls.lab-walking .app{--lab-dock-width:0px;grid-template-columns:0 minmax(0,1fr)}
+body.external-controls.lab-walking .app>aside,body.external-controls.lab-walking .editor-topbar,body.external-controls.lab-walking .app>footer,body.external-controls.lab-walking #toast,
+body.external-controls.lab-walking #stage> :not(#view3d),body.external-controls.lab-walking #walkOverlay,body.external-controls.lab-walking #walkExit,body.external-controls.lab-walking #joy,body.external-controls.lab-walking #cross,body.external-controls.lab-walking #hint3d,body.external-controls.lab-walking .rlabel{display:none!important}
+@media(max-width:620px){body.external-controls .app.has-left-dock{--lab-dock-width:min(240px,45vw)}body.external-controls .lib-grid{grid-template-columns:1fr 1fr}body.external-controls #panel section{padding:12px 10px}body.external-controls .mats{grid-template-columns:1fr}body.external-controls .dock-panel-header h2{font-size:14px}}
+
+/* Fit the actual stage width, including a narrow viewport beside an open dock. */
+@container(max-width:300px){
+  .editor-bottom-dock{flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100% - 12px);padding:4px;gap:4px}
+  .editor-bottom-dock .btn{width:32px;min-width:32px;height:34px;min-height:34px;padding:7px}
+  .editor-bottom-dock .history-actions{flex-basis:100%;justify-content:center;border-top:1px solid #e5e5e5;padding-top:3px}
+  .editor-bottom-dock .dock-separator{display:none}
+}
+
 </style>
 
 <style id="plan-linear-style">
@@ -368,7 +393,7 @@ const AI_LAB = JSON.parse(document.getElementById('ai-lab-payload').textContent)
 const FLOORPLAN_CASE = AI_LAB.scene;
 if (!FLOORPLAN_CASE || !Array.isArray(FLOORPLAN_CASE.rooms) || !FLOORPLAN_CASE.rooms.length) throw new Error('No validated scene supplied');
 const LAB_SCOPE = 'ai-lab:' + encodeURIComponent(AI_LAB.context.projectId) + ':v' + AI_LAB.context.version;
-let labBridgeReady = false;
+let labBridgeReady = false,labDockFitFrame=0;
 document.body.classList.toggle('external-controls',AI_LAB.context.embeddedControls !== false && window.parent !== window);
 /* ======================= 多语言（中文 / English，默认中文） ======================= */
 const LANG_KEY = LAB_SCOPE + ':lang';
@@ -959,7 +984,7 @@ function drawer(which, open){
     const visible = key === which && !!show;
     el.classList.toggle('open',visible); el.inert = !visible; el.setAttribute('aria-hidden',String(!visible));
   });
-  syncPaneBtns(); publishLabViewState();
+  syncPaneBtns(); syncLabDock(); publishLabViewState();
 }
 function syncPaneBtns(){
   const els = {lib:$('aside.lib'), panel:$('aside.right')};
@@ -972,7 +997,17 @@ function syncPaneBtns(){
   }
   $('#stage').classList.remove('drawer-panel');
 }
-function closeDrawers(){ drawer(null); }
+function syncLabDock(){
+  const app=$('.app'),open=$('aside.lib').classList.contains('open')||$('aside.right').classList.contains('open');
+  const changed=app.classList.contains('has-left-dock')!==open;app.classList.toggle('has-left-dock',open);
+  if (changed&&document.body.classList.contains('external-controls')){
+    cancelAnimationFrame(labDockFitFrame);
+    labDockFitFrame=requestAnimationFrame(()=>{labDockFitFrame=0;if (!window.View3D?.walking()&&!switching&&!labCapturePending) fitCanvas();});
+  }
+}
+function closeDrawers(){
+  if(!document.body.classList.contains('external-controls'))drawer(null);
+}
 
 function roomPanel(r){
   const st = state.rooms[r.id], a = area(r.poly), [x0,y0,x1,y1] = bbox(r.poly), inside = state.furniture.filter(f => f.cx>x0&&f.cx<x1&&f.cy>y0&&f.cy<y1);
@@ -1101,8 +1136,10 @@ function applyView(){
 }
 function fitView(){
   const W = svg.clientWidth, H = svg.clientHeight;
+  if(!W||!H)return;
   view.s = Math.min(W/BOUNDS.w, H/BOUNDS.h);
   view.x0 = BOUNDS.x - (W/view.s - BOUNDS.w)/2; view.y0 = BOUNDS.y - (H/view.s - BOUNDS.h)/2;
+  lastW=W;lastH=H;  // Commit the fitted viewport before ResizeObserver can apply a second delta.
   applyView();
 }
 function zoomAt(ns, mx, my){
@@ -1144,7 +1181,7 @@ function snapPoint(p, shift){
 
 /* ======================= 指针交互 ======================= */
 let drag = null, pinch = null;
-const touches = new Map();                     // 当前按在平面图上的手指
+const touches = new Map(),planPointerIds=new Set();                     // 当前按在平面图上的手指
 const svgXY = (x, y) => { const r = svg.getBoundingClientRect(); return [x - r.left, y - r.top]; };
 function pinchInfo(){
   const [a, b] = [...touches.values()];
@@ -1169,6 +1206,7 @@ function endDrag(cancel){
 }
 
 svg.addEventListener('pointerdown', e => {
+  if(is3D())return;planPointerIds.add(e.pointerId);
   if (e.button === 1 || e.button === 2) return;
   closeDrawers(); $('details.menu').open = false;
   if (e.pointerType !== 'mouse'){
@@ -1206,6 +1244,7 @@ svg.addEventListener('pointerdown', e => {
 });
 
 svg.addEventListener('pointermove', e => {
+  if(is3D())return;
   if (touches.has(e.pointerId)) touches.set(e.pointerId, {x:e.clientX, y:e.clientY});
   if (pinch){
     if (touches.size < 2) return;
@@ -1251,6 +1290,7 @@ svg.addEventListener('pointermove', e => {
 });
 
 function onPointerEnd(e){
+  planPointerIds.delete(e.pointerId);
   touches.delete(e.pointerId);
   if (pinch){ if (touches.size < 2) pinch = null; return; }   // 双指结束后，剩下的手指不再触发操作
   endDrag(e.type === 'pointercancel');
@@ -1304,8 +1344,8 @@ function buildLib(){
     return `<div class="item" data-key="${ci}:${ii}" title="${tr('点击添加，或拖到平面图中的指定位置', 'Click to add, or drag onto the plan')}">
       <svg viewBox="${-w/2-pad} ${-d/2-pad} ${w+2*pad} ${d+2*pad}">${furnSVG(t,w,d,col)}</svg><b>${esc(nm(n))}</b><small>${w}×${d}</small></div>`;
   }).join('')}</div>`).join('') + `<div class="hint">${tr(
-    `家具按真实尺寸（mm）绘制。${COARSE ? '点一下放到画面中央，或按住向右拖到平面图 / 3D 地面上的指定位置（上下滑动为滚动列表）。' : '点击添加到画面中央，或直接拖到平面图 / 3D 地面上。'}添加后可在右侧修改宽深与颜色。`,
-    `Furniture is drawn at real size (mm). ${COARSE ? 'Tap to place at the center, or hold and drag right onto the plan / 3D floor (swipe up/down to scroll).' : 'Click to add at the center, or drag onto the plan / 3D floor.'} Edit size and color in the right panel afterwards.`)}</div>`;
+    `家具按真实尺寸（mm）绘制。${COARSE ? '点一下放到画面中央，或按住向右拖到平面图 / 3D 地面上的指定位置（上下滑动为滚动列表）。' : '点击添加到画面中央，或直接拖到平面图 / 3D 地面上。'}添加后可在属性面板修改宽深与颜色。`,
+    `Furniture is drawn at real size (mm). ${COARSE ? 'Tap to place at the center, or hold and drag right onto the plan / 3D floor (swipe up/down to scroll).' : 'Click to add at the center, or drag onto the plan / 3D floor.'} Edit size and color in the inspector afterwards.`)}</div>`;
   document.querySelectorAll('.item').forEach(el => el.addEventListener('pointerdown', e => {
     if (e.button) return;
     libDrag = {el, id:e.pointerId, sx:e.clientX, sy:e.clientY, it:itemOf(el), ghost:null};
@@ -1337,7 +1377,7 @@ addEventListener('pointermove', e => {
   const g = libDrag.ghost, s = Math.max(dropPoint(e.clientX, e.clientY)?.s || (is3D() ? .05 : view.s), .02);
   Object.assign(g.style, {width:Math.max(28, it[2]*s)+'px', height:Math.max(20, it[3]*s)+'px', left:e.clientX+'px', top:e.clientY+'px'});
   const lib = $('aside.lib');
-  if (narrow() && lib.classList.contains('open') && e.clientX > lib.getBoundingClientRect().right) drawer(null);   // 拖出抽屉后自动收起
+  if (!document.body.classList.contains('external-controls') && narrow() && lib.classList.contains('open') && e.clientX > lib.getBoundingClientRect().right) drawer(null);   // 拖出抽屉后自动收起
 });
 function endLibDrag(e, ok){
   if (!libDrag || e.pointerId !== libDrag.id) return;
@@ -1362,6 +1402,13 @@ function endLibDrag(e, ok){
 }
 addEventListener('pointerup', e => endLibDrag(e, true));
 addEventListener('pointercancel', e => endLibDrag(e, false));
+
+function finishViewInteraction(){
+  endDrag(true);pinch=null;touches.clear();
+  for(const id of planPointerIds)if(svg.hasPointerCapture(id))svg.releasePointerCapture(id);planPointerIds.clear();
+  if(libDrag){const current=libDrag;endLibDrag({pointerId:current.id},false);if(current.el.hasPointerCapture(current.id))current.el.releasePointerCapture(current.id);}
+  window.View3D?.finishDrag?.();
+}
 
 /* ======================= 导入导出 ======================= */
 function download(name, blob){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
@@ -1476,6 +1523,7 @@ const TIPS = () => COARSE
 async function setView(m){
   if (m===viewMode || switching) return;
   if (!window.View3D) return toast(tr('3D 引擎仍在加载，请稍后重试','3D engine is still loading; please try again shortly'));
+  finishViewInteraction();
   const previousMode=viewMode;
   switching=true; document.body.classList.add('busy');
   viewMode=m; document.querySelectorAll('#viewSeg [data-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===m)));
@@ -1550,12 +1598,12 @@ $('#reset').onclick = () => { if (confirm(tr('恢复为默认设计方案？（�
 // 横竖屏切换、表头换行等都会改变画布尺寸；尺寸从 0 恢复（如首次布局）时重新适应窗口
 // 其余尺寸变化（收起 / 展开面板等）保持画面中心不动
 let lastW = 0, lastH = 0;
-const planObserver = new ResizeObserver(() => {
-  const w = svg.clientWidth, h = svg.clientHeight; if (!w) return;
-  if (!lastW) fitView();
-  else { view.x0 -= (w - lastW)/2/view.s; view.y0 -= (h - lastH)/2/view.s; applyView(); }
-  lastW = w; lastH = h;
-});
+function resizePlanViewport(){
+  const w=svg.clientWidth,h=svg.clientHeight;if(!w||!h||(w===lastW&&h===lastH))return;
+  if(!lastW)fitView();
+  else{view.x0-=(w-lastW)/2/view.s;view.y0-=(h-lastH)/2/view.s;lastW=w;lastH=h;applyView();}
+}
+const planObserver=new ResizeObserver(resizePlanViewport);
 planObserver.observe(svg);
 window.addEventListener('pagehide', () => planObserver.disconnect(), {once:true});
 
@@ -1575,7 +1623,8 @@ fitView(); renderAll();
 
 // Same-origin iframe bridge. Commands operate the existing editor, never code or JSON paths.
 function labViewState(){
-  return {mode:viewMode,panes:{library:$('aside.lib').classList.contains('open'),panel:$('aside.right').classList.contains('open')},selection:ui.sel ? {kind:ui.sel.kind,id:ui.sel.id} : null,busy:!!(switching||labCapturePending)};
+  const navigation=viewMode==='3d'?(window.View3D?.navigation?.()||'orbit'):'orbit',immersive=navigation==='walk'&&AI_LAB.context.embeddedControls!==false&&window.parent!==window;
+  return {mode:viewMode,navigation,panes:{library:!immersive&&$('aside.lib').classList.contains('open'),panel:!immersive&&$('aside.right').classList.contains('open')},selection:ui.sel ? {kind:ui.sel.kind,id:ui.sel.id} : null,busy:!!(switching||labCapturePending)};
 }
 function labViewMessage(type,requestId=null){
   return {type,requestId,projectId:AI_LAB.context.projectId,projectVersion:AI_LAB.context.version,viewState:labViewState()};
@@ -1588,11 +1637,12 @@ function publishLabViewState(requestId=null,error=null){
 function validateLabCommand(value){
   if (!value || typeof value!=='object' || Array.isArray(value)) throw new Error('invalid_command');
   if (value.projectId!==AI_LAB.context.projectId || value.projectVersion!==AI_LAB.context.version) throw new Error('stale_context');
-  const fields={'set-view-mode':['mode'],'open-panel':['panel','action'],'set-camera':['preset'],fit:[],'focus-room':['roomId'],'import-state':[]};
+  const fields={'set-view-mode':['mode'],'set-navigation':['mode'],'open-panel':['panel','action'],'set-camera':['preset'],fit:[],'focus-room':['roomId'],'import-state':[]};
   if (typeof value.command!=='string' || !Object.hasOwn(fields,value.command)) throw new Error('invalid_command');
   const allowed=['type','requestId','projectId','projectVersion','command',...fields[value.command]];
   if (Object.keys(value).some(key=>!allowed.includes(key)) || fields[value.command].some(key=>!Object.hasOwn(value,key))) throw new Error('invalid_command');
   if (value.command==='set-view-mode' && !['2d','3d'].includes(value.mode)) throw new Error('invalid_command');
+  if (value.command==='set-navigation' && !['orbit','walk'].includes(value.mode)) throw new Error('invalid_command');
   if (value.command==='open-panel' && (!['library','panel'].includes(value.panel)||!['open','close','toggle'].includes(value.action))) throw new Error('invalid_command');
   if (value.command==='set-camera' && !['top','iso'].includes(value.preset)) throw new Error('invalid_command');
   if (value.command==='focus-room' && !ROOMS.some(room=>room.id===value.roomId)) throw new Error('invalid_command');
@@ -1602,8 +1652,12 @@ async function executeLabCommand(value){
   const command=validateLabCommand(value);
   if (!labBridgeReady) throw new Error('view_unavailable');
   if (switching||labCapturePending) throw new Error('view_busy');
+  if(window.View3D?.walking()&&!['set-navigation','set-view-mode'].includes(command.command))throw new Error('view_busy');
   if (command.command==='set-view-mode'){
     await setView(command.mode); if (viewMode!==command.mode) throw new Error('view_unavailable');
+  } else if (command.command==='set-navigation'){
+    if (command.mode==='orbit'&&viewMode==='2d') return;
+    await setView('3d');if (!window.View3D?.setNavigation(command.mode)) throw new Error('view_busy');
   } else if (command.command==='open-panel') drawer(command.panel==='library'?'lib':'panel',command.action==='toggle'?undefined:command.action==='open');
   else if (command.command==='fit') fitCanvas();
   else if (command.command==='import-state') $('#fileIn').click();
@@ -1662,6 +1716,7 @@ let groundReviewMaterial, groundShadowMaterial;
 let renderer, labelRenderer, scene, camera, orbit, walkCtl, hemi, sun, ground, glassMat, wallMat, capMat, frameMat, labResizeObserver;
 let archFloor, archUp, furnG, labelG, lampG, colliders = [], polyColliders = [], selKey = null, selHelper = null;
 let sigArch = '', sigFurn = '', sigLabels = '', grow = 1, furnGrow = 1;
+let walkReturnState=null,resetWalkLook=()=>{},finishFurnitureDrag=()=>{};
 const doors = [], keys = {};
 
 /* ======================= 初始化 ======================= */
@@ -1683,8 +1738,8 @@ function init(){
   orbit = new OrbitControls(camera, renderer.domElement);
   orbit.enableDamping = true; orbit.maxPolarAngle = Math.PI*.495; orbit.minDistance = 1.5; orbit.maxDistance = FLOORPLAN_CASE?.camera?.maxDistance ?? 45;
   walkCtl = new PointerLockControls(camera, document.body);
-  walkCtl.addEventListener('lock', () => { $('#walkOverlay').style.display = 'none'; $('#cross').style.display = 'block'; });
-  walkCtl.addEventListener('unlock', () => { if (opt.mode === 'walk'){ $('#walkOverlay').style.display = 'flex'; $('#cross').style.display = 'none'; } });
+  walkCtl.addEventListener('lock',()=>{clearWalkInput();$('#walkOverlay').style.display='none';$('#cross').style.display='block';});
+  walkCtl.addEventListener('unlock',()=>{if(opt.mode==='walk'){if(document.body.classList.contains('external-controls'))setMode('orbit');else{$('#walkOverlay').style.display='flex';$('#cross').style.display='none';}}});
 
   hemi = new THREE.HemisphereLight(0xfff8ee, 0xb9a88f, 1.1);
   sun = new THREE.DirectionalLight(0xfff1dd, 2.6);
@@ -1708,20 +1763,35 @@ function init(){
   archFloor = new THREE.Group(); archUp = new THREE.Group(); furnG = new THREE.Group(); labelG = new THREE.Group(); lampG = new THREE.Group();
   scene.add(archFloor, archUp, furnG, labelG, lampG);
 
-  const cv = renderer.domElement; let downAt = null, look = null;
-  cv.addEventListener('pointerdown', e => {
-    downAt = [e.clientX, e.clientY]; window.closeDrawers();
-    if (touchWalk && !look){ look = {id:e.pointerId, x:e.clientX, y:e.clientY}; cv.setPointerCapture(e.pointerId); }
+  const cv=renderer.domElement;let downAt=null,look=null;cv.tabIndex=0;
+  resetWalkLook=()=>{for(const id of [look?.id,joy.id])if(id!=null&&cv.hasPointerCapture(id))cv.releasePointerCapture(id);look=null;downAt=null;};
+  cv.addEventListener('pointerdown',e=>{
+    downAt=[e.clientX,e.clientY];window.closeDrawers();
+    if(opt.mode==='walk'&&touchWalk&&!walkCtl.isLocked){
+      const bounds=cv.getBoundingClientRect();
+      if(document.body.classList.contains('external-controls')&&e.pointerType==='touch'&&e.clientX<bounds.left+bounds.width*.45&&joy.id===null){
+        joy.id=e.pointerId;joy.ox=e.clientX;joy.oy=e.clientY;cv.setPointerCapture(e.pointerId);e.preventDefault();return;
+      }
+      if(!look){look={id:e.pointerId,x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId);}
+      // Embedded walk keeps the cursor available for the title-bar exit button.
+      // Drag-to-look also works in hosts that cannot lock an iframe pointer.
+    }
   });
-  cv.addEventListener('pointermove', e => {
-    if (!look || e.pointerId !== look.id) return;
-    lookBy(e.clientX - look.x, e.clientY - look.y); look.x = e.clientX; look.y = e.clientY;
+  cv.addEventListener('pointermove',e=>{
+    if(opt.mode==='walk'&&e.pointerId===joy.id){const movement=touchMovement(e.clientX-joy.ox,e.clientY-joy.oy);joy.x=movement.x;joy.y=movement.y;e.preventDefault();return;}
+    if(!look||e.pointerId!==look.id||walkCtl.isLocked)return;
+    lookBy(e.clientX-look.x,e.clientY-look.y);look.x=e.clientX;look.y=e.clientY;
   });
-  cv.addEventListener('pointercancel', e => { if (look?.id === e.pointerId) look = null; });
+  cv.addEventListener('pointercancel',e=>{if(e.pointerId===joy.id){joy.id=null;joy.x=joy.y=0;}if(look?.id===e.pointerId)look=null;});
 
   // 按住已选中的家具拖动：沿地面摆放（与 2D 共用网格和贴墙吸附）。
   // 在父元素上用捕获阶段监听，赶在 OrbitControls 之前关掉它，避免同时旋转镜头
-  let fdrag = null;
+  let fdrag=null;
+  finishFurnitureDrag=()=>{
+    if(!fdrag)return;const current=fdrag;fdrag=null;orbit.enabled=true;cv.style.cursor='';
+    if(cv.hasPointerCapture(current.pid))cv.releasePointerCapture(current.pid);
+    if(current.moved){commit(current.before);renderAll();}
+  };
   host.addEventListener('pointerdown', e => {
     if (e.target !== cv || !e.isPrimary || anim || opt.mode !== 'orbit' || ui.sel?.kind !== 'furn') return;
     const h = pick(e), f = h?.fid === ui.sel.id && getF(h.fid), g = f && groundAt(e.clientX, e.clientY);
@@ -1730,7 +1800,7 @@ function init(){
     orbit.enabled = false; fly = null; cv.setPointerCapture(e.pointerId);
   }, true);
   cv.addEventListener('pointermove', e => {
-    if (!fdrag || e.pointerId !== fdrag.pid) return;
+    if (!fdrag || e.pointerId !== fdrag.pid || opt.mode!=='orbit') return;
     if (!fdrag.moved && Math.hypot(e.clientX - fdrag.sx, e.clientY - fdrag.sy) < TAP) return;
     const f = getF(fdrag.id), g = groundAt(e.clientX, e.clientY); if (!f || !g) return;
     fdrag.moved = true; cv.style.cursor = 'grabbing';
@@ -1739,12 +1809,14 @@ function init(){
   });
   const endF = e => {
     if (!fdrag || e.pointerId !== fdrag.pid) return;
+    if(opt.mode!=='orbit'){fdrag=null;cv.style.cursor='';return;}
     const d = fdrag; fdrag = null; orbit.enabled = true; cv.style.cursor = '';
     if (d.moved){ commit(d.before); renderAll(); }
   };
   cv.addEventListener('pointerup', endF); cv.addEventListener('pointercancel', endF);
 
   cv.addEventListener('pointerup', e => {
+    if(e.pointerId===joy.id){joy.id=null;joy.x=joy.y=0;return;}
     const tap = downAt && Math.hypot(e.clientX-downAt[0], e.clientY-downAt[1]) <= TAP;
     if (look?.id === e.pointerId){
       look = null;
@@ -1758,10 +1830,7 @@ function init(){
     else if (h?.room) window.select({kind:'room', id:h.room});
     else window.select(null);
   });
-  labResizeObserver = new ResizeObserver(() => {
-    renderer.setSize(SW(), SH()); labelRenderer.setSize(SW(), SH());
-    camera.aspect = SW()/SH(); camera.updateProjectionMatrix();
-  });
+  labResizeObserver=new ResizeObserver(resize3DViewport);
   labResizeObserver.observe(stage);
   bindUI();
 }
@@ -2697,8 +2766,7 @@ async function enter(){
   stage.classList.remove('animating');
 }
 async function exit(){
-  if (opt.mode === 'walk'){ walkCtl.unlock(); stopTouchWalk(); $('#hint3d').textContent = HINT_ORBIT; $('#walkOverlay').style.display = 'none'; $('#cross').style.display = 'none';
-    const dir = new THREE.Vector3(); camera.getWorldDirection(dir); orbit.target.copy(camera.position).addScaledVector(dir, 3).setY(0); opt.mode = 'orbit'; syncModeBtns(); }
+  if(opt.mode==='walk')setMode('orbit');
   fly = null; orbit.enabled = false; showLabels(false); stage.classList.add('animating');
   const A = curPose(), B = planPose();
   if (reducedMotion()){ stage.classList.remove('is3d','animating'); active=false; cancelAnimationFrame(raf); raf=0; grow=furnGrow=1; applyGrow(); return; }
@@ -2796,25 +2864,38 @@ function bindJoystick(){
   const end = e => { if (e.pointerId !== joy.id) return; joy.id = null; joy.x = joy.y = 0; knob.style.transform = ''; };
   el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
 }
+function resize3DViewport(){
+  if(!inited)return;const width=Math.max(1,SW()),height=Math.max(1,SH());renderer.setSize(width,height);labelRenderer.setSize(width,height);camera.aspect=width/height;camera.updateProjectionMatrix();
+}
+function clearWalkInput(){
+  resetWalkLook();Object.keys(keys).forEach(key=>delete keys[key]);joy.x=joy.y=0;joy.id=null;
+}
+function touchMovement(dx,dy,radius=64){
+  const length=Math.hypot(dx,dy),factor=length>radius?radius/length:1;return {x:dx*factor/radius,y:dy*factor/radius};
+}
 function setMode(m){
-  if (anim) return;
-  opt.mode = m; syncModeBtns();
-  if (m === 'walk'){
-    window.select(null);
-    if (opt.cut < H){ opt.cut = H; syncCutBtns(); sync(); }
-    orbit.enabled = false; fly = null;
-    const start = FLOORPLAN_CASE?.walkStart ?? [4200,8755], look = FLOORPLAN_CASE?.walkLook ?? [7000,8755];
-    camera.position.set(wx(start[0]), 1.6, wz(start[1])); camera.lookAt(wx(look[0]), 1.5, wz(look[1]));
-    $('#walkOverlay').style.display = 'flex';
-    syncHint3d();
-  } else {
-    walkCtl.unlock(); stopTouchWalk(); orbit.enabled = true;
-    $('#walkOverlay').style.display = 'none'; $('#cross').style.display = 'none';
-    syncHint3d();
-    orbit.target.set(0, 0, 0); flyTo(isoWhole());
+  if(!['orbit','walk'].includes(m)||anim||!active)return false;
+  if(opt.mode===m)return true;
+  const embedded=document.body.classList.contains('external-controls');
+  finishViewInteraction();clearWalkInput();cancelAnimationFrame(labDockFitFrame);labDockFitFrame=0;
+  if(m==='walk'){
+    resize3DViewport();walkReturnState={cut:opt.cut,camera:camera.clone(),target:orbit.target.clone(),orbitEnabled:orbit.enabled,selection:ui.sel?{...ui.sel}:null};
+    opt.mode='walk';document.body.classList.toggle('lab-walking',embedded);window.select(null);
+    if(opt.cut!==H){opt.cut=H;syncCutBtns();sync();}
+    orbit.enabled=false;fly=null;resize3DViewport();
+    const room=ROOMS.find(room=>!room.outdoor)||ROOMS[0],at=room?.at||[room.poly.reduce((sum,p)=>sum+p[0],0)/room.poly.length,room.poly.reduce((sum,p)=>sum+p[1],0)/room.poly.length];
+    const start=FLOORPLAN_CASE?.walkStart||at,look=FLOORPLAN_CASE?.walkLook||[start[0]+1000,start[1]];
+    camera.position.set(wx(start[0]),1.6,wz(start[1]));camera.lookAt(wx(look[0]),1.5,wz(look[1]));
+    if(embedded){document.activeElement?.blur();startTouchWalk();renderer.domElement.focus({preventScroll:true});}
+    else $('#walkOverlay').style.display='flex';
+  }else{
+    opt.mode='orbit';walkCtl.unlock();stopTouchWalk();document.body.classList.remove('lab-walking');
+    $('#walkOverlay').style.display='none';$('#cross').style.display='none';
+    const previous=walkReturnState;walkReturnState=null;
+    if(previous){opt.cut=previous.cut;syncCutBtns();sync();resize3DViewport();camera.copy(previous.camera,false);orbit.target.copy(previous.target);orbit.enabled=previous.orbitEnabled;window.select(previous.selection);}
+    else{orbit.enabled=true;resize3DViewport();flyTo(isoWhole());}
   }
-  showLabels(opt.labels && m === 'orbit');
-  archUp.traverse(o => { if (o.userData.walkOnly) o.visible = m === 'walk'; });
+  syncModeBtns();syncHint3d();showLabels(opt.labels&&m==='orbit');archUp.traverse(object=>{if(object.userData.walkOnly)object.visible=m==='walk';});publishLabViewState();return true;
 }
 function blocked(x, z, r = .22){
   for (const [x0, z0, x1, z1] of colliders) if (x > x0 - r && x < x1 + r && z > z0 - r && z < z1 + r) return true;
@@ -2850,12 +2931,15 @@ function stepWalk(dt){
   if (!blocked(p.x + mv.x, p.z)) p.x += mv.x;
   if (!blocked(p.x, p.z + mv.z)) p.z += mv.z;
 }
-addEventListener('keydown', e => {
-  if (!active || e.target.matches('input,select,textarea')) return;
-  keys[e.code] = true;
-  if (opt.mode === 'walk' && e.code === 'KeyE'){ const h = pick(); if (h?.door && h.dist < 2.5) h.door.open = !h.door.open; }
+addEventListener('keydown',e=>{
+  if(!active||opt.mode!=='walk')return;
+  if(e.code==='Escape'){e.preventDefault();setMode('orbit');return;}
+  if(e.target.matches('input,select,textarea'))return;
+  keys[e.code]=true;
+  if(e.code==='KeyE'){const hit=pick();if(hit?.door&&hit.dist<2.5)hit.door.open=!hit.door.open;}
 });
-addEventListener('keyup', e => keys[e.code] = false);
+addEventListener('keyup',e=>{delete keys[e.code];});
+addEventListener('blur',clearWalkInput);
 
 /* ======================= 工具栏 ======================= */
 function syncModeBtns(){ document.querySelectorAll('#modes3d .btn').forEach(b => { const on=b.dataset.mode===opt.mode; b.classList.toggle('on',on); b.setAttribute('aria-pressed',String(on)); }); }
@@ -3010,7 +3094,7 @@ function disposeLabViewer(){
   if (raf) cancelAnimationFrame(raf); raf = 0;
   if (!inited) return;
   labResizeObserver?.disconnect(); orbit?.dispose(); walkCtl?.dispose();
-  if (document.pointerLockElement === renderer?.domElement) document.exitPointerLock?.();
+  if (document.pointerLockElement===walkCtl?.domElement||document.pointerLockElement===renderer?.domElement) document.exitPointerLock?.();
   const textures = new Set(), materials = new Set(), geometries = new Set();
   scene?.traverse(o => {
     if (o.geometry) geometries.add(o.geometry);
@@ -3025,7 +3109,7 @@ function disposeLabViewer(){
 window.addEventListener('pagehide', disposeLabViewer, {once:true});
 window.addEventListener('unload', disposeLabViewer, {once:true});
 
-window.View3D = {enter, exit, relang, fit:() => { if (active && !anim){ if (opt.mode === 'walk') setMode('orbit'); flyTo(isoWhole()); } }, sync:() => sync(), shot, capture:captureSceneDataUrl, groundAt, flyToRoom:id => active && !anim && flyToRoom(id), walking:() => active && opt.mode === 'walk'};
+window.View3D = {enter, exit, relang, navigation:()=>opt.mode,setNavigation:setMode,finishDrag:()=>finishFurnitureDrag(), fit:() => { if (active && !anim){ if (opt.mode === 'walk') setMode('orbit'); flyTo(isoWhole()); } }, sync:() => sync(), shot, capture:captureSceneDataUrl, groundAt, flyToRoom:id => active && !anim && flyToRoom(id), walking:() => active && opt.mode === 'walk'};
 labBridgeReady=true;
 window.parent.postMessage(labViewMessage('ai-lab:ready'),window.location.origin);
 </script>

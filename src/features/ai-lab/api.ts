@@ -15,7 +15,7 @@ export interface LabJob {
 }
 export interface LabJobEvent { id: string | number; at?: string; type: 'stage' | 'agent_message' | 'status'; stage?: string; message: string }
 export interface LabJobEvents { events: LabJobEvent[]; cursor: string | number; hasMore: boolean; terminal: boolean }
-export interface LabViewerState { mode: '2d' | '3d'; panes: { library: boolean; panel: boolean }; selection: { kind: 'room' | 'furn'; id: string } | null; busy: boolean }
+export interface LabViewerState { mode: '2d' | '3d'; navigation?: 'orbit' | 'walk'; panes: { library: boolean; panel: boolean }; selection: { kind: 'room' | 'furn'; id: string } | null; busy: boolean }
 export interface LabViewerContext { projectId: string; projectVersion: string | number }
 export type ScaleMode = 'auto' | 'calibrated' | 'manual';
 export type PixelPoint = [number, number];

@@ -264,7 +264,7 @@ anim={};assert.throws(()=>captureSceneDataUrl(),/capture_busy/);
         result=subprocess.run(['node','--input-type=module'],input=script,text=True,encoding='utf-8',capture_output=True)
         self.assertEqual(result.returncode,0,result.stderr)
 
-    def test_editor_drawers_are_transient_overlays_and_do_not_touch_saved_layout(self):
+    def test_editor_drawers_are_real_left_docks_and_do_not_touch_saved_layout(self):
         html=render_viewer_html(compiled(),None,'project-a',1)
         self.assertIn('layers:{dims:true, labels:true',html)  # Keep 2D room labels.
         self.assertRegex(html,r'const opt = \{[^\n]*labels:false')
@@ -282,18 +282,21 @@ anim={};assert.throws(()=>captureSceneDataUrl(),/capture_busy/);
             self.assertRegex(button,r'aria-label="[^"]+"')
             self.assertRegex(button,r'title="[^"]+"')
             self.assertNotRegex(button,r'[↖↔↶↷＋−▥]')
-        functions='\n'.join(re.search(r'function '+name+r'\([^)]*\)\{[\s\S]*?\n}',html)[0] for name in ('drawer','syncPaneBtns'))
+        functions='\n'.join(re.search(r'function '+name+r'\([^)]*\)\{[\s\S]*?\n}',html)[0] for name in ('drawer','syncPaneBtns','syncLabDock','closeDrawers'))
         script=r"""
 const assert=require('node:assert/strict');
 function element(){const classes=new Set();return {inert:false,attrs:{},classList:{contains:key=>classes.has(key),toggle(key,on){if(on===undefined)on=!classes.has(key);on?classes.add(key):classes.delete(key)},remove:key=>classes.delete(key)},setAttribute(key,value){this.attrs[key]=value}}}
-const dom=Object.fromEntries(['aside.lib','aside.right','#tgLib','#tgPanel','#stage'].map(key=>[key,element()]));
+const dom=Object.fromEntries(['aside.lib','aside.right','#tgLib','#tgPanel','#stage','.app'].map(key=>[key,element()]));
 const $=key=>dom[key],tr=zh=>zh;function publishLabViewState(){}
+const document={body:element()};document.body.classList.toggle('external-controls',true);
+let labDockFitFrame=0,nextFrame,fitCount=0,switching=false,labCapturePending=false,walking=false;const window={View3D:{walking:()=>walking}};
+const requestAnimationFrame=callback=>{nextFrame=callback;return 1},cancelAnimationFrame=()=>{};function fitCanvas(){fitCount++}
 const localStorage={getItem(){throw Error('must not read saved layout for a transient drawer')},setItem(){throw Error('must not overwrite saved layout')}};
 """+functions+r"""
 drawer(null);assert.equal(dom['aside.lib'].inert,true);assert.equal(dom['aside.right'].inert,true);
-drawer('lib');assert.equal(dom['aside.lib'].inert,false);assert.equal(dom['#tgLib'].attrs['aria-expanded'],'true');
+drawer('lib');assert.equal(dom['.app'].classList.contains('has-left-dock'),true);nextFrame();assert.equal(fitCount,1);closeDrawers();assert.equal(dom['aside.lib'].inert,false);assert.equal(dom['aside.lib'].inert,false);assert.equal(dom['#tgLib'].attrs['aria-expanded'],'true');
 drawer('panel');assert.equal(dom['aside.lib'].inert,true);assert.equal(dom['aside.right'].inert,false);
-drawer('panel',false);assert.equal(dom['aside.right'].inert,true);assert.equal(dom['#tgPanel'].attrs['aria-expanded'],'false');
+drawer('panel',false);assert.equal(dom['.app'].classList.contains('has-left-dock'),false);nextFrame();assert.equal(fitCount,2);assert.equal(dom['aside.right'].inert,true);assert.equal(dom['#tgPanel'].attrs['aria-expanded'],'false');
 """
         result=subprocess.run(['node'],input=script,text=True,encoding='utf-8',capture_output=True)
         self.assertEqual(result.returncode,0,result.stderr)
@@ -346,17 +349,18 @@ assert.equal(attrs.get('data-plan-profile'),'linear');attrs.delete('data-plan-pr
 
     def test_command_bridge_requires_same_origin_scope_and_allowlisted_parameters(self):
         html=render_viewer_html(compiled(),None,'project-a',7)
-        names=('drawer','syncPaneBtns','labViewState','labViewMessage','publishLabViewState','validateLabCommand','executeLabCommand','handleLabMessage')
+        names=('drawer','syncPaneBtns','syncLabDock','labViewState','labViewMessage','publishLabViewState','validateLabCommand','executeLabCommand','handleLabMessage')
         functions='\n'.join(re.search(r'(?:async )?function '+name+r'\([^)]*\)\{[\s\S]*?\n}',html)[0] for name in names)
         script=r"""
 const assert=require('node:assert/strict');
 const messages=[],actions=[];const parent={postMessage(message,origin){assert.equal(origin,'http://localhost:5186');messages.push(message)}};
-const window={parent,location:{origin:'http://localhost:5186'},View3D:{flyToRoom:id=>actions.push(['room',id])}};
+const window={parent,location:{origin:'http://localhost:5186'},View3D:{flyToRoom:id=>actions.push(['room',id]),navigation:()=>navigation,walking:()=>navigation==='walk',setNavigation(mode){navigation=mode;actions.push(['navigation',mode]);return true}}};
 const AI_LAB={context:{projectId:'project-a',version:7}},ROOMS=[{id:'r1'}],ui={sel:null},state={furniture:[],rooms:{r1:{name:'room',mat:'wood'}},demolished:[],measures:[]};
-let viewMode='2d',switching=false,labCapturePending=false,labBridgeReady=true;
+let viewMode='2d',navigation='orbit',switching=false,labCapturePending=false,labBridgeReady=true,labDockFitFrame=0;
 function element(action){const classes=new Set();return {inert:false,attrs:{},classList:{contains:key=>classes.has(key),toggle(key,on){if(on===undefined)on=!classes.has(key);on?classes.add(key):classes.delete(key)},remove:key=>classes.delete(key)},setAttribute(key,value){this.attrs[key]=value},click(){actions.push([action])}}}
-const dom=Object.fromEntries(['aside.lib','aside.right','#tgLib','#tgPanel','#stage','#vTop','#vIso','#fileIn'].map(key=>[key,element(key)]));
-const $=key=>dom[key],tr=zh=>zh;
+const dom=Object.fromEntries(['aside.lib','aside.right','#tgLib','#tgPanel','#stage','#vTop','#vIso','#fileIn','.app'].map(key=>[key,element(key)]));
+const $=key=>dom[key],tr=zh=>zh;const document={body:element()};document.body.classList.toggle('external-controls',true);
+const requestAnimationFrame=()=>1,cancelAnimationFrame=()=>{};
 async function setView(mode){actions.push(['mode',mode]);viewMode=mode}
 function fitCanvas(){actions.push(['fit'])}
 async function captureLabViews(){actions.push(['capture']);return {planDataUrl:'data:image/png;base64,plan',sceneDataUrl:'data:image/jpeg;base64,scene'}}
@@ -373,8 +377,11 @@ async function command(fields,origin=window.location.origin,source=parent){await
  await command({command:'set-camera',preset:'top'});assert.ok(actions.some(action=>action[0]==='#vTop'));
  await command({command:'focus-room',roomId:'r1'});assert.ok(actions.some(action=>action[0]==='room'&&action[1]==='r1'));
  await command({command:'import-state'});assert.ok(actions.some(action=>action[0]==='#fileIn'));
+ await command({command:'set-navigation',mode:'walk'});assert.equal(messages.at(-1).viewState.navigation,'walk');assert.deepEqual(messages.at(-1).viewState.panes,{library:false,panel:false});
+ await command({command:'open-panel',panel:'library',action:'open'});assert.equal(messages.at(-1).error.code,'view_busy');
+ await command({command:'set-navigation',mode:'orbit'});assert.equal(messages.at(-1).viewState.navigation,'orbit');
  const actionCount=actions.length;
- for(const invalid of [{command:'eval',code:'globalThis.attacked=true'},{command:'__proto__'},{command:['fit']},{command:{name:'fit'}},{command:'set-view-mode',mode:'4d'},{command:'set-camera',preset:'front'},{command:'open-panel',panel:'html',action:'open'},{command:'focus-room',roomId:'missing'},{command:'fit',code:'arbitrary'},{command:'fit',mode:'3d'}]){
+ for(const invalid of [{command:'eval',code:'globalThis.attacked=true'},{command:'__proto__'},{command:['fit']},{command:{name:'fit'}},{command:'set-view-mode',mode:'4d'},{command:'set-navigation',mode:'fly'},{command:'set-camera',preset:'front'},{command:'open-panel',panel:'html',action:'open'},{command:'focus-room',roomId:'missing'},{command:'fit',code:'arbitrary'},{command:'fit',mode:'3d'}]){
   await command(invalid);assert.equal(messages.at(-1).error.code,'invalid_command');assert.equal(actions.length,actionCount);
  }
  await command({command:'fit',projectVersion:6});assert.equal(messages.at(-1).error.code,'stale_context');
@@ -400,6 +407,84 @@ async function command(fields,origin=window.location.origin,source=parent){await
             self.assertIn('body.external-controls #viewSeg{display:none}',html)
         for invalid in ('yes',0,None):
             with self.assertRaises(ValueError):render_viewer_html(scene,None,'project-a',1,embedded_controls=invalid)
+
+    def test_immersive_navigation_restores_cut_camera_selection_and_keeps_state(self):
+        html=render_viewer_html(compiled(),None,'project-a',1)
+        self.assertIn('body.external-controls .app>main{position:relative;inset:auto;grid-column:2',html)
+        self.assertIn('body.external-controls .app.has-left-dock{--lab-dock-width:min(280px,42vw)}',html)
+        self.assertRegex(html,r'body\.external-controls #paneBtns[^{}]*\{display:none!important\}')
+        self.assertIn('body.external-controls.lab-walking #stage> :not(#view3d)',html)
+        names=('resize3DViewport','clearWalkInput','touchMovement','setMode')
+        functions='\n'.join(re.search(r'function '+name+r'\([^)]*\)\{[\s\S]*?\n}',html)[0] for name in names)
+        three=(ROOT/'ai-lab/vendor/three/build/three.module.js').resolve().as_uri()
+        script="import assert from 'node:assert/strict'; import * as THREE from "+json.dumps(three)+";\n"+r"""
+const classes=new Set(['external-controls']),document={body:{classList:{contains:key=>classes.has(key),toggle(key,on){on?classes.add(key):classes.delete(key)},remove:key=>classes.delete(key)}},activeElement:{blur(){}}};
+const ui={sel:{kind:'furn',id:'f1'}},state={furniture:[{id:'f1',cx:10,cy:20,w:800,d:600,rot:0}],rooms:{r1:{mat:'wood'}}},beforeState=JSON.stringify(state);
+const opt={mode:'orbit',cut:1.2,labels:true},camera=new THREE.PerspectiveCamera(45,900/700,.05,300);camera.position.set(5,8,9);camera.lookAt(0,0,0);camera.updateMatrixWorld(true);
+const orbit={target:new THREE.Vector3(1,0,2),enabled:true},sizes=[],renderer={setSize:(w,h)=>sizes.push([w,h]),domElement:{focus(){}}},labelRenderer={setSize(){}};
+let inited=true,active=true,anim=null,fly={},walkReturnState=null,labDockFitFrame=1,resetCount=0,finishCount=0,touchWalk=false;
+const resetWalkLook=()=>resetCount++,keys={KeyW:true},joy={x:.7,y:.5,id:4},H=2.8;
+const SW=()=>classes.has('lab-walking')?1200:900,SH=()=>700,ROOMS=[{id:'r1',at:[2000,2000],poly:[[0,0],[4000,0],[4000,4000]]}],FLOORPLAN_CASE={walkStart:[1800,1800],walkLook:[2800,1800]},wx=value=>value/1000,wz=value=>value/1000;
+const elements=Object.fromEntries(['#walkOverlay','#cross'].map(key=>[key,{style:{display:''}}])), $=key=>elements[key];
+const walkCtl={unlock(){}},archUp=new THREE.Group();const edge=new THREE.Object3D();edge.userData.walkOnly=true;archUp.add(edge);
+const messages=[];const window={select(value){ui.sel=value}};
+function finishViewInteraction(){finishCount++}function cancelAnimationFrame(){}function syncCutBtns(){}function syncModeBtns(){}function syncHint3d(){}function sync(){}function showLabels(value){edge.userData.labels=value}
+function startTouchWalk(){touchWalk=true}function stopTouchWalk(){touchWalk=false}function publishLabViewState(){messages.push({mode:opt.mode,walking:classes.has('lab-walking')})}
+function flyTo(){throw Error('restored navigation must retain previous camera, not replace it with iso')}
+const localStorage={setItem(){throw Error('navigation cannot write saved state')}};
+"""+functions+r"""
+const oldCamera=camera.clone(),oldTarget=orbit.target.clone(),oldSelection={...ui.sel};oldCamera.uuid=camera.uuid;
+assert.equal(setMode('walk'),true);assert.equal(opt.mode,'walk');assert.equal(opt.cut,H);assert.equal(classes.has('lab-walking'),true);assert.equal(orbit.enabled,false);assert.equal(touchWalk,true);assert.equal(camera.position.y,1.6);assert.deepEqual(Object.keys(keys),[]);assert.equal(joy.id,null);assert.equal(ui.sel,null);assert.deepEqual(sizes.at(-1),[1200,700]);
+assert.equal(setMode('orbit'),true);assert.equal(opt.mode,'orbit');assert.equal(opt.cut,1.2);assert.equal(classes.has('lab-walking'),false);assert.equal(orbit.enabled,true);assert.equal(touchWalk,false);assert.deepEqual(ui.sel,oldSelection);assert.deepEqual(camera.toJSON(),oldCamera.toJSON());assert.deepEqual(orbit.target.toArray(),oldTarget.toArray());assert.deepEqual(sizes.at(-1),[900,700]);assert.equal(JSON.stringify(state),beforeState);assert.equal(edge.visible,false);assert.equal(finishCount,2);assert.ok(resetCount>=2);assert.deepEqual(messages.at(-1),{mode:'orbit',walking:false});
+assert.equal(setMode('fly'),false);assert.equal(opt.mode,'orbit');
+assert.deepEqual(touchMovement(0,0),{x:0,y:0});const diagonal=touchMovement(200,-200);assert.ok(Math.abs(Math.hypot(diagonal.x,diagonal.y)-1)<1e-9);assert.ok(diagonal.x>0&&diagonal.y<0);
+"""
+        result=subprocess.run(['node','--input-type=module'],input=script,text=True,encoding='utf-8',capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_view_switch_finishes_pointer_gestures_before_hidden_editors(self):
+        html=render_viewer_html(compiled(),None,'project-a',1)
+        function=re.search(r'function finishViewInteraction\([^)]*\)\{[\s\S]*?\n}',html)[0]
+        self.assertIn("if(is3D())return;\n  if (touches",html)
+        self.assertIn("if (!fdrag || e.pointerId !== fdrag.pid || opt.mode!=='orbit') return;",html)
+        self.assertIn("finishViewInteraction();clearWalkInput();",html)
+        script=r"""
+const assert=require('node:assert/strict');let drag={moved:true},pinch={},libDrag={id:7,el:{hasPointerCapture:()=>true,releasePointerCapture:id=>released.push(id)}},commits=0,finished3d=0;
+const touches=new Map([[1,{}],[2,{}]]),planPointerIds=new Set([1,2]),released=[],svg={hasPointerCapture:()=>true,releasePointerCapture:id=>released.push(id)};
+function endDrag(cancel){assert.equal(cancel,true);if(drag?.moved)commits++;drag=null}function endLibDrag(event,ok){assert.equal(event.pointerId,7);assert.equal(ok,false);libDrag=null}
+const window={View3D:{finishDrag(){finished3d++}}};
+"""+function+r"""
+finishViewInteraction();assert.equal(drag,null);assert.equal(pinch,null);assert.equal(touches.size,0);assert.equal(planPointerIds.size,0);assert.equal(libDrag,null);assert.equal(commits,1);assert.equal(finished3d,1);assert.deepEqual(released,[1,2,7]);
+finishViewInteraction();assert.equal(commits,1);
+"""
+        result=subprocess.run(['node'],input=script,text=True,encoding='utf-8',capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_dock_resize_fit_is_centered_for_both_observer_orders(self):
+        html=render_viewer_html(compiled(),None,'project-a',1)
+        functions='\n'.join(re.search(r'function '+name+r'\([^)]*\)\{[\s\S]*?\n}',html)[0] for name in ('fitView','resizePlanViewport'))
+        script=r"""
+const assert=require('node:assert/strict'),BOUNDS={x:-500,y:100,w:12000,h:9000};
+const svg={clientWidth:334,clientHeight:600};let view={x0:0,y0:0,s:.06},lastW=0,lastH=0,applied=0;function applyView(){applied++}
+"""+functions+r"""
+for(const order of ['fit-first','observer-first']){
+ svg.clientWidth=334;svg.clientHeight=600;lastW=lastH=0;fitView();
+ svg.clientWidth=185;
+ if(order==='fit-first'){
+  fitView();const fitted={...view},count=applied;resizePlanViewport();assert.deepEqual(view,fitted);assert.equal(applied,count,'observer must not shift a viewport already fitted at the same size');
+ }else{resizePlanViewport();fitView();const fitted={...view};resizePlanViewport();assert.deepEqual(view,fitted)}
+ assert.equal(lastW,185);assert.equal(lastH,600);
+ assert.ok(Math.abs(view.x0+svg.clientWidth/(2*view.s)-(BOUNDS.x+BOUNDS.w/2))<1e-7);
+ assert.ok(Math.abs(view.y0+svg.clientHeight/(2*view.s)-(BOUNDS.y+BOUNDS.h/2))<1e-7);
+ for(const x of [BOUNDS.x,BOUNDS.x+BOUNDS.w])assert.ok((x-view.x0)*view.s>=-1e-7&&(x-view.x0)*view.s<=svg.clientWidth+1e-7,'whole model must fit inside narrow stage');
+ // A normal drag/zoom with unchanged stage size must remain untouched.
+ view.x0+=125;view.s*=1.5;const dragged={...view},count=applied;resizePlanViewport();assert.deepEqual(view,dragged);assert.equal(applied,count);
+ const center=view.x0+svg.clientWidth/(2*view.s);svg.clientWidth=250;const oldScale=view.s;resizePlanViewport();assert.equal(view.s,oldScale);assert.ok(Math.abs(view.x0+250/(2*view.s)-center)<1e-7);
+ svg.clientWidth=0;const hidden={...view};fitView();resizePlanViewport();assert.deepEqual(view,hidden);
+}
+"""
+        result=subprocess.run(['node'],input=script,text=True,encoding='utf-8',capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
 
     def test_overlay_mapping_and_capture_size_are_single_transform(self):
         html=render_viewer_html(compiled(),None,'project-a',1)
