@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "updatedAt": "2026-11-05",
+  "updatedAt": "2026-11-06",
   "policy": {
     "heatRequired": false,
     "requiredDecisionFields": [
@@ -4269,6 +4269,39 @@
       "intakeDecision": "approved",
       "decisionReason": "可检查的数据构造、验证答案与完整训练/评测工程符合Agent基础设施方向；代码与社区权重身份分别保留。",
       "reviewedAt": "2026-11-05T04:10:29.515Z"
+    },
+    {
+      "repo": "IQuestLab/IQuestRT",
+      "name": "IQuestRT",
+      "category": "模型推理 / 基础设施",
+      "level": "A",
+      "priorityDomains": [
+        "open-model"
+      ],
+      "summary": "针对IQuest-Q1的八卡TP8单请求低延迟推理引擎，组合GPU自主循环、融合内核和动态投机解码。",
+      "riskNote": "仅支持指定GPU架构与NVLink，约330GB检查点；不支持通用模型或连续批处理，运行时代码与模型权重许可分别核对。",
+      "industryFit": "为本地/专用Coding Agent推理工程提供原创系统实现。",
+      "originality": "官方团队包含原创融合内核、GPU调度及可复现基准脚本，非薄API封装。",
+      "maintenanceEvidence": "2026-11-06官方REST核验README、commits、issues、pulls与releases；最近提交11月4日，Apache-2.0运行时代码。",
+      "intakeDecision": "approved",
+      "decisionReason": "方向相关的原创推理引擎、公开代码与基准条件完整；热度6stars不影响收录，尚未在本机运行。"
+    },
+    {
+      "repo": "MAC-AutoML/RoTA-Bench",
+      "name": "RoTA-Bench",
+      "category": "3D / 空间推理评测",
+      "level": "A",
+      "priorityDomains": [
+        "3d-generation",
+        "design-tools"
+      ],
+      "summary": "交互式3D-to-2D投影对齐基准，674任务、100冻结测试项，包含旋转控制、数据构造与评测代码。",
+      "riskNote": "纯离散旋转与投影IoU不代表真实操控全部能力；源图标保留第三方版权，正式评测需要CUDA及模型API。",
+      "industryFit": "直接服务3D编辑交互与空间Agent闭环动作评测。",
+      "originality": "作者原创研究、可复用任务构造和评测实现，非论文清单。",
+      "maintenanceEvidence": "2026-11-06官方REST核验全部6类证据；最近提交10月23日，Apache-2.0，README保留被移除图标版权说明。",
+      "intakeDecision": "approved",
+      "decisionReason": "作者研究与公开可复现实现适配空间控制方向，保留测试设置和第三方素材限制；不以低stars为拒绝理由。"
     }
   ]
 }

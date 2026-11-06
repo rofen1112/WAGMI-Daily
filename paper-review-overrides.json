@@ -12941,6 +12941,200 @@
       "reviewStatus": "interpreted",
       "readingLevel": "abstract",
       "reviewedAt": "2026-11-05T00:37:14.347Z"
+    },
+    "arxiv-2611-04493": {
+      "titleZh": "物理扩散策略：用 MPM 引导的 3D 高斯仿真适应不同材料",
+      "summaryZh": "将3DGS与可微材料点法结合，从视觉示范估计材料参数，再以材料感知混合专家扩散策略适应不同接触与形变；物理记忆库避免部署时反复在线优化。",
+      "keyContributionsZh": [
+        "从视频与粒子约束估计物性",
+        "以物性条件化混合专家策略",
+        "用记忆检索降低部署开销"
+      ],
+      "industryValueZh": "为软硬物体混合操作和物理数字孪生提供联合视觉与动力学路线。",
+      "limitationsZh": "摘要级解读；摘要仅报告仿真及真实物体实验的定性增益，未核对成功率表、材料辨识误差或在线延迟。",
+      "futureOutlookZh": "关注物性不可辨识性、未见材料泛化与室内物品交互的复现。",
+      "reviewStatus": "interpreted",
+      "readingLevel": "abstract",
+      "reviewedAt": "2026-11-05T23:36:12.371Z",
+      "titleOriginal": "Physical Diffusion Policy via MPM-Guided 3D Gaussian Simulation",
+      "sourceUrl": "https://arxiv.org/abs/2611.04493",
+      "sourceEvidencePath": "data/dev/source-archives/wagmi-ai-2026-11-06/initial-0.raw"
+    },
+    "arxiv-2609-20267": {
+      "titleZh": "CleanVideo：以三模态门控选择性擦除视频概念",
+      "summaryZh": "将时空视觉特征、扩散时间步和文本语义联合用于门控，控制低维子空间干预的位置、时机与强度，在可定义替代概念时引导自然替代，保留其他内容。",
+      "keyContributionsZh": [
+        "选择性低维概念干预",
+        "时空、时间步和语义三模态门控",
+        "同时评估画面质量、时间一致性与概念恢复攻击"
+      ],
+      "industryValueZh": "可供视频生成产品研究概念移除及内容治理。",
+      "limitationsZh": "摘要级解读；摘要级；防恢复攻击结论以受保护流水线完整为前提，不能推广到权重外泄或任意攻击；没有读取全文实验细节。",
+      "futureOutlookZh": "比较不同视频骨干、动作复杂度与误删率，检查保护被移除后的边界。",
+      "reviewStatus": "interpreted",
+      "readingLevel": "abstract",
+      "reviewedAt": "2026-11-05T23:36:12.371Z",
+      "titleOriginal": "CleanVideo: Adaptive Concept Erasure for Text-to-Video Diffusion Models",
+      "sourceUrl": "https://arxiv.org/abs/2609.20267",
+      "sourceEvidencePath": "data/dev/source-archives/wagmi-ai-2026-11-06/initial-1.raw"
+    },
+    "arxiv-2611-03937": {
+      "titleZh": "FlowBench：训练空间反事实想象的场景与运动基准",
+      "summaryZh": "提出反事实空间想象任务，构建42.8万训练样本；把假设运动与空间问题配对，在仿真中提供结果帧和光流。作者报告微调Qwen3-VL-8B后，仿真和真实图像准确率分别提升29.5、16.9个百分点。",
+      "keyContributionsZh": [
+        "联合评估视觉语言模型与世界模型",
+        "自动生成运动问题及精确仿真监督",
+        "提供仿真到真实图像迁移证据"
+      ],
+      "industryValueZh": "适合评估室内重排、机器人规划是否真正理解动作后的空间关系。",
+      "limitationsZh": "摘要级解读；摘要级；增益限定论文基准和训练设置，不能推断开放世界规划成功率；未执行代码。",
+      "futureOutlookZh": "复核数据泄漏、真实房间物体移动和遮挡条件，建立室内方案反事实测试集。",
+      "reviewStatus": "interpreted",
+      "readingLevel": "abstract",
+      "reviewedAt": "2026-11-05T23:36:12.371Z",
+      "titleOriginal": "FlowBench: Counterfactual Imagination Training for Spatial Intelligence",
+      "sourceUrl": "https://arxiv.org/abs/2611.03937",
+      "sourceEvidencePath": "data/dev/source-archives/wagmi-ai-2026-11-06/initial-2.raw"
+    },
+    "arxiv-2611-04371": {
+      "titleZh": "具身科学发现综述：从物理动作走向可追溯的科学证据",
+      "summaryZh": "以操作、认知和证据三类闭环组织机器人与AI科学交叉工作，提出记录、诊断、校准、确认的证据循环，并区分动作完成、有效实验与已确认科学主张。",
+      "keyContributionsZh": [
+        "区分命令、实际执行及观测条件",
+        "以三种闭环交叉六类委托决策和五类具身形式",
+        "摘要描述28项工作流证据映射"
+      ],
+      "industryValueZh": "帮助设计实验Agent验收与数字孪生证据链，避免把执行成功直接当研究结论。",
+      "limitationsZh": "摘要级解读；摘要级综述解读；未阅读46页全文或逐项复核28个案例，不是新机器人性能实证。",
+      "futureOutlookZh": "把证据循环用于材料、建筑物理实验和模拟器的审计日志设计。",
+      "reviewStatus": "interpreted",
+      "readingLevel": "abstract",
+      "reviewedAt": "2026-11-05T23:36:12.371Z",
+      "titleOriginal": "Embodied AI for Scientific Discovery: From Physical Action to Scientific Evidence",
+      "sourceUrl": "https://arxiv.org/abs/2611.04371",
+      "sourceEvidencePath": "data/dev/source-archives/wagmi-ai-2026-11-06/initial-3.raw"
+    },
+    "arxiv-2611-04315": {
+      "titleZh": "ATLAS：用任务、角色与状态谱锚定减少长程多智能体漂移",
+      "summaryZh": "以隐藏状态中的任务、角色、共享状态子空间构建正半定锚核，通过低秩谱方向干预，在生成token前约束表示漂移，无需重新训练。",
+      "keyContributionsZh": [
+        "把三类漂移放入联合表示控制框架",
+        "低秩分解减少干预成本",
+        "在长程记忆、工具使用和角色一致性任务报告增益"
+      ],
+      "industryValueZh": "为可访问权重的多Agent部署提供超出提示词和检索的控制选择。",
+      "limitationsZh": "摘要级解读；摘要级；需访问模型隐藏状态，不能直接迁移闭源API；所报最高增益不是所有任务的平均收益，未复现。",
+      "futureOutlookZh": "测量推理开销、跨任务干扰，以及与权限协议和日志审计的组合效果。",
+      "reviewStatus": "interpreted",
+      "readingLevel": "abstract",
+      "reviewedAt": "2026-11-05T23:36:12.371Z",
+      "titleOriginal": "Drift No More: Spectral Locking for Long-Horizon Open-Weight Multi-Agent AI",
+      "sourceUrl": "https://arxiv.org/abs/2611.04315",
+      "sourceEvidencePath": "data/dev/source-archives/wagmi-ai-2026-11-06/initial-4.raw"
+    },
+    "arxiv-2611-05192": {
+      "titleZh": "自然图像预训练如何迁移至医学扩散生成：空间结构比语义更相关",
+      "summaryZh": "在RadImageNet和BraTS上比较潜空间与像素扩散，作者报告自然图像初始化改善生成指标；内部空间结构与gFID相关，而语义探针未能预测生成质量。",
+      "keyContributionsZh": [
+        "系统比较模型大小与两种扩散范式",
+        "对空间结构与语义迁移作区分",
+        "检验混合域训练和初始化方案"
+      ],
+      "industryValueZh": "对领域图像生成的迁移设计有方法启发，建筑材料等领域仍需独立验证。",
+      "limitationsZh": "摘要级解读；摘要级；gFID、分类与放射组学指标都是临床保真代理，不能认定临床有效或可诊断；不提供医疗建议。",
+      "futureOutlookZh": "在新领域验证结构迁移规律，加入专家盲评及敏感属性偏差检测。",
+      "reviewStatus": "interpreted",
+      "readingLevel": "abstract",
+      "reviewedAt": "2026-11-05T23:36:12.371Z",
+      "titleOriginal": "From Natural Images to Medical Scans: Transferability of Diffusion Models for Medical Image Generation",
+      "sourceUrl": "https://arxiv.org/abs/2611.05192",
+      "sourceEvidencePath": "data/dev/source-archives/wagmi-ai-2026-11-06/initial-5.raw"
+    },
+    "arxiv-2611-04498": {
+      "titleZh": "3DGS-VBench+：分别评估高斯视频的整体、几何和颜色质量",
+      "summaryZh": "构建涵盖11个真实与22个合成场景、3036个3DGS重建视频和9108个主观评分的基准，提出支持少参考与无参考的多模态质量模型，一次输出三个维度。",
+      "keyContributionsZh": [
+        "区分几何与颜色压缩失真",
+        "用有界门控融合排序式参考线索",
+        "面向缺少连续轨迹真值的实际采集"
+      ],
+      "industryValueZh": "可用于三维资产压缩和渲染交付的多维验收。",
+      "limitationsZh": "摘要级解读；摘要级；作者仓库链接已确认但今日返回404，摘要称代码和数据将发布；不能声称已开源可运行或已复现领先结果。",
+      "futureOutlookZh": "等待数据与代码发布，检验室内扫描、轨迹变化和压缩器外泛化。",
+      "reviewStatus": "interpreted",
+      "readingLevel": "abstract",
+      "reviewedAt": "2026-11-05T23:36:12.371Z",
+      "titleOriginal": "3DGS-VBench+ and 3DGSV-Assessor: A Multi-Dimensional Subjective Benchmark and a Reference-Flexible Objective Model for 3D Gaussian Splatting Video Quality Assessment",
+      "sourceUrl": "https://arxiv.org/abs/2611.04498",
+      "sourceEvidencePath": "data/dev/source-archives/wagmi-ai-2026-11-06/initial-6.raw"
+    },
+    "arxiv-2607-18539": {
+      "titleZh": "AniGS：用视频扩散先验给大型静态 3DGS 场景加入环境动态",
+      "summaryZh": "以规范高斯场景和时间条件形变场表示动态，通过反复渲染、视频细化与数据更新扩大视角覆盖，同时限制静态区域的不期望运动。",
+      "keyContributionsZh": [
+        "面向大型可导航场景而非单物体",
+        "迭代扩展视角覆盖",
+        "组合视频到视频细化以保护刚性结构"
+      ],
+      "industryValueZh": "为园林、建筑外部和空间展示增加植被等微动态。",
+      "limitationsZh": "摘要级解读；摘要级；仅报告五个真实大型室外场景；官方项目链接今日404，未读取代码或验证室内适用性。",
+      "futureOutlookZh": "关注结构漂移、交互视角稳定性及动态区域可编辑性。",
+      "reviewStatus": "interpreted",
+      "readingLevel": "abstract",
+      "reviewedAt": "2026-11-05T23:36:12.371Z",
+      "titleOriginal": "AniGS: Bridging Rendering and Diffusion Prior for 3D Scene Animation",
+      "sourceUrl": "https://arxiv.org/abs/2607.18539",
+      "sourceEvidencePath": "data/dev/source-archives/wagmi-ai-2026-11-06/initial-7.raw"
+    },
+    "arxiv-2611-05359": {
+      "titleZh": "GSCV++：让标准视频编解码器承载低复杂度 3D 高斯序列压缩",
+      "summaryZh": "以能量自适应球谐降维、带先验的小规模重排及内容感知编码配置，将高斯属性映射为更适合标准视频编解码器的二维特征图。",
+      "keyContributionsZh": [
+        "稳定跨帧球谐特征空间",
+        "改良三维到二维映射",
+        "不修改编码标准而调节位深与编码单元"
+      ],
+      "industryValueZh": "为三维序列传输利用成熟硬件编解码器提供路线。",
+      "limitationsZh": "摘要级解读；摘要级；超过20%帧内与60%帧间率失真增益是作者相对所选基线结果，尚未核对数据集、码率定义及绝对时延。",
+      "futureOutlookZh": "比较真实室内动态序列的端到端码率、视觉质量与移动端兼容性。",
+      "reviewStatus": "interpreted",
+      "readingLevel": "abstract",
+      "reviewedAt": "2026-11-05T23:36:12.371Z",
+      "titleOriginal": "GSCV++: Lightweight 3D Gaussian Splatting Sequence Compression via Standard Video Codecs",
+      "sourceUrl": "https://arxiv.org/abs/2611.05359",
+      "sourceEvidencePath": "data/dev/source-archives/wagmi-ai-2026-11-06/initial-8.raw"
+    },
+    "arxiv-2611-02044": {
+      "titleZh": "统一损失感知密度控制：按预期收益增删 3D 高斯",
+      "summaryZh": "把高斯拆分、复制与透明度衰减建模为局部损失下降决策，以泰勒近似评估收益；联合位置和尺度拆分，并用选择性软衰减代替全局透明度重置。",
+      "keyContributionsZh": [
+        "在统一局部目标下处理三类操作",
+        "联合位置与各向异性尺度拆分",
+        "只弱化有害高斯以稳定训练"
+      ],
+      "industryValueZh": "可能以相同或更少高斯预算改善重建质量，适合研究资产质量与存储成本权衡。",
+      "limitationsZh": "摘要级解读；摘要级；未核验完整实验表、二阶近似开销和工业规模泛化；NeurIPS接收仅按官方摘要备注记录。",
+      "futureOutlookZh": "比较统一预算下的质量、训练时间与复杂室内薄结构恢复。",
+      "reviewStatus": "interpreted",
+      "readingLevel": "abstract",
+      "reviewedAt": "2026-11-05T23:36:12.371Z",
+      "titleOriginal": "Unified Loss-Aware Density Control for 3D Gaussian Splatting",
+      "sourceUrl": "https://arxiv.org/abs/2611.02044",
+      "sourceEvidencePath": "data/dev/source-archives/wagmi-ai-2026-11-06/initial-9.raw"
+    },
+    "arxiv-2610-17665": {
+      "titleZh": "RoTA-Bench：用交互式三维旋转检验投影对齐与空间控制",
+      "summaryZh": "通过674个可逆初始化任务、100个冻结测试任务比较二维观察到三维动作的闭环控制。作者报告GPT-5.6-Sol成功率17%，20名本科生共400次运行全部成功；二维轮廓改善可能与三维姿态改善相反。",
+      "keyContributionsZh": [
+        "可解的图标到三维任务构造与冻结评测集",
+        "区分二维投影进度、三维姿态误差和历史信息敏感性"
+      ],
+      "industryValueZh": "为空间交互、3D编辑与具身控制提供可复用的闭环评测思路。",
+      "limitationsZh": "本轮仅读原始摘要、元数据、官方README和中文解读，未读PDF或运行评测。17%限本文模型与离散旋转设置；任务成功以投影IoU定义，不等于恢复唯一三维姿态。原始提交为10月13日，不是11月6日首发。",
+      "futureOutlookZh": "后续研究队列检查交互历史、旋转步长和对称几何对3D工具控制的影响。",
+      "reviewStatus": "interpreted",
+      "readingLevel": "abstract",
+      "reviewedAt": "2026-11-06T00:41:40.917Z"
     }
   },
   "dailySelections": {
