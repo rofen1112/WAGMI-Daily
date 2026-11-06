@@ -80,3 +80,7 @@ changed candidate content and undocumented reading gaps must be repaired in
 the same task. The dated audit and public report must reflect the actual
 review. Continue through publication, public verification and the existing
 once-per-day delivery contract; no extra user reminder is required.
+
+## AI laboratory development boundary
+
+As of 2026-11-06 the user explicitly authorized merging codex/ai-lab into main and publishing the AI laboratory for all visitors, using the existing GPT-6.1 Sol API on this computer. Preserve and push recent news before integration; never replace main news with the development worktree's older snapshot. Main owns production publication. Keep 5186/8786 and their private data local; production uses the isolated 8787 backend through the existing 8080 public server. Follow docs/ai-lab-production.md. Daily collection and DingTalk remain a separate dated workflow; a code deployment must not relabel old news or trigger an extra daily send.

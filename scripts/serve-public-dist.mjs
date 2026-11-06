@@ -6,6 +6,7 @@ import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { brotliCompress, constants, gzip } from 'node:zlib';
+import { createPublicLabProxy } from './public-lab-proxy.mjs';
 
 const compressBrotli = promisify(brotliCompress);
 const compressGzip = promisify(gzip);
@@ -18,7 +19,7 @@ const contentTypes = new Map([
   ['.woff', 'font/woff'], ['.woff2', 'font/woff2'],
 ]);
 const compressibleExtensions = new Set(['.css', '.html', '.js', '.json', '.md', '.svg', '.txt']);
-const publicRoutes = new Set(['', 'today', 'ai', 'github', 'skills', 'papers']);
+const publicRoutes = new Set(['', 'today', 'ai', 'github', 'skills', 'papers', 'ai-lab']);
 
 function safePublicPath(pathname) {
   if (!pathname.startsWith('/') || /[\\\u0000-\u001f\u007f:]/.test(pathname)) return false;
@@ -40,7 +41,7 @@ async function resolvePublicFile(root, rawUrl) {
   let pathname;
   try { pathname = decodeURIComponent(rawUrl.split(/[?#]/, 1)[0]); } catch { return null; }
   const route = pathname.replace(/^\//, '').replace(/\/$/, '');
-  if (publicRoutes.has(route) && /^\/(?:today|ai|github|skills|papers)?\/?$/.test(pathname)) pathname = '/index.html';
+  if (publicRoutes.has(route) && /^\/(?:today|ai|github|skills|papers|ai-lab)?\/?$/.test(pathname)) pathname = '/index.html';
   if (!safePublicPath(pathname)) return null;
   const requested = resolve(root, `.${pathname}`);
   if (!isInside(root, requested)) return null;
@@ -161,6 +162,7 @@ export function createPublicServer({
   // The cumulative paper catalog has passed 32 MiB. Keep it compressed while
   // retaining a finite input bound and the existing two-operation queue.
   maxCompressFileBytes = 64 * 1024 * 1024,
+  labProxy = null,
 } = {}) {
   root = resolve(root);
   const compressedBody = createCompressionCache({ maxCacheBytes, maxCacheEntries });
@@ -169,6 +171,7 @@ export function createPublicServer({
       response.writeHead(status, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers });
       response.end(request.method === 'HEAD' ? undefined : message);
     };
+    if (labProxy && await labProxy(request, response)) return;
     if (request.method !== 'GET' && request.method !== 'HEAD') return sendError(405, 'Method not allowed', { Allow: 'GET, HEAD' });
     if (!request.url) return sendError(400, 'Bad request');
     try {
@@ -222,7 +225,7 @@ if (executedDirectly) {
   } else {
     const host = argument('--host') || process.env.WAGMI_PUBLIC_HOST || '0.0.0.0';
     const port = Number(argument('--port') || process.env.WAGMI_PUBLIC_PORT || '8080');
-    const server = createPublicServer({ root });
+    const server = createPublicServer({ root, labProxy: createPublicLabProxy({ workspace: process.cwd() }) });
     server.on('error', (error) => { console.error(error.message); process.exitCode = 1; });
     server.listen(port, host, () => console.log(`WAGMI public preview listening on http://${host}:${port} from ${root}`));
     const shutdown = () => { server.close(); setTimeout(() => server.closeAllConnections(), 5_000).unref(); };

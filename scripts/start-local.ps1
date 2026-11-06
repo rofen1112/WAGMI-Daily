@@ -51,6 +51,9 @@ if (-not $SkipBuild) {
   if ($LASTEXITCODE -ne 0) { throw 'Public build failed.' }
 }
 
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'start-public-ai-lab.ps1')
+if ($LASTEXITCODE -ne 0) { throw 'Public AI Lab startup failed.' }
+
 if (-not (Test-LocalPort 5174)) {
   Start-Process -FilePath $env:ComSpec -ArgumentList '/d', '/c', 'npm.cmd run dev:admin >> .tmp-vite-admin.log 2>&1' -WorkingDirectory $root -WindowStyle Hidden
 }

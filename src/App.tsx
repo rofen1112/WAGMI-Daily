@@ -7,6 +7,10 @@ import { applyTheme, buildThemeColors, readStoredTheme, storeTheme, type ThemeSe
 import type { Snapshot } from './types';
 
 const isAdminBuild = import.meta.env.MODE === 'admin';
+const isLabBuild = import.meta.env.MODE === 'lab';
+const isLabEnabled = isLabBuild || import.meta.env.MODE === 'public';
+const AiLabPage = isLabEnabled ? lazy(() => import('./features/ai-lab/AiLabPage')) : null;
+const AiLabHub = isLabEnabled ? lazy(() => import('./features/ai-lab/AiLabHub')) : null;
 const AiEventsPage = lazy(() => import('./pages/AiEventsPage'));
 const GithubRadarPage = lazy(() => import('./pages/GithubRadarPage'));
 const OperationsPage = isAdminBuild ? lazy(() => import('./pages/OperationsPage')) : null;
@@ -30,6 +34,7 @@ const adminNav: { route: RouteName; label: string }[] = [
   { route: 'watchlist', label: '我的关注' },
   { route: 'operations', label: '任务运行' },
 ];
+const labNav: { route: RouteName; label: string }[] = [...publicNav, { route: 'ai-lab', label: 'AI 实验室' }];
 
 function readFollowed(): Set<string> {
   try {
@@ -47,8 +52,11 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [followed, setFollowed] = useState<Set<string>>(readFollowed);
   const [theme, setTheme] = useState<ThemeSettings>(readStoredTheme);
-  const { route, params, navigate, updateParams } = useHashRoute(isAdminBuild);
-  const navigation = isAdminBuild ? adminNav : publicNav;
+  const { route, params, navigate, updateParams } = useHashRoute(isAdminBuild, isLabBuild);
+  const isLabRoute = isLabEnabled && route === 'ai-lab';
+  const labTool = params.get('tool');
+  const isLabToolRoute = isLabRoute && (labTool === 'floorplan3d' || (!labTool && Boolean(params.get('projectId'))));
+  const navigation = isLabEnabled ? labNav : isAdminBuild ? adminNav : publicNav;
   const themeColors = useMemo(() => buildThemeColors(theme), [theme]);
 
   useLayoutEffect(() => {
@@ -56,6 +64,7 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    if (isLabRoute) return;
     const controller = new AbortController();
     setError(null);
     loadSnapshot(controller.signal)
@@ -64,12 +73,16 @@ export default function App() {
         if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : '数据加载失败');
       });
     return () => controller.abort();
-  }, [reloadKey]);
+  }, [reloadKey, isLabRoute]);
 
   useEffect(() => {
+    if (isLabToolRoute) {
+      document.title = 'Floorplan-Editor · AI 实验室';
+      return;
+    }
     const current = navigation.find((item) => item.route === route);
     document.title = `${current?.label ?? '今日'} · ark.insight`;
-  }, [navigation, route]);
+  }, [navigation, route, isLabToolRoute]);
 
   const toggleFollow = (projectId: string) => {
     setFollowed((current) => {
@@ -82,6 +95,10 @@ export default function App() {
   };
 
   const page = useMemo(() => {
+    if (isLabRoute) {
+      if (isLabToolRoute && AiLabPage) return <AiLabPage />;
+      return AiLabHub ? <AiLabHub /> : null;
+    }
     if (!snapshot) return null;
     if (route === 'ai') return <AiEventsPage snapshot={snapshot} params={params} updateParams={updateParams} />;
     if (route === 'github') {
@@ -112,7 +129,7 @@ export default function App() {
     }
     if (route === 'operations' && isAdminBuild && OperationsPage) return <OperationsPage snapshot={snapshot} onPublished={() => setReloadKey((value) => value + 1)} />;
     return <TodayPage snapshot={snapshot} isAdmin={isAdminBuild} navigate={navigate} />;
-  }, [followed, navigate, params, route, snapshot, updateParams]);
+  }, [followed, navigate, params, route, snapshot, updateParams, isLabRoute, isLabToolRoute]);
 
   const navigateFromMenu = (target: RouteName) => {
     setMenuOpen(false);
@@ -141,8 +158,8 @@ export default function App() {
         },
       }}
     >
-      <div className="app-shell">
-        <header className="app-header">
+      <div className={`app-shell${isLabToolRoute ? ' lab-shell' : ''}`}>
+        {!isLabToolRoute && <header className="app-header">
           <div className="header-inner">
             <a className="brand" href={routeHref('today')}>
               <span className="brand-mark" aria-hidden="true"><img src="/brand/ark-ghost.png" alt="" /></span>
@@ -159,16 +176,16 @@ export default function App() {
             </nav>
 
             <div className="header-meta">
-              {snapshot && <span>更新 {formatDate(snapshot.generatedAt, true)}</span>}
+              {snapshot && !isLabRoute && <span>更新 {formatDate(snapshot.generatedAt, true)}</span>}
               {isAdminBuild && <span className="admin-badge">本地管理</span>}
               <ThemePicker value={theme} onChange={updateTheme} />
               <Button className="mobile-menu-button" onClick={() => setMenuOpen(true)}>菜单</Button>
             </div>
           </div>
-        </header>
+        </header>}
 
-        <main className="app-main">
-          {error ? (
+        <main className={`app-main${isLabToolRoute ? ' lab-main' : ''}`} style={isLabToolRoute ? { width: '100%', maxWidth: 'none', margin: 0, padding: 0 } : undefined}>
+          {isLabRoute ? <Suspense fallback={<div className="loading-state"><Spin size="large" /><span>正在打开实验室</span></div>}>{page}</Suspense> : error ? (
             <Result
               status="warning"
               title="数据暂时无法加载"
@@ -180,7 +197,7 @@ export default function App() {
           ) : <Suspense fallback={<div className="loading-state"><Spin size="large" /><span>正在打开页面</span></div>}>{page}</Suspense>}
         </main>
 
-        {snapshot && (
+        {snapshot && !isLabRoute && (
           <footer className="app-footer">
             <span>ark.insight</span>
             <span>GitHub {formatDate(snapshot.asOf.github)} · AI {formatDate(snapshot.asOf.ai)} · Skill {formatDate(snapshot.asOf.skills)}</span>

@@ -1,0 +1,176 @@
+﻿param([switch]$NoBrowser)
+$ErrorActionPreference = 'Stop'
+$labRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
+if ((git -C $labRoot branch --show-current).Trim() -cne 'codex/ai-lab') { throw 'Start only from the AI Lab branch.' }
+$runtime = Join-Path $labRoot '.local-ai-lab/runtime'
+
+# Parse the actual Windows process command line as argv; never execute its text.
+if (-not ('AiLabProcessArguments' -as [type])) {
+    Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public static class AiLabProcessArguments {
+    [DllImport("shell32.dll", SetLastError = true)]
+    private static extern IntPtr CommandLineToArgvW([MarshalAs(UnmanagedType.LPWStr)] string command, out int count);
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr LocalFree(IntPtr memory);
+    public static string[] Parse(string command) {
+        int count;
+        IntPtr memory = CommandLineToArgvW(command, out count);
+        if (memory == IntPtr.Zero) throw new InvalidOperationException("Cannot parse process command line.");
+        try {
+            string[] result = new string[count];
+            for (int index = 0; index < count; index++)
+                result[index] = Marshal.PtrToStringUni(Marshal.ReadIntPtr(memory, index * IntPtr.Size));
+            return result;
+        } finally { LocalFree(memory); }
+    }
+}
+"@
+}
+
+function Get-LabServiceDefinitions {
+    param([string]$Root, [string]$Runtime)
+    $pythonExecutable = (Get-Command python -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+    $nodeExecutable = (Get-Command node -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+    @(
+        [pscustomobject]@{
+            Name = 'api'; Port = 8786; Executable = $pythonExecutable
+            Arguments = @('-m', 'server', '--root', $Root, '--port', '8786')
+            PidFile = Join-Path $Runtime 'api.pid'
+        },
+        [pscustomobject]@{
+            Name = 'frontend'; Port = 5186; Executable = $nodeExecutable
+            Arguments = @((Join-Path $Root 'node_modules/vite/bin/vite.js'), '--config', (Join-Path $Root 'vite.ai-lab.config.ts'), '--mode', 'lab', '--host', '127.0.0.1', '--port', '5186', '--strictPort')
+            PidFile = Join-Path $Runtime 'frontend.pid'
+        }
+    )
+}
+
+function Get-LabTrackedProcess {
+    param($Definition)
+    if (-not (Test-Path -LiteralPath $Definition.PidFile -PathType Leaf)) { return $null }
+    $record = (Get-Content -LiteralPath $Definition.PidFile -Raw -ErrorAction Stop).Trim()
+    $serviceProcessId = 0
+    if (-not [int]::TryParse($record, [ref]$serviceProcessId) -or $serviceProcessId -le 0) {
+        throw "Invalid $($Definition.Name) PID record. No process was changed."
+    }
+    $actual = Get-CimInstance -ClassName Win32_Process -Filter "ProcessId=$serviceProcessId" -ErrorAction Stop
+    if ($null -eq $actual) { return $null } # A stale record alone is not ownership.
+    [pscustomobject]@{ Id = $serviceProcessId; Process = $actual }
+}
+
+function Get-LabPortListeners {
+    param([int]$Port)
+    # Query failure must fail closed, rather than treating an inaccessible port as free.
+    Get-NetTCPConnection -State Listen -ErrorAction Stop | Where-Object { $_.LocalPort -eq $Port }
+}
+
+function Assert-LabProcessSignature {
+    param($Definition, $Tracked)
+    if ($null -eq $Tracked -or [string]::IsNullOrWhiteSpace($Tracked.Process.CommandLine) -or [string]::IsNullOrWhiteSpace($Tracked.Process.ExecutablePath)) {
+        throw "Cannot establish $($Definition.Name) process ownership. No process was changed."
+    }
+    $expectedExecutable = [IO.Path]::GetFullPath($Definition.Executable)
+    $actualExecutable = [IO.Path]::GetFullPath($Tracked.Process.ExecutablePath)
+    if (-not [string]::Equals($actualExecutable, $expectedExecutable, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "$($Definition.Name) PID belongs to a different executable. No process was changed."
+    }
+    $actualArguments = [AiLabProcessArguments]::Parse($Tracked.Process.CommandLine)
+    if ($actualArguments.Count -ne $Definition.Arguments.Count + 1 -or
+        -not [string]::Equals([IO.Path]::GetFullPath($actualArguments[0]), $expectedExecutable, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "$($Definition.Name) command line does not match this checkout. No process was changed."
+    }
+    for ($index = 0; $index -lt $Definition.Arguments.Count; $index++) {
+        $expected = [string]$Definition.Arguments[$index]
+        $actualArgument = [string]$actualArguments[$index + 1]
+        $comparison = if ([IO.Path]::IsPathRooted($expected)) { [StringComparison]::OrdinalIgnoreCase } else { [StringComparison]::Ordinal }
+        if (-not [string]::Equals($actualArgument, $expected, $comparison)) {
+            throw "$($Definition.Name) command line does not exactly match this checkout and expected arguments. No process was changed."
+        }
+    }
+}
+
+function Assert-LabListenerOwnership {
+    param($Definition, $Tracked, [object[]]$Listeners)
+    Assert-LabProcessSignature $Definition $Tracked
+    if ($Listeners.Count -eq 0 -or @($Listeners | Where-Object { $_.OwningProcess -ne $Tracked.Id -or $_.LocalAddress -notin @('127.0.0.1', '::1') }).Count -gt 0) {
+        throw "Port $($Definition.Port) is not exclusively owned by the recorded local $($Definition.Name) process. No process was changed."
+    }
+}
+
+function Ensure-LabService {
+    param($Definition)
+    $tracked = Get-LabTrackedProcess $Definition
+    $listeners = @(Get-LabPortListeners $Definition.Port)
+    if ($listeners.Count -gt 0) {
+        if ($null -eq $tracked) { throw "Port $($Definition.Port) is occupied without an owned PID record for this checkout. No service was changed." }
+        Assert-LabListenerOwnership $Definition $tracked $listeners
+        return
+    }
+    if ($null -ne $tracked) {
+        Assert-LabProcessSignature $Definition $tracked
+        throw "The recorded $($Definition.Name) process is running but not listening on port $($Definition.Port). No duplicate was started."
+    }
+    # Every argument is fixed by this script. Quote each one for Start-Process on
+    # Windows; project paths never end in a slash and cannot contain a quote.
+    $quotedArguments = @($Definition.Arguments | ForEach-Object {
+        if ($_.Contains('"') -or $_.EndsWith('\')) { throw 'Unsupported quote or trailing slash in a service argument.' }
+        '"' + $_ + '"'
+    }) -join ' '
+    $started = Start-Process -FilePath $Definition.Executable -ArgumentList $quotedArguments -WorkingDirectory $labRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $runtime ($Definition.Name + '.log')) -RedirectStandardError (Join-Path $runtime ($Definition.Name + '-error.log'))
+    $started.Id | Set-Content -LiteralPath $Definition.PidFile
+}
+
+function Wait-LabService {
+    param($Definition)
+    for ($attempt = 0; $attempt -lt 40; $attempt++) {
+        $tracked = Get-LabTrackedProcess $Definition
+        if ($null -eq $tracked) { throw "$($Definition.Name) exited before readiness. Inspect its log under .local-ai-lab/runtime." }
+        Assert-LabProcessSignature $Definition $tracked
+        $listeners = @(Get-LabPortListeners $Definition.Port)
+        if ($listeners.Count -gt 0) {
+            Assert-LabListenerOwnership $Definition $tracked $listeners
+            $ready = $false
+            try {
+                if ($Definition.Name -eq 'api') {
+                    $health = Invoke-RestMethod 'http://127.0.0.1:8786/api/ai-lab/v1/health' -TimeoutSec 2
+                    $ready = $health.status -eq 'ok'
+                } else {
+                    $response = Invoke-WebRequest 'http://127.0.0.1:5186/' -UseBasicParsing -TimeoutSec 2
+                    $ready = $response.StatusCode -eq 200
+                }
+            } catch { $ready = $false }
+            if ($ready) { return }
+        }
+        Start-Sleep -Milliseconds 200
+    }
+    throw "$($Definition.Name) did not become ready. Its process was left intact; inspect .local-ai-lab/runtime logs."
+}
+
+$definitions = @(Get-LabServiceDefinitions $labRoot $runtime)
+# Preflight both ports before starting either service. An unrelated listener is
+# an error even if it happens to return status=ok or a frontend HTTP 200.
+foreach ($definition in $definitions) {
+    $listeners = @(Get-LabPortListeners $definition.Port)
+    $tracked = Get-LabTrackedProcess $definition
+    if ($listeners.Count -gt 0) {
+        if ($null -eq $tracked) { throw "Port $($definition.Port) is occupied without ownership by this checkout. No service was changed." }
+        Assert-LabListenerOwnership $definition $tracked $listeners
+    } elseif ($null -ne $tracked) {
+        Assert-LabProcessSignature $definition $tracked
+        throw "Recorded $($definition.Name) process has no expected listener; inspect it before starting another copy."
+    }
+}
+New-Item -ItemType Directory -Path $runtime -Force | Out-Null
+$previousPythonPath = $env:PYTHONPATH
+try {
+    $env:PYTHONPATH = Join-Path $labRoot 'ai-lab'
+    foreach ($definition in $definitions) {
+        Ensure-LabService $definition
+        Wait-LabService $definition
+    }
+} finally { $env:PYTHONPATH = $previousPythonPath }
+$url = 'http://127.0.0.1:5186/#/ai-lab?tool=floorplan3d'
+Write-Output "AI Lab ready: $url"
+if (-not $NoBrowser) { Start-Process $url }

@@ -1,39 +1,41 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-export type RouteName = 'today' | 'ai' | 'github' | 'skills' | 'papers' | 'watchlist' | 'operations';
+export type RouteName = 'today' | 'ai' | 'github' | 'skills' | 'papers' | 'watchlist' | 'operations' | 'ai-lab';
 
 const publicRoutes: RouteName[] = ['today', 'ai', 'github', 'skills', 'papers'];
 const adminRoutes: RouteName[] = [...publicRoutes, 'watchlist', 'operations'];
+const labRoutes: RouteName[] = [...publicRoutes, 'ai-lab'];
 
-function readLocation(isAdmin: boolean) {
+function readLocation(isAdmin: boolean, isLab: boolean) {
   const raw = window.location.hash.replace(/^#\/?/, '');
   const [path = 'today', query = ''] = raw.split('?');
-  const allowed = isAdmin ? adminRoutes : publicRoutes;
+  const allowed = isAdmin ? adminRoutes : labRoutes;
   const route = allowed.includes(path as RouteName) ? (path as RouteName) : 'today';
   return { route, params: new URLSearchParams(query) };
 }
 
 export function routeHref(route: RouteName, params?: URLSearchParams): string {
+  if (route === 'ai-lab' && !params) return '#/ai-lab';
   const query = params?.toString();
   return `#/${route}${query ? `?${query}` : ''}`;
 }
 
-export function useHashRoute(isAdmin: boolean) {
+export function useHashRoute(isAdmin: boolean, isLab = false) {
   const [hash, setHash] = useState(window.location.hash);
 
   useEffect(() => {
     const rawPath = window.location.hash.replace(/^#\/?/, '').split('?')[0];
-    const allowed = isAdmin ? adminRoutes : publicRoutes;
+    const allowed = isAdmin ? adminRoutes : labRoutes;
     if (!window.location.hash || !allowed.includes(rawPath as RouteName)) {
-      window.history.replaceState(null, '', routeHref('today'));
+      window.history.replaceState(null, '', routeHref(isLab ? 'ai-lab' : 'today'));
       setHash(window.location.hash);
     }
     const onChange = () => setHash(window.location.hash);
     window.addEventListener('hashchange', onChange);
     return () => window.removeEventListener('hashchange', onChange);
-  }, [isAdmin]);
+  }, [isAdmin, isLab]);
 
-  const location = useMemo(() => readLocation(isAdmin), [hash, isAdmin]);
+  const location = useMemo(() => readLocation(isAdmin, isLab), [hash, isAdmin, isLab]);
   const navigate = useCallback((route: RouteName, params?: URLSearchParams) => {
     window.location.hash = routeHref(route, params);
   }, []);

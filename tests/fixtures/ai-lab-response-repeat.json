@@ -1,0 +1,12 @@
+{
+  "case": "abstract-identical-analysis-repeat",
+  "single": {
+    "summary": "示意办公平面",
+    "spaces": ["示意空间"],
+    "notes": [],
+    "observations": [],
+    "scale": {"mmPerPixel": 10, "confidence": "low", "evidence": ["示意依据"], "assumptions": ["示意假设"], "anchors": []}
+  },
+  "separator": "\n",
+  "repeatCount": 2
+}

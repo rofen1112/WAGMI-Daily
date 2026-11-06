@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "start:lab-public": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-public-ai-lab.ps1",
+    "dev:lab": "vite --config vite.ai-lab.config.ts --mode lab",
+    "build:lab": "tsc -b && vite build --config vite.ai-lab.config.ts --mode lab",
     "dev": "npm run dev:admin",
     "dev:admin": "vite --host 127.0.0.1 --port 5174 --strictPort --mode admin",
     "dev:public": "vite --host 127.0.0.1 --mode public",

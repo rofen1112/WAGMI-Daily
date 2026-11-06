@@ -31,3 +31,9 @@ public/data/main/*
 
 # Internal report originals stay local; public/reports contains sanitized mirrors.
 /reports/
+
+# AI laboratory runtime remains private to this checkout.
+.local-ai-lab/
+.local-ai-lab-public/
+__pycache__/
+*.py[cod]

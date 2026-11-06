@@ -1,0 +1,3 @@
+# Only the new current-chat handoff capture decoder requires this dependency.
+# Runtime does not install packages automatically or invoke any model SDK.
+Pillow==12.2.0

@@ -1,5 +1,9 @@
 # ark.insight deployment
 
+## AI laboratory production integration (2026-11-06)
+
+The public visitor build now includes `#/ai-lab`. The existing origin additionally proxies only `/api/ai-lab/v1/` and `/viewer-assets/` to an isolated loopback backend on 8787. It never proxies the 5174 admin or the private 8786 development backend. Start the backend with `npm run start:lab-public`; `npm run start:local` also restores it. Shutdown of this machine pauses access. Existing news dates and the daily delivery workflow are unchanged. See [AI laboratory production](docs/ai-lab-production.md) for browser session isolation, API configuration, persisted admission limits and verification boundaries. This is an explicit extension of the otherwise static, read-only news runtime described below.
+
 ## Active deployment: local Windows origin (2026-09-30)
 
 The user selected this always-on computer as the public website origin after
